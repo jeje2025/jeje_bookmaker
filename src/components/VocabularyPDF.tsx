@@ -7,13 +7,19 @@ import {
   Font,
 } from '@react-pdf/renderer';
 
-// 한글 폰트 등록 (Noto Sans KR - OTF 형식 사용)
-// Google Fonts GitHub에서 직접 가져옴
-const NOTO_SANS_KR_REGULAR = 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf';
-
+// 한글 폰트 등록 (Pretendard - 더 안정적인 CDN)
 Font.register({
-  family: 'NotoSansKR',
-  src: NOTO_SANS_KR_REGULAR,
+  family: 'Pretendard',
+  fonts: [
+    {
+      src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Regular.otf',
+      fontWeight: 400,
+    },
+    {
+      src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Bold.otf',
+      fontWeight: 700,
+    },
+  ],
 });
 
 // Hyphenation 비활성화 (한글에 불필요)
@@ -25,7 +31,7 @@ const styles = StyleSheet.create({
     paddingTop: 30,
     paddingBottom: 40,
     paddingHorizontal: 35,
-    fontFamily: 'NotoSansKR',
+    fontFamily: 'Pretendard',
     fontSize: 10,
     backgroundColor: '#ffffff',
   },
@@ -53,9 +59,9 @@ const styles = StyleSheet.create({
   // 카드 스타일 - VocabularyCard.tsx와 매칭
   card: {
     borderWidth: 1,
-    borderColor: 'rgba(229, 231, 235, 0.6)', // border-gray-200/60
+    borderColor: '#e5e7eb', // border-gray-200
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)', // bg-white/80
+    backgroundColor: '#ffffff',
     paddingTop: 10,
     paddingBottom: 10,
     paddingLeft: 14,
@@ -80,12 +86,12 @@ const styles = StyleSheet.create({
   idBadge: {
     fontSize: 6,
     color: '#475569',
-    backgroundColor: 'rgba(241, 245, 249, 0.8)', // bg-slate-100/80
+    backgroundColor: '#f1f5f9', // bg-slate-100
     paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.6)', // border-slate-200/60
+    borderColor: '#e2e8f0', // border-slate-200
     marginBottom: 6,
     alignSelf: 'flex-start',
     textTransform: 'uppercase',
@@ -94,6 +100,7 @@ const styles = StyleSheet.create({
   // 단어 - 22px bold
   word: {
     fontSize: 18,
+    fontWeight: 700,
     color: '#000000',
     marginBottom: 2,
     letterSpacing: -0.3,
@@ -101,6 +108,7 @@ const styles = StyleSheet.create({
   // 품사 - 10px bold gray
   partOfSpeech: {
     fontSize: 8,
+    fontWeight: 700,
     color: '#9ca3af', // text-gray-400
   },
   // 의미 컨테이너
@@ -195,12 +203,12 @@ const styles = StyleSheet.create({
   infoBadge: {
     fontSize: 6,
     color: '#475569',
-    backgroundColor: 'rgba(241, 245, 249, 0.8)',
+    backgroundColor: '#f1f5f9',
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: 'rgba(226, 232, 240, 0.6)',
+    borderColor: '#e2e8f0',
     marginBottom: 3,
     alignSelf: 'flex-start',
     textTransform: 'uppercase',
