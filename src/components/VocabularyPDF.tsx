@@ -16,6 +16,11 @@ Font.register({
       fontWeight: 400,
     },
     {
+      src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Regular.otf',
+      fontWeight: 400,
+      fontStyle: 'italic',
+    },
+    {
       src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Bold.otf',
       fontWeight: 700,
     },
