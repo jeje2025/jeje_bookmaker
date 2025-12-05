@@ -412,6 +412,33 @@ const styles = StyleSheet.create({
     color: '#059669',
     fontWeight: 700,
   },
+  answerMeaningLabel: {
+    fontSize: 9,
+    color: '#000000',
+    marginBottom: 4,
+  },
+  answerSynonymLabel: {
+    fontSize: 10,
+    color: '#4b5563',
+  },
+  answerSynonymValue: {
+    fontSize: 10,
+    color: '#1f2937',
+    fontWeight: 700,
+  },
+  answerWrongItem: {
+    flexDirection: 'row',
+    marginTop: 1,
+  },
+  answerWrongX: {
+    fontSize: 9,
+    color: '#dc2626',
+    marginRight: 2,
+  },
+  answerWrongText: {
+    fontSize: 9,
+    color: '#4b5563',
+  },
 });
 
 interface VocabularyItem {
@@ -480,8 +507,8 @@ function generateTestQuestions(data: VocabularyItem[]) {
     const selectedDistractors = shuffledDistractors.slice(0, 4);
 
     const allChoices = [
-      ...correctSynonyms.map(syn => ({ word: syn, isCorrect: true })),
-      ...selectedDistractors.map(d => ({ word: d.word, isCorrect: false }))
+      ...correctSynonyms.map(syn => ({ word: syn, isCorrect: true, meaning: '' })),
+      ...selectedDistractors.map(d => ({ word: d.word, isCorrect: false, meaning: d.meaning }))
     ];
 
     return {
@@ -753,40 +780,39 @@ const VocabularyAnswerRowPDF = ({ left, right, allData }: {
   const leftQ = questions.find(q => q.id === left.id);
   const rightQ = right ? questions.find(q => q.id === right.id) : null;
 
+  const renderAnswerContent = (q: typeof leftQ, item: VocabularyItem) => (
+    <>
+      <View style={styles.testHeader}>
+        <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        <Text style={styles.testWord}>{item.word}</Text>
+      </View>
+      {/* 뜻 */}
+      <Text style={styles.answerMeaningLabel}>뜻: {item.meaning}</Text>
+      {/* 동의어 정답 */}
+      <View style={{ flexDirection: 'row', marginBottom: 4 }}>
+        <Text style={styles.answerSynonymLabel}>동의어: </Text>
+        <Text style={styles.answerSynonymValue}>
+          {q?.allChoices.filter(c => c.isCorrect).map(c => c.word).join(', ')}
+        </Text>
+      </View>
+      {/* 오답 설명 */}
+      {q?.allChoices.filter(c => !c.isCorrect).map((choice, idx) => (
+        <View key={idx} style={styles.answerWrongItem}>
+          <Text style={styles.answerWrongX}>✗</Text>
+          <Text style={styles.answerWrongText}>{choice.word}: {choice.meaning}</Text>
+        </View>
+      ))}
+    </>
+  );
+
   return (
     <View style={styles.testRow} wrap={false}>
       <View style={styles.testCol}>
-        <View style={styles.testHeader}>
-          <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
-          <Text style={styles.testWord}>{left.word}</Text>
-        </View>
-        <Text style={styles.simpleMeaning}>{left.meaning}</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
-          {leftQ?.allChoices.map((choice, idx) => (
-            <View key={idx} style={styles.testChoice}>
-              <Text style={choice.isCorrect ? styles.answerCorrect : styles.testChoiceText}>
-                {choice.isCorrect ? '■' : '□'} {choice.word}
-              </Text>
-            </View>
-          ))}
-        </View>
+        {renderAnswerContent(leftQ, left)}
       </View>
-      {rightQ ? (
+      {right && rightQ ? (
         <View style={styles.testColRight}>
-          <View style={styles.testHeader}>
-            <Text style={styles.idBadge}>{String(right!.id).padStart(3, '0')}</Text>
-            <Text style={styles.testWord}>{right!.word}</Text>
-          </View>
-          <Text style={styles.simpleMeaning}>{right!.meaning}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
-            {rightQ.allChoices.map((choice, idx) => (
-              <View key={idx} style={styles.testChoice}>
-                <Text style={choice.isCorrect ? styles.answerCorrect : styles.testChoiceText}>
-                  {choice.isCorrect ? '■' : '□'} {choice.word}
-                </Text>
-              </View>
-            ))}
-          </View>
+          {renderAnswerContent(rightQ, right)}
         </View>
       ) : (
         <View style={styles.testColRight} />
