@@ -23,6 +23,7 @@ import { projectId, publicAnonKey } from './utils/supabase/info';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner@2.0.3';
 import { AdminDashboard } from './components/AdminDashboard';
+import { downloadPDF } from './utils/pdfDownload';
 
 const vocabularyData = [
   {
@@ -759,18 +760,22 @@ export default function App() {
 
           {/* PDF 저장 버튼 */}
           <Button
-            onClick={() => {
+            onClick={async () => {
               // 제목 필수 체크
               if (!headerInfo.headerTitle.trim()) {
                 toast.error('제목을 입력해주세요.', { duration: 1000 });
                 return;
               }
-              
-              // 바로 PDF 저장 (인쇄 대화상자 열기)
-              toast.success('PDF 저장을 시작합니다...', { duration: 1000 });
-              setTimeout(() => {
-                window.print();
-              }, 500);
+
+              // PDF 다운로드
+              toast.success('PDF 생성 중...', { duration: 1000 });
+              try {
+                await downloadPDF(vocabularyList, headerInfo);
+                toast.success('PDF 다운로드 완료!', { duration: 1000 });
+              } catch (error) {
+                console.error('PDF 생성 오류:', error);
+                toast.error('PDF 생성에 실패했습니다.', { duration: 1000 });
+              }
             }}
             className="bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2"
           >
