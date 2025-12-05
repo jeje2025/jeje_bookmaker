@@ -7,27 +7,31 @@ import {
   Font,
 } from '@react-pdf/renderer';
 
-// 한글 폰트 등록 (Noto Sans KR - Google Fonts CDN)
+// 한글 폰트 등록 (Noto Sans KR - TTF 형식 사용)
+// react-pdf는 TTF/OTF만 지원, woff2는 지원하지 않음
+const NOTO_SANS_KR_REGULAR = 'https://cdn.jsdelivr.net/gh/nicennnnnnnlee/noto-sans-korean-webfont-master@master/fonts/ttf/NotoSansKR-Regular.ttf';
+const NOTO_SANS_KR_BOLD = 'https://cdn.jsdelivr.net/gh/nicennnnnnnlee/noto-sans-korean-webfont-master@master/fonts/ttf/NotoSansKR-Bold.ttf';
+
 Font.register({
   family: 'NotoSansKR',
   fonts: [
     {
-      src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLGC5nwmHvBNKQ.woff2',
+      src: NOTO_SANS_KR_REGULAR,
       fontWeight: 400,
       fontStyle: 'normal',
     },
     {
-      src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLGC5nwmHvBNKQ.woff2',
+      src: NOTO_SANS_KR_REGULAR,
       fontWeight: 400,
-      fontStyle: 'italic', // italic은 normal과 동일하게 처리 (한글 폰트는 italic이 없음)
+      fontStyle: 'italic',
     },
     {
-      src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyhbSC5nwmHvBNKQ.woff2',
+      src: NOTO_SANS_KR_BOLD,
       fontWeight: 700,
       fontStyle: 'normal',
     },
     {
-      src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyhbSC5nwmHvBNKQ.woff2',
+      src: NOTO_SANS_KR_BOLD,
       fontWeight: 700,
       fontStyle: 'italic',
     },
