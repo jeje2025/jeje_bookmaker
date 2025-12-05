@@ -14,10 +14,22 @@ Font.register({
     {
       src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLGC5nwmHvBNKQ.woff2',
       fontWeight: 400,
+      fontStyle: 'normal',
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyeLGC5nwmHvBNKQ.woff2',
+      fontWeight: 400,
+      fontStyle: 'italic', // italic은 normal과 동일하게 처리 (한글 폰트는 italic이 없음)
     },
     {
       src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyhbSC5nwmHvBNKQ.woff2',
       fontWeight: 700,
+      fontStyle: 'normal',
+    },
+    {
+      src: 'https://fonts.gstatic.com/s/notosanskr/v36/PbyxFmXiEBPT4ITbgNA5Cgms3VYcOA-vvnIzzuoyhbSC5nwmHvBNKQ.woff2',
+      fontWeight: 700,
+      fontStyle: 'italic',
     },
   ],
 });
