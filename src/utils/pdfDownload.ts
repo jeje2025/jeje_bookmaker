@@ -24,13 +24,16 @@ interface HeaderInfo {
   footerLeft: string;
 }
 
+type ViewMode = 'card' | 'table' | 'tableSimple' | 'tableSimpleTest' | 'test' | 'testDefinition' | 'testAnswer' | 'testDefinitionAnswer';
+
 export async function downloadPDF(
   data: VocabularyItem[],
   headerInfo: HeaderInfo,
+  viewMode: ViewMode = 'card',
   filename?: string
 ): Promise<void> {
   // PDF 문서 생성
-  const doc = createElement(VocabularyPDF, { data, headerInfo });
+  const doc = createElement(VocabularyPDF, { data, headerInfo, viewMode });
   const blob = await pdf(doc).toBlob();
 
   // 파일명 생성

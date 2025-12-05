@@ -767,10 +767,16 @@ export default function App() {
                 return;
               }
 
-              // PDF 다운로드
+              // 표지는 PDF 저장 지원 안 함
+              if (viewMode === 'cover' || viewMode === 'input') {
+                toast.error('이 화면은 PDF 저장을 지원하지 않습니다.', { duration: 1000 });
+                return;
+              }
+
+              // PDF 다운로드 (현재 viewMode 전달)
               toast.success('PDF 생성 중...', { duration: 1000 });
               try {
-                await downloadPDF(vocabularyList, headerInfo);
+                await downloadPDF(vocabularyList, headerInfo, viewMode);
                 toast.success('PDF 다운로드 완료!', { duration: 1000 });
               } catch (error) {
                 console.error('PDF 생성 오류:', error);

@@ -235,6 +235,178 @@ const styles = StyleSheet.create({
     fontSize: 8,
     color: '#9ca3af',
   },
+  // ===== 표버전 스타일 =====
+  tableRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    paddingVertical: 6,
+  },
+  tableColId: {
+    width: '5%',
+    paddingHorizontal: 2,
+  },
+  tableColWord: {
+    width: '18%',
+    paddingHorizontal: 6,
+  },
+  tableColMeaning: {
+    width: '42%',
+    paddingHorizontal: 6,
+  },
+  tableColSyn: {
+    width: '17%',
+    paddingHorizontal: 6,
+  },
+  tableColAnt: {
+    width: '18%',
+    paddingHorizontal: 6,
+  },
+  tableWord: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: '#000000',
+    marginBottom: 2,
+  },
+  tableDerivative: {
+    marginTop: 2,
+  },
+  tableDerivativeWord: {
+    fontSize: 9,
+    color: '#1f2937',
+  },
+  tableDerivativeMeaning: {
+    fontSize: 7,
+    color: '#6b7280',
+  },
+  tableMeaning: {
+    fontSize: 10,
+    color: '#000000',
+    marginBottom: 2,
+  },
+  tableDefinition: {
+    fontSize: 8,
+    color: '#6b7280',
+    fontStyle: 'italic',
+    marginBottom: 2,
+  },
+  tableExample: {
+    fontSize: 9,
+    color: '#000000',
+    marginBottom: 1,
+  },
+  tableTranslation: {
+    fontSize: 8,
+    color: '#4b5563',
+  },
+  // ===== 간단버전 스타일 =====
+  simpleRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    paddingVertical: 5,
+  },
+  simpleColId: {
+    width: '6%',
+    paddingHorizontal: 2,
+  },
+  simpleColWord: {
+    width: '22%',
+    paddingHorizontal: 6,
+  },
+  simpleColMeaning: {
+    width: '22%',
+    paddingHorizontal: 6,
+  },
+  simpleWord: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: '#000000',
+  },
+  simpleMeaning: {
+    fontSize: 9,
+    color: '#000000',
+  },
+  // ===== 테스트지 스타일 =====
+  testRow: {
+    flexDirection: 'row',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+    paddingVertical: 8,
+  },
+  testCol: {
+    width: '50%',
+    paddingHorizontal: 10,
+  },
+  testColRight: {
+    width: '50%',
+    paddingHorizontal: 10,
+    borderLeftWidth: 1,
+    borderLeftColor: '#e5e7eb',
+  },
+  testHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  testWord: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: '#000000',
+    marginRight: 8,
+  },
+  testMeaningLabel: {
+    fontSize: 8,
+    color: '#6b7280',
+    marginRight: 4,
+    marginTop: 3,
+  },
+  testMeaningLine: {
+    flex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1d5db',
+    height: 16,
+  },
+  testChoices: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  testChoice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+    marginBottom: 4,
+  },
+  testCheckbox: {
+    fontSize: 10,
+    color: '#9ca3af',
+    marginRight: 4,
+  },
+  testChoiceText: {
+    fontSize: 10,
+    color: '#374151',
+  },
+  // ===== 영영정의 테스트지 스타일 =====
+  defTestDefinition: {
+    fontSize: 9,
+    color: '#4b5563',
+    fontStyle: 'italic',
+    marginBottom: 4,
+  },
+  defTestAnswerLine: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#d1d5db',
+    height: 20,
+    marginTop: 4,
+  },
+  // ===== 답지 스타일 =====
+  answerCorrect: {
+    fontSize: 10,
+    color: '#059669',
+    fontWeight: 700,
+  },
 });
 
 interface VocabularyItem {
@@ -259,12 +431,66 @@ interface HeaderInfo {
   footerLeft: string;
 }
 
+type ViewMode = 'card' | 'table' | 'tableSimple' | 'tableSimpleTest' | 'test' | 'testDefinition' | 'testAnswer' | 'testDefinitionAnswer';
+
 interface VocabularyPDFProps {
   data: VocabularyItem[];
   headerInfo: HeaderInfo;
+  viewMode?: ViewMode;
 }
 
-// 카드 컴포넌트
+// seed 기반 랜덤 함수 (테스트지용)
+function seededRandom(seed: number): () => number {
+  return function() {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+}
+
+function seededShuffle<T>(array: T[], seed: number): T[] {
+  const result = [...array];
+  const random = seededRandom(seed);
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
+// 테스트 문제 생성 함수
+function generateTestQuestions(data: VocabularyItem[]) {
+  return data.map((item) => {
+    const correctSynonyms = item.synonyms.slice(0, Math.min(3, item.synonyms.length));
+    const distractors: Array<{ word: string; meaning: string }> = [];
+
+    const otherWords = data.filter(d => d.id !== item.id);
+    for (const other of otherWords) {
+      distractors.push({ word: other.word, meaning: other.meaning });
+      other.synonyms.forEach(syn => {
+        distractors.push({ word: syn, meaning: `(${other.word}의 동의어)` });
+      });
+    }
+
+    const shuffledDistractors = seededShuffle(distractors, item.id);
+    const selectedDistractors = shuffledDistractors.slice(0, 4);
+
+    const allChoices = [
+      ...correctSynonyms.map(syn => ({ word: syn, isCorrect: true })),
+      ...selectedDistractors.map(d => ({ word: d.word, isCorrect: false }))
+    ];
+
+    return {
+      id: item.id,
+      word: item.word,
+      meaning: item.meaning,
+      definition: item.definition,
+      correctSynonyms,
+      allChoices: seededShuffle(allChoices, item.id + 1000)
+    };
+  });
+}
+
+// ===== 카드 컴포넌트 =====
 const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
   <View style={styles.card} wrap={false}>
     {/* Top section */}
@@ -334,44 +560,353 @@ const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
   </View>
 );
 
-// 메인 PDF 문서
-export const VocabularyPDF = ({ data, headerInfo }: VocabularyPDFProps) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      {/* Header - 첫 페이지에만 */}
-      {headerInfo.headerTitle && (
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{headerInfo.headerTitle}</Text>
-          {headerInfo.headerDescription && (
-            <Text style={styles.headerDescription}>
-              {headerInfo.headerDescription}
-            </Text>
-          )}
+// ===== 표버전 컴포넌트 =====
+const VocabularyTableRowPDF = ({ item }: { item: VocabularyItem }) => (
+  <View style={styles.tableRow} wrap={false}>
+    <View style={styles.tableColId}>
+      <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+    </View>
+    <View style={styles.tableColWord}>
+      <Text style={styles.tableWord}>{item.word}</Text>
+      {item.derivatives.map((der, idx) => (
+        <View key={idx} style={styles.tableDerivative}>
+          <Text style={styles.tableDerivativeWord}>{der.word}</Text>
+          <Text style={styles.tableDerivativeMeaning}>
+            {der.partOfSpeech && `${der.partOfSpeech} `}{der.meaning}
+          </Text>
         </View>
-      )}
-
-      {/* Vocabulary Cards */}
-      {data.map((item) => (
-        <VocabularyCardPDF key={item.id} item={item} />
       ))}
-
-      {/* Footer */}
-      {headerInfo.footerLeft && (
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>{headerInfo.footerLeft}</Text>
-        </View>
-      )}
-
-      {/* Page Number */}
-      <Text
-        style={styles.pageNumber}
-        render={({ pageNumber, totalPages }) =>
-          `${pageNumber} / ${totalPages}`
-        }
-        fixed
-      />
-    </Page>
-  </Document>
+    </View>
+    <View style={styles.tableColMeaning}>
+      <Text style={styles.tableMeaning}>{item.meaning}</Text>
+      {item.definition && <Text style={styles.tableDefinition}>{item.definition}</Text>}
+      <Text style={styles.tableExample}>{item.example}</Text>
+      <Text style={styles.tableTranslation}>{item.translation}</Text>
+    </View>
+    <View style={styles.tableColSyn}>
+      <Text style={styles.infoBadge}>동</Text>
+      <Text style={styles.infoText}>{item.synonyms.join(', ')}</Text>
+    </View>
+    <View style={styles.tableColAnt}>
+      <Text style={styles.infoBadge}>반</Text>
+      <Text style={styles.infoText}>{item.antonyms.join(', ')}</Text>
+    </View>
+  </View>
 );
+
+// ===== 간단버전 컴포넌트 =====
+const VocabularySimpleRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
+  <View style={styles.simpleRow} wrap={false}>
+    <View style={styles.simpleColId}>
+      <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+    </View>
+    <View style={styles.simpleColWord}>
+      <Text style={styles.simpleWord}>{left.word}</Text>
+    </View>
+    <View style={styles.simpleColMeaning}>
+      <Text style={styles.simpleMeaning}>{left.meaning}</Text>
+    </View>
+    {right ? (
+      <>
+        <View style={styles.simpleColId}>
+          <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+        </View>
+        <View style={styles.simpleColWord}>
+          <Text style={styles.simpleWord}>{right.word}</Text>
+        </View>
+        <View style={styles.simpleColMeaning}>
+          <Text style={styles.simpleMeaning}>{right.meaning}</Text>
+        </View>
+      </>
+    ) : (
+      <>
+        <View style={styles.simpleColId} />
+        <View style={styles.simpleColWord} />
+        <View style={styles.simpleColMeaning} />
+      </>
+    )}
+  </View>
+);
+
+// ===== 테스트용 간단버전 컴포넌트 (뜻 숨김) =====
+const VocabularySimpleTestRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
+  <View style={styles.simpleRow} wrap={false}>
+    <View style={styles.simpleColId}>
+      <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+    </View>
+    <View style={styles.simpleColWord}>
+      <Text style={styles.simpleWord}>{left.word}</Text>
+    </View>
+    <View style={styles.simpleColMeaning}>
+      <View style={{ borderBottomWidth: 1, borderBottomColor: '#d1d5db', height: 14, width: '90%' }} />
+    </View>
+    {right ? (
+      <>
+        <View style={styles.simpleColId}>
+          <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+        </View>
+        <View style={styles.simpleColWord}>
+          <Text style={styles.simpleWord}>{right.word}</Text>
+        </View>
+        <View style={styles.simpleColMeaning}>
+          <View style={{ borderBottomWidth: 1, borderBottomColor: '#d1d5db', height: 14, width: '90%' }} />
+        </View>
+      </>
+    ) : (
+      <>
+        <View style={styles.simpleColId} />
+        <View style={styles.simpleColWord} />
+        <View style={styles.simpleColMeaning} />
+      </>
+    )}
+  </View>
+);
+
+// ===== 동의어 테스트지 컴포넌트 =====
+const VocabularyTestRowPDF = ({ left, right, allData }: {
+  left: VocabularyItem;
+  right: VocabularyItem | null;
+  allData: VocabularyItem[];
+}) => {
+  const questions = generateTestQuestions(allData);
+  const leftQ = questions.find(q => q.id === left.id);
+  const rightQ = right ? questions.find(q => q.id === right.id) : null;
+
+  return (
+    <View style={styles.testRow} wrap={false}>
+      <View style={styles.testCol}>
+        <View style={styles.testHeader}>
+          <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+          <Text style={styles.testWord}>{left.word}</Text>
+          <Text style={styles.testMeaningLabel}>뜻:</Text>
+          <View style={styles.testMeaningLine} />
+        </View>
+        <View style={styles.testChoices}>
+          {leftQ?.allChoices.map((choice, idx) => (
+            <View key={idx} style={styles.testChoice}>
+              <Text style={styles.testCheckbox}>□</Text>
+              <Text style={styles.testChoiceText}>{choice.word}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      {rightQ ? (
+        <View style={styles.testColRight}>
+          <View style={styles.testHeader}>
+            <Text style={styles.idBadge}>{String(right!.id).padStart(3, '0')}</Text>
+            <Text style={styles.testWord}>{right!.word}</Text>
+            <Text style={styles.testMeaningLabel}>뜻:</Text>
+            <View style={styles.testMeaningLine} />
+          </View>
+          <View style={styles.testChoices}>
+            {rightQ.allChoices.map((choice, idx) => (
+              <View key={idx} style={styles.testChoice}>
+                <Text style={styles.testCheckbox}>□</Text>
+                <Text style={styles.testChoiceText}>{choice.word}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : (
+        <View style={styles.testColRight} />
+      )}
+    </View>
+  );
+};
+
+// ===== 영영정의 테스트지 컴포넌트 =====
+const VocabularyDefTestRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
+  <View style={styles.testRow} wrap={false}>
+    <View style={styles.testCol}>
+      <View style={styles.testHeader}>
+        <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+      </View>
+      {left.definition && <Text style={styles.defTestDefinition}>{left.definition}</Text>}
+      <View style={styles.defTestAnswerLine} />
+    </View>
+    {right ? (
+      <View style={styles.testColRight}>
+        <View style={styles.testHeader}>
+          <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+        </View>
+        {right.definition && <Text style={styles.defTestDefinition}>{right.definition}</Text>}
+        <View style={styles.defTestAnswerLine} />
+      </View>
+    ) : (
+      <View style={styles.testColRight} />
+    )}
+  </View>
+);
+
+// ===== 동의어 답지 컴포넌트 =====
+const VocabularyAnswerRowPDF = ({ left, right, allData }: {
+  left: VocabularyItem;
+  right: VocabularyItem | null;
+  allData: VocabularyItem[];
+}) => {
+  const questions = generateTestQuestions(allData);
+  const leftQ = questions.find(q => q.id === left.id);
+  const rightQ = right ? questions.find(q => q.id === right.id) : null;
+
+  return (
+    <View style={styles.testRow} wrap={false}>
+      <View style={styles.testCol}>
+        <View style={styles.testHeader}>
+          <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+          <Text style={styles.testWord}>{left.word}</Text>
+        </View>
+        <Text style={styles.simpleMeaning}>{left.meaning}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+          {leftQ?.allChoices.map((choice, idx) => (
+            <View key={idx} style={styles.testChoice}>
+              <Text style={choice.isCorrect ? styles.answerCorrect : styles.testChoiceText}>
+                {choice.isCorrect ? '■' : '□'} {choice.word}
+              </Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      {rightQ ? (
+        <View style={styles.testColRight}>
+          <View style={styles.testHeader}>
+            <Text style={styles.idBadge}>{String(right!.id).padStart(3, '0')}</Text>
+            <Text style={styles.testWord}>{right!.word}</Text>
+          </View>
+          <Text style={styles.simpleMeaning}>{right!.meaning}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+            {rightQ.allChoices.map((choice, idx) => (
+              <View key={idx} style={styles.testChoice}>
+                <Text style={choice.isCorrect ? styles.answerCorrect : styles.testChoiceText}>
+                  {choice.isCorrect ? '■' : '□'} {choice.word}
+                </Text>
+              </View>
+            ))}
+          </View>
+        </View>
+      ) : (
+        <View style={styles.testColRight} />
+      )}
+    </View>
+  );
+};
+
+// ===== 영영정의 답지 컴포넌트 =====
+const VocabularyDefAnswerRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
+  <View style={styles.testRow} wrap={false}>
+    <View style={styles.testCol}>
+      <View style={styles.testHeader}>
+        <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+      </View>
+      {left.definition && <Text style={styles.defTestDefinition}>{left.definition}</Text>}
+      <Text style={styles.answerCorrect}>{left.word}</Text>
+      <Text style={styles.simpleMeaning}>{left.meaning}</Text>
+    </View>
+    {right ? (
+      <View style={styles.testColRight}>
+        <View style={styles.testHeader}>
+          <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+        </View>
+        {right.definition && <Text style={styles.defTestDefinition}>{right.definition}</Text>}
+        <Text style={styles.answerCorrect}>{right.word}</Text>
+        <Text style={styles.simpleMeaning}>{right.meaning}</Text>
+      </View>
+    ) : (
+      <View style={styles.testColRight} />
+    )}
+  </View>
+);
+
+// 데이터를 2개씩 묶는 헬퍼 함수
+function pairData<T>(data: T[]): Array<{ left: T; right: T | null }> {
+  const pairs: Array<{ left: T; right: T | null }> = [];
+  for (let i = 0; i < data.length; i += 2) {
+    pairs.push({ left: data[i], right: data[i + 1] || null });
+  }
+  return pairs;
+}
+
+// 메인 PDF 문서
+export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card' }: VocabularyPDFProps) => {
+  const pairedData = pairData(data);
+
+  // 콘텐츠 렌더링 함수
+  const renderContent = () => {
+    switch (viewMode) {
+      case 'table':
+        return data.map((item) => <VocabularyTableRowPDF key={item.id} item={item} />);
+
+      case 'tableSimple':
+        return pairedData.map((pair, idx) => (
+          <VocabularySimpleRowPDF key={idx} left={pair.left} right={pair.right} />
+        ));
+
+      case 'tableSimpleTest':
+        return pairedData.map((pair, idx) => (
+          <VocabularySimpleTestRowPDF key={idx} left={pair.left} right={pair.right} />
+        ));
+
+      case 'test':
+        return pairedData.map((pair, idx) => (
+          <VocabularyTestRowPDF key={idx} left={pair.left} right={pair.right} allData={data} />
+        ));
+
+      case 'testDefinition':
+        return pairedData.map((pair, idx) => (
+          <VocabularyDefTestRowPDF key={idx} left={pair.left} right={pair.right} />
+        ));
+
+      case 'testAnswer':
+        return pairedData.map((pair, idx) => (
+          <VocabularyAnswerRowPDF key={idx} left={pair.left} right={pair.right} allData={data} />
+        ));
+
+      case 'testDefinitionAnswer':
+        return pairedData.map((pair, idx) => (
+          <VocabularyDefAnswerRowPDF key={idx} left={pair.left} right={pair.right} />
+        ));
+
+      case 'card':
+      default:
+        return data.map((item) => <VocabularyCardPDF key={item.id} item={item} />);
+    }
+  };
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.page}>
+        {/* Header */}
+        {headerInfo.headerTitle && (
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>{headerInfo.headerTitle}</Text>
+            {headerInfo.headerDescription && (
+              <Text style={styles.headerDescription}>
+                {headerInfo.headerDescription}
+              </Text>
+            )}
+          </View>
+        )}
+
+        {/* Content based on viewMode */}
+        {renderContent()}
+
+        {/* Footer */}
+        {headerInfo.footerLeft && (
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>{headerInfo.footerLeft}</Text>
+          </View>
+        )}
+
+        {/* Page Number */}
+        <Text
+          style={styles.pageNumber}
+          render={({ pageNumber, totalPages }) =>
+            `${pageNumber} / ${totalPages}`
+          }
+          fixed
+        />
+      </Page>
+    </Document>
+  );
+};
 
 export default VocabularyPDF;
