@@ -773,10 +773,24 @@ export default function App() {
                 return;
               }
 
+              // viewMode별 한글 이름 매핑
+              const viewModeNames: Record<string, string> = {
+                card: '카드형',
+                table: '표버전',
+                tableSimple: '간단버전',
+                tableSimpleTest: '테스트용 간단버전',
+                test: '동의어 테스트지',
+                testDefinition: '영영정의 테스트지',
+                testAnswer: '동의어 답지',
+                testDefinitionAnswer: '영영정의 답지',
+              };
+              const viewModeName = viewModeNames[viewMode] || viewMode;
+              const filename = `${headerInfo.headerTitle} - ${viewModeName}`;
+
               // PDF 다운로드 (현재 viewMode 전달)
               toast.success('PDF 생성 중...', { duration: 1000 });
               try {
-                await downloadPDF(vocabularyList, headerInfo, viewMode);
+                await downloadPDF(vocabularyList, headerInfo, viewMode, filename);
                 toast.success('PDF 다운로드 완료!', { duration: 1000 });
               } catch (error) {
                 console.error('PDF 생성 오류:', error);
