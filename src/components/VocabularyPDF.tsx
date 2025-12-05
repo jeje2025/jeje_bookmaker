@@ -19,27 +19,29 @@ Font.register({
 // Hyphenation 비활성화 (한글에 불필요)
 Font.registerHyphenationCallback((word) => [word]);
 
-// A4 사이즈 스타일
+// A4 사이즈 스타일 - 브라우저 VocabularyCard.tsx와 동일하게 맞춤
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    paddingTop: 30,
+    paddingBottom: 40,
+    paddingHorizontal: 35,
     fontFamily: 'NotoSansKR',
     fontSize: 10,
     backgroundColor: '#ffffff',
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 16,
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 10,
+    fontSize: 9,
     textTransform: 'uppercase',
     letterSpacing: 2,
     color: '#1e293b',
     backgroundColor: '#f1f5f9',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#cbd5e1',
   },
@@ -48,19 +50,21 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     marginTop: 8,
   },
+  // 카드 스타일 - VocabularyCard.tsx와 매칭
   card: {
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: 'rgba(229, 231, 235, 0.6)', // border-gray-200/60
     borderRadius: 8,
-    backgroundColor: '#ffffff',
-    paddingVertical: 12,
-    paddingLeft: 16,
-    paddingRight: 32,
-    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)', // bg-white/80
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingLeft: 14,
+    paddingRight: 28,
+    marginBottom: 10,
   },
   cardTop: {
     flexDirection: 'row',
-    marginBottom: 12,
+    marginBottom: 10,
   },
   cardLeft: {
     width: '28%',
@@ -72,63 +76,86 @@ const styles = StyleSheet.create({
   cardRightContent: {
     flex: 1,
   },
+  // ID 배지 - 8px 폰트
   idBadge: {
-    fontSize: 7,
+    fontSize: 6,
     color: '#475569',
-    backgroundColor: '#f1f5f9',
-    paddingHorizontal: 6,
+    backgroundColor: 'rgba(241, 245, 249, 0.8)', // bg-slate-100/80
+    paddingHorizontal: 5,
     paddingVertical: 2,
-    borderRadius: 10,
-    marginBottom: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.6)', // border-slate-200/60
+    marginBottom: 6,
     alignSelf: 'flex-start',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
+  // 단어 - 22px bold
   word: {
-    fontSize: 20,
+    fontSize: 18,
     color: '#000000',
     marginBottom: 2,
+    letterSpacing: -0.3,
   },
+  // 품사 - 10px bold gray
   partOfSpeech: {
     fontSize: 8,
-    color: '#9ca3af',
+    color: '#9ca3af', // text-gray-400
   },
+  // 의미 컨테이너
+  meaningContainer: {
+    marginBottom: 6,
+  },
+  // 의미 - 13px
   meaning: {
     fontSize: 11,
     color: '#000000',
-    marginBottom: 4,
+    lineHeight: 1.4,
   },
+  // 정의 - 10.5px italic gray
   definition: {
-    fontSize: 9,
-    color: '#6b7280',
-    marginBottom: 8,
+    fontSize: 8.5,
+    color: '#6b7280', // text-gray-500
+    marginTop: 2,
+    lineHeight: 1.3,
   },
+  // 예문 컨테이너 - 왼쪽 보더
   exampleContainer: {
     borderLeftWidth: 1,
-    borderLeftColor: '#d1d5db',
-    paddingLeft: 10,
+    borderLeftColor: '#d1d5db', // border-gray-300
+    paddingLeft: 8,
   },
+  // 예문 - 12px (text-xs)
   example: {
     fontSize: 10,
     color: '#000000',
     marginBottom: 2,
+    lineHeight: 1.4,
   },
+  // 번역 - 10px gray
   translation: {
-    fontSize: 9,
-    color: '#4b5563',
+    fontSize: 8,
+    color: '#4b5563', // text-gray-600
+    lineHeight: 1.3,
   },
+  // 체크박스
   checkboxContainer: {
     flexDirection: 'row',
-    gap: 6,
-    marginLeft: 12,
+    gap: 5,
+    marginLeft: 10,
   },
   checkbox: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderWidth: 1,
     borderColor: '#d1d5db',
   },
+  // 하단 섹션
   cardBottom: {
     flexDirection: 'row',
   },
+  // 파생어 컨테이너
   derivativesContainer: {
     width: '28%',
   },
@@ -136,20 +163,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'baseline',
     gap: 4,
-    marginBottom: 2,
+    marginBottom: 1,
   },
+  // 파생어 단어 - 11px medium
   derivativeWord: {
     fontSize: 9,
-    color: '#1f2937',
+    color: '#1f2937', // text-gray-800
   },
+  // 파생어 품사 - 8px
   derivativePos: {
-    fontSize: 7,
-    color: '#9ca3af',
+    fontSize: 6,
+    color: '#9ca3af', // text-gray-400
   },
+  // 파생어 의미 - 10px
   derivativeMeaning: {
     fontSize: 8,
-    color: '#6b7280',
+    color: '#6b7280', // text-gray-500
   },
+  // 정보 컨테이너 (동의어, 반의어, 어원)
   infoContainer: {
     width: '72%',
     flexDirection: 'row',
@@ -160,33 +191,40 @@ const styles = StyleSheet.create({
   infoSectionWide: {
     width: '50%',
   },
+  // 정보 배지 (동, 반, Tip)
   infoBadge: {
-    fontSize: 7,
+    fontSize: 6,
     color: '#475569',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: 'rgba(241, 245, 249, 0.8)',
     paddingHorizontal: 4,
-    paddingVertical: 2,
-    borderRadius: 10,
-    marginBottom: 4,
+    paddingVertical: 1,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.6)',
+    marginBottom: 3,
     alignSelf: 'flex-start',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
+  // 정보 텍스트 - 10px
   infoText: {
     fontSize: 8,
     color: '#4b5563',
+    lineHeight: 1.3,
   },
   footer: {
-    marginTop: 16,
-    paddingTop: 8,
+    marginTop: 12,
+    paddingTop: 6,
   },
   footerText: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#4b5563',
   },
   pageNumber: {
     position: 'absolute',
-    bottom: 30,
-    right: 40,
-    fontSize: 9,
+    bottom: 25,
+    right: 35,
+    fontSize: 8,
     color: '#9ca3af',
   },
 });
@@ -232,7 +270,7 @@ const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
       {/* Right: Meaning & Examples */}
       <View style={styles.cardRight}>
         <View style={styles.cardRightContent}>
-          <View style={{ marginBottom: 8 }}>
+          <View style={styles.meaningContainer}>
             <Text style={styles.meaning}>
               <Text style={styles.partOfSpeech}>{item.partOfSpeech} </Text>
               {item.meaning}
