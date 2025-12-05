@@ -7,36 +7,17 @@ import {
   Font,
 } from '@react-pdf/renderer';
 
-// 한글 폰트 등록 (Noto Sans KR - TTF 형식 사용)
-// react-pdf는 TTF/OTF만 지원, woff2는 지원하지 않음
-const NOTO_SANS_KR_REGULAR = 'https://cdn.jsdelivr.net/gh/nicennnnnnnlee/noto-sans-korean-webfont-master@master/fonts/ttf/NotoSansKR-Regular.ttf';
-const NOTO_SANS_KR_BOLD = 'https://cdn.jsdelivr.net/gh/nicennnnnnnlee/noto-sans-korean-webfont-master@master/fonts/ttf/NotoSansKR-Bold.ttf';
+// 한글 폰트 등록 (Noto Sans KR - OTF 형식 사용)
+// Google Fonts GitHub에서 직접 가져옴
+const NOTO_SANS_KR_REGULAR = 'https://raw.githubusercontent.com/google/fonts/main/ofl/notosanskr/NotoSansKR%5Bwght%5D.ttf';
 
 Font.register({
   family: 'NotoSansKR',
-  fonts: [
-    {
-      src: NOTO_SANS_KR_REGULAR,
-      fontWeight: 400,
-      fontStyle: 'normal',
-    },
-    {
-      src: NOTO_SANS_KR_REGULAR,
-      fontWeight: 400,
-      fontStyle: 'italic',
-    },
-    {
-      src: NOTO_SANS_KR_BOLD,
-      fontWeight: 700,
-      fontStyle: 'normal',
-    },
-    {
-      src: NOTO_SANS_KR_BOLD,
-      fontWeight: 700,
-      fontStyle: 'italic',
-    },
-  ],
+  src: NOTO_SANS_KR_REGULAR,
 });
+
+// Hyphenation 비활성화 (한글에 불필요)
+Font.registerHyphenationCallback((word) => [word]);
 
 // A4 사이즈 스타일
 const styles = StyleSheet.create({
@@ -52,7 +33,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 10,
-    fontWeight: 700,
     textTransform: 'uppercase',
     letterSpacing: 2,
     color: '#1e293b',
@@ -104,13 +84,11 @@ const styles = StyleSheet.create({
   },
   word: {
     fontSize: 20,
-    fontWeight: 700,
     color: '#000000',
     marginBottom: 2,
   },
   partOfSpeech: {
     fontSize: 8,
-    fontWeight: 700,
     color: '#9ca3af',
   },
   meaning: {
@@ -121,7 +99,6 @@ const styles = StyleSheet.create({
   definition: {
     fontSize: 9,
     color: '#6b7280',
-    fontStyle: 'italic',
     marginBottom: 8,
   },
   exampleContainer: {
@@ -163,7 +140,6 @@ const styles = StyleSheet.create({
   },
   derivativeWord: {
     fontSize: 9,
-    fontWeight: 700,
     color: '#1f2937',
   },
   derivativePos: {
