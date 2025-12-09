@@ -224,6 +224,7 @@ export default function App() {
   const [coverAuthorName, setCoverAuthorName] = useState<string>(''); // 표지 저자명
   const [testQuestionCount, setTestQuestionCount] = useState<number | null>(null); // 테스트 문제 수 (null = 전체)
   // const [isPDFModalOpen, setIsPDFModalOpen] = useState(false); // PDF 저장 모달 - 사용 안 함
+  const [isPDFLoading, setIsPDFLoading] = useState(false); // PDF 생성 로딩 상태
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -788,13 +789,15 @@ export default function App() {
               const filename = `${headerInfo.headerTitle} - ${viewModeName}`;
 
               // PDF 다운로드 (현재 viewMode 전달)
-              toast.success('PDF 생성 중...', { duration: 1000 });
+              setIsPDFLoading(true);
               try {
                 await downloadPDF(vocabularyList, headerInfo, viewMode, filename);
-                toast.success('PDF 다운로드 완료!', { duration: 1000 });
+                toast.success('PDF 다운로드 완료!', { duration: 2000 });
               } catch (error) {
                 console.error('PDF 생성 오류:', error);
-                toast.error('PDF 생성에 실패했습니다.', { duration: 1000 });
+                toast.error('PDF 생성에 실패했습니다.', { duration: 2000 });
+              } finally {
+                setIsPDFLoading(false);
               }
             }}
             className="bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2"
@@ -963,27 +966,25 @@ export default function App() {
         </DialogContent>
       </Dialog>
 
-      {/* PDF 저장 모달 - 사용 안 함 (바로 저장으로 변경) */}
-      {/* <PDFSaveModal
-        open={isPDFModalOpen}
-        onOpenChange={setIsPDFModalOpen}
-        onSave={(selectedPages, useUnitCover, wordsPerUnitValue) => {
-          // 제목 필수 체크
-          if (!headerInfo.headerTitle.trim()) {
-            toast.error('제목을 입력해주세요.', { duration: 1000 });
-            return;
-          }
-          
-          // PDF 저장 로직
-          // 선택된 페이지들을 순서대로 출력하는 기능은 향후 구현
-          toast.success('PDF 저장을 시작합니다...', { duration: 1000 });
-          
-          // 현재는 단순히 인쇄 대화상자 열기
-          setTimeout(() => {
-            window.print();
-          }, 500);
-        }}
-      /> */}
+      {/* PDF 로딩 모달 */}
+      {isPDFLoading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 data-[state=open]:animate-in data-[state=open]:fade-in-0" data-state="open">
+          <div className="bg-background w-full max-w-[calc(100%-2rem)] sm:max-w-md rounded-lg border p-6 shadow-lg data-[state=open]:animate-in data-[state=open]:zoom-in-95" data-state="open">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-2 text-center sm:text-left">
+                <h2 className="text-lg leading-none font-semibold">PDF 생성 중</h2>
+                <p className="text-muted-foreground text-sm">
+                  {vocabularyList.length}개 단어를 처리하고 있습니다
+                </p>
+              </div>
+              <div className="flex items-center justify-center py-4">
+                <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+              </div>
+              <p className="text-muted-foreground text-xs text-center">잠시만 기다려주세요</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 알림 토스트 */}
       <Toaster />
