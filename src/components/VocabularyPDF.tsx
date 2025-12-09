@@ -11,33 +11,24 @@ import {
 Font.register({
   family: 'Pretendard',
   fonts: [
-    {
-      src: '/fonts/Pretendard-Regular.otf',
-      fontWeight: 400,
-    },
-    {
-      src: '/fonts/Pretendard-Regular.otf',
-      fontWeight: 400,
-      fontStyle: 'italic',
-    },
-    {
-      src: '/fonts/Pretendard-Bold.otf',
-      fontWeight: 700,
-    },
+    { src: '/fonts/Pretendard-Regular.otf', fontWeight: 400 },
+    { src: '/fonts/Pretendard-Regular.otf', fontWeight: 400, fontStyle: 'italic' },
+    { src: '/fonts/Pretendard-Bold.otf', fontWeight: 700 },
+    { src: '/fonts/Pretendard-Bold.otf', fontWeight: 700, fontStyle: 'italic' },
   ],
 });
 
 // Hyphenation 비활성화 (한글에 불필요)
 Font.registerHyphenationCallback((word) => [word]);
 
-// A4 사이즈 스타일 - 브라우저 VocabularyCard.tsx와 동일하게 맞춤
+// A4 사이즈 스타일 - PDF pt 단위 보정 (화면 px의 약 75-80% 크기)
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 30,
+    paddingTop: 35,
     paddingBottom: 40,
-    paddingHorizontal: 35,
+    paddingHorizontal: 40,
     fontFamily: 'Pretendard',
-    fontSize: 10,
+    fontSize: 8,
     backgroundColor: '#ffffff',
   },
   header: {
@@ -45,199 +36,218 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 9,
+    fontSize: 8,
     textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     color: '#1e293b',
     backgroundColor: '#f1f5f9',
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#cbd5e1',
   },
   headerDescription: {
-    fontSize: 9,
+    fontSize: 8,
     color: '#4b5563',
-    marginTop: 8,
+    marginTop: 6,
   },
-  // 카드 스타일 - VocabularyCard.tsx와 매칭
+  // 카드 스타일 - PDF 크기 보정
   card: {
     borderWidth: 1,
-    borderColor: '#e5e7eb', // border-gray-200
-    borderRadius: 8,
+    borderColor: '#e5e7eb',
+    borderRadius: 6,
     backgroundColor: '#ffffff',
     paddingTop: 10,
     paddingBottom: 10,
     paddingLeft: 14,
-    paddingRight: 28,
+    paddingRight: 14,
     marginBottom: 10,
   },
   cardTop: {
     flexDirection: 'row',
     marginBottom: 10,
+    gap: 12,
   },
   cardLeft: {
-    width: '28%',
+    width: '22%',
   },
   cardRight: {
-    width: '72%',
+    width: '78%',
     flexDirection: 'row',
   },
   cardRightContent: {
     flex: 1,
   },
-  // ID 배지 - 8px 폰트
-  idBadge: {
-    fontSize: 6,
-    color: '#475569',
-    backgroundColor: '#f1f5f9', // bg-slate-100
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 8,
+  // ID 배지 컨테이너 (View로 감싸서 정렬)
+  idBadgeContainer: {
+    backgroundColor: '#f1f5f9',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#e2e8f0', // border-slate-200
+    borderColor: '#e2e8f0',
     marginBottom: 6,
     alignSelf: 'flex-start',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 24,
   },
-  // 단어 - 22px bold
+  // ID 배지 텍스트
+  idBadge: {
+    fontSize: 6,
+    fontWeight: 700,
+    color: '#475569',
+    textAlign: 'center',
+  },
+  // 단어 - 16pt bold (화면 22px -> PDF 16pt)
   word: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 700,
     color: '#000000',
-    marginBottom: 2,
-    letterSpacing: -0.3,
+    marginBottom: 1.5,
+    letterSpacing: -0.2,
   },
-  // 품사 - 10px bold gray
+  // 품사 - 7pt bold gray
   partOfSpeech: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: 700,
-    color: '#9ca3af', // text-gray-400
+    color: '#9ca3af',
   },
   // 의미 컨테이너
   meaningContainer: {
     marginBottom: 6,
   },
-  // 의미 - 13px
+  // 의미 - 10pt (화면 13px -> PDF 10pt)
   meaning: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#000000',
     lineHeight: 1.4,
   },
-  // 정의 - 10.5px italic gray
+  // 정의 - 8pt italic gray
   definition: {
-    fontSize: 8.5,
-    color: '#6b7280', // text-gray-500
+    fontSize: 8,
+    color: '#6b7280',
     marginTop: 2,
     lineHeight: 1.3,
+    fontStyle: 'italic',
   },
-  // 예문 컨테이너 - 왼쪽 보더
+  // 예문 컨테이너
   exampleContainer: {
     borderLeftWidth: 1,
-    borderLeftColor: '#d1d5db', // border-gray-300
+    borderLeftColor: '#d1d5db',
     paddingLeft: 8,
+    marginTop: 6,
   },
-  // 예문 - 12px (text-xs)
+  // 예문 - 9pt (화면 12px -> PDF 9pt)
   example: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#000000',
     marginBottom: 2,
     lineHeight: 1.4,
   },
-  // 번역 - 10px gray
+  // 번역 - 7.5pt gray
   translation: {
-    fontSize: 8,
-    color: '#4b5563', // text-gray-600
+    fontSize: 7.5,
+    color: '#4b5563',
     lineHeight: 1.3,
   },
   // 체크박스
   checkboxContainer: {
     flexDirection: 'row',
-    gap: 5,
-    marginLeft: 10,
+    gap: 4,
+    marginLeft: 8,
   },
   checkbox: {
-    width: 7,
-    height: 7,
+    width: 6,
+    height: 6,
     borderWidth: 1,
     borderColor: '#d1d5db',
   },
   // 하단 섹션
   cardBottom: {
     flexDirection: 'row',
+    gap: 12,
   },
   // 파생어 컨테이너
   derivativesContainer: {
-    width: '28%',
+    width: '22%',
   },
   derivative: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 4,
-    marginBottom: 1,
+    flexWrap: 'wrap',
+    gap: 3,
+    marginBottom: 2,
   },
-  // 파생어 단어 - 11px medium
+  // 파생어 단어 - 8pt medium
   derivativeWord: {
-    fontSize: 9,
-    color: '#1f2937', // text-gray-800
+    fontSize: 8,
+    color: '#1f2937',
+    fontWeight: 700,
   },
-  // 파생어 품사 - 8px
+  // 파생어 품사 - 6pt
   derivativePos: {
     fontSize: 6,
-    color: '#9ca3af', // text-gray-400
+    color: '#9ca3af',
   },
-  // 파생어 의미 - 10px
+  // 파생어 의미 - 7pt
   derivativeMeaning: {
-    fontSize: 8,
-    color: '#6b7280', // text-gray-500
+    fontSize: 7,
+    color: '#6b7280',
   },
-  // 정보 컨테이너 (동의어, 반의어, 어원)
+  // 정보 컨테이너 (동의어, 반의어, 어원) - grid-cols-4 매칭
   infoContainer: {
-    width: '72%',
+    width: '78%',
     flexDirection: 'row',
+    gap: 10,
   },
   infoSection: {
-    width: '25%',
+    width: '20%',  // 동의어, 반의어 각각
   },
   infoSectionWide: {
-    width: '50%',
+    flex: 1,       // 어원 (Tip) - 나머지 공간 모두 차지
   },
-  // 정보 배지 (동, 반, Tip)
-  infoBadge: {
-    fontSize: 6,
-    color: '#475569',
+  // 정보 배지 컨테이너 (동, 반, Tip)
+  infoBadgeContainer: {
     backgroundColor: '#f1f5f9',
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 8,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     marginBottom: 3,
     alignSelf: 'flex-start',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 16,
   },
-  // 정보 텍스트 - 10px
+  // 정보 배지 텍스트 (동, 반, Tip)
+  infoBadge: {
+    fontSize: 6,
+    fontWeight: 700,
+    color: '#475569',
+    textAlign: 'center',
+  },
+  // 정보 텍스트 - 8pt
   infoText: {
     fontSize: 8,
     color: '#4b5563',
     lineHeight: 1.3,
   },
   footer: {
-    marginTop: 12,
-    paddingTop: 6,
+    marginTop: 8,
+    paddingTop: 4,
   },
   footerText: {
-    fontSize: 8,
+    fontSize: 6,
     color: '#4b5563',
   },
   pageNumber: {
     position: 'absolute',
-    bottom: 25,
-    right: 35,
-    fontSize: 8,
+    bottom: 20,
+    right: 30,
+    fontSize: 6,
     color: '#9ca3af',
   },
   // ===== 표버전 스타일 =====
@@ -245,91 +255,97 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    paddingVertical: 6,
+    paddingTop: 4,
+    paddingBottom: 8,
   },
   tableColId: {
     width: '5%',
     paddingHorizontal: 2,
+    paddingLeft: 4,
   },
   tableColWord: {
-    width: '18%',
+    width: '15%',
     paddingHorizontal: 6,
   },
   tableColMeaning: {
-    width: '42%',
+    width: '45%',
     paddingHorizontal: 6,
   },
   tableColSyn: {
-    width: '17%',
+    width: '15%',
     paddingHorizontal: 6,
   },
   tableColAnt: {
-    width: '18%',
+    width: '15%',
     paddingHorizontal: 6,
   },
   tableWord: {
-    fontSize: 12,
+    fontSize: 10,     // 화면 14px -> PDF 10pt
     fontWeight: 700,
     color: '#000000',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   tableDerivative: {
-    marginTop: 2,
+    marginTop: 3,
   },
   tableDerivativeWord: {
-    fontSize: 9,
+    fontSize: 8,      // 화면 11px -> PDF 8pt
     color: '#1f2937',
   },
   tableDerivativeMeaning: {
-    fontSize: 7,
+    fontSize: 6,      // 화면 8px -> PDF 6pt
     color: '#6b7280',
   },
   tableMeaning: {
-    fontSize: 10,
+    fontSize: 8.5,    // 화면 12px -> PDF 8.5pt
     color: '#000000',
-    marginBottom: 2,
+    lineHeight: 1.25,
+    marginBottom: 3,
   },
   tableDefinition: {
-    fontSize: 8,
+    fontSize: 6.5,    // 화면 9px -> PDF 6.5pt
     color: '#6b7280',
     fontStyle: 'italic',
-    marginBottom: 2,
+    lineHeight: 1.25,
+    marginBottom: 3,
   },
   tableExample: {
-    fontSize: 9,
+    fontSize: 7,      // 화면 10px -> PDF 7pt
     color: '#000000',
-    marginBottom: 1,
+    lineHeight: 1.25,
+    marginBottom: 3,
   },
   tableTranslation: {
-    fontSize: 8,
+    fontSize: 6.5,    // 화면 9px -> PDF 6.5pt
     color: '#4b5563',
+    lineHeight: 1.25,
   },
   // ===== 간단버전 스타일 =====
   simpleRow: {
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    paddingVertical: 5,
+    paddingVertical: 6,
   },
   simpleColId: {
-    width: '6%',
-    paddingHorizontal: 2,
+    width: '4%',
+    paddingHorizontal: 3,
   },
   simpleColWord: {
-    width: '22%',
-    paddingHorizontal: 6,
+    width: '18%',
+    paddingHorizontal: 8,
   },
   simpleColMeaning: {
-    width: '22%',
-    paddingHorizontal: 6,
+    width: '28%',
+    paddingHorizontal: 8,
   },
   simpleWord: {
-    fontSize: 12,
+    fontSize: 10,     // 화면 14px -> PDF 10pt
     fontWeight: 700,
     color: '#000000',
   },
   simpleMeaning: {
-    fontSize: 9,
+    fontSize: 7,      // 화면 10px -> PDF 7pt
     color: '#000000',
   },
   // ===== 테스트지 스타일 =====
@@ -341,88 +357,90 @@ const styles = StyleSheet.create({
   },
   testCol: {
     width: '50%',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
+    paddingBottom: 16,
   },
   testColRight: {
     width: '50%',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
+    paddingBottom: 16,
     borderLeftWidth: 1,
     borderLeftColor: '#e5e7eb',
   },
   testHeader: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: 6,
+    gap: 6,
+    marginVertical: 3,
+    paddingVertical: 3,
+    marginBottom: 8,
   },
   testWord: {
-    fontSize: 12,
+    fontSize: 10,     // 화면 14px -> PDF 10pt
     fontWeight: 700,
     color: '#000000',
-    marginRight: 8,
   },
   testMeaningLabel: {
-    fontSize: 8,
+    fontSize: 6.5,    // 화면 9px -> PDF 6.5pt
     color: '#6b7280',
-    marginRight: 4,
-    marginTop: 3,
+    paddingTop: 3,
   },
   testMeaningLine: {
     flex: 1,
     borderBottomWidth: 1,
     borderBottomColor: '#d1d5db',
-    height: 16,
+    minHeight: 14,
   },
   testChoices: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 8,
+    marginVertical: 10,
   },
   testChoice: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 10,
+    marginRight: 8,
     marginBottom: 4,
   },
   testCheckbox: {
-    fontSize: 10,
+    fontSize: 8,      // 화면 11px -> PDF 8pt
     color: '#9ca3af',
     marginRight: 4,
   },
   testChoiceText: {
-    fontSize: 10,
+    fontSize: 8.5,    // 화면 12px -> PDF 8.5pt
     color: '#374151',
   },
   // ===== 영영정의 테스트지 스타일 =====
   defTestDefinition: {
-    fontSize: 9,
+    fontSize: 6.5,    // 화면 9px -> PDF 6.5pt
     color: '#4b5563',
     fontStyle: 'italic',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   defTestAnswerLine: {
     borderBottomWidth: 1,
     borderBottomColor: '#d1d5db',
-    height: 20,
-    marginTop: 4,
+    height: 14,
+    marginTop: 3,
   },
   // ===== 답지 스타일 =====
   answerCorrect: {
-    fontSize: 10,
+    fontSize: 7,      // PDF 7pt
     color: '#059669',
     fontWeight: 700,
   },
   answerMeaningLabel: {
-    fontSize: 9,
+    fontSize: 6.5,    // PDF 6.5pt
     color: '#000000',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   answerSynonymLabel: {
-    fontSize: 10,
+    fontSize: 7,      // PDF 7pt
     color: '#4b5563',
   },
   answerSynonymValue: {
-    fontSize: 10,
+    fontSize: 7,      // PDF 7pt
     color: '#1f2937',
     fontWeight: 700,
   },
@@ -431,12 +449,12 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   answerWrongX: {
-    fontSize: 9,
+    fontSize: 6.5,    // PDF 6.5pt
     color: '#dc2626',
     marginRight: 2,
   },
   answerWrongText: {
-    fontSize: 9,
+    fontSize: 6.5,    // PDF 6.5pt
     color: '#4b5563',
   },
 });
@@ -529,7 +547,9 @@ const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
     <View style={styles.cardTop}>
       {/* Left: Word */}
       <View style={styles.cardLeft}>
-        <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        <View style={styles.idBadgeContainer}>
+          <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        </View>
         <Text style={styles.word}>{item.word}</Text>
       </View>
 
@@ -576,15 +596,21 @@ const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
       {/* Right: Synonyms, Antonyms, Etymology */}
       <View style={styles.infoContainer}>
         <View style={styles.infoSection}>
-          <Text style={styles.infoBadge}>동</Text>
+          <View style={styles.infoBadgeContainer}>
+            <Text style={styles.infoBadge}>동</Text>
+          </View>
           <Text style={styles.infoText}>{item.synonyms.join(', ')}</Text>
         </View>
         <View style={styles.infoSection}>
-          <Text style={styles.infoBadge}>반</Text>
+          <View style={styles.infoBadgeContainer}>
+            <Text style={styles.infoBadge}>반</Text>
+          </View>
           <Text style={styles.infoText}>{item.antonyms.join(', ')}</Text>
         </View>
         <View style={styles.infoSectionWide}>
-          <Text style={styles.infoBadge}>Tip</Text>
+          <View style={styles.infoBadgeContainer}>
+            <Text style={styles.infoBadge}>Tip</Text>
+          </View>
           <Text style={styles.infoText}>{item.etymology}</Text>
         </View>
       </View>
@@ -596,7 +622,9 @@ const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
 const VocabularyTableRowPDF = ({ item }: { item: VocabularyItem }) => (
   <View style={styles.tableRow} wrap={false}>
     <View style={styles.tableColId}>
-      <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+      <View style={styles.idBadgeContainer}>
+        <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+      </View>
     </View>
     <View style={styles.tableColWord}>
       <Text style={styles.tableWord}>{item.word}</Text>
@@ -616,11 +644,15 @@ const VocabularyTableRowPDF = ({ item }: { item: VocabularyItem }) => (
       <Text style={styles.tableTranslation}>{item.translation}</Text>
     </View>
     <View style={styles.tableColSyn}>
-      <Text style={styles.infoBadge}>동</Text>
+      <View style={styles.infoBadgeContainer}>
+        <Text style={styles.infoBadge}>동</Text>
+      </View>
       <Text style={styles.infoText}>{item.synonyms.join(', ')}</Text>
     </View>
     <View style={styles.tableColAnt}>
-      <Text style={styles.infoBadge}>반</Text>
+      <View style={styles.infoBadgeContainer}>
+        <Text style={styles.infoBadge}>반</Text>
+      </View>
       <Text style={styles.infoText}>{item.antonyms.join(', ')}</Text>
     </View>
   </View>
@@ -630,7 +662,9 @@ const VocabularyTableRowPDF = ({ item }: { item: VocabularyItem }) => (
 const VocabularySimpleRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
   <View style={styles.simpleRow} wrap={false}>
     <View style={styles.simpleColId}>
-      <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+      <View style={styles.idBadgeContainer}>
+        <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+      </View>
     </View>
     <View style={styles.simpleColWord}>
       <Text style={styles.simpleWord}>{left.word}</Text>
@@ -641,7 +675,9 @@ const VocabularySimpleRowPDF = ({ left, right }: { left: VocabularyItem; right: 
     {right ? (
       <>
         <View style={styles.simpleColId}>
-          <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          <View style={styles.idBadgeContainer}>
+            <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          </View>
         </View>
         <View style={styles.simpleColWord}>
           <Text style={styles.simpleWord}>{right.word}</Text>
@@ -664,7 +700,9 @@ const VocabularySimpleRowPDF = ({ left, right }: { left: VocabularyItem; right: 
 const VocabularySimpleTestRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
   <View style={styles.simpleRow} wrap={false}>
     <View style={styles.simpleColId}>
-      <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+      <View style={styles.idBadgeContainer}>
+        <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+      </View>
     </View>
     <View style={styles.simpleColWord}>
       <Text style={styles.simpleWord}>{left.word}</Text>
@@ -675,7 +713,9 @@ const VocabularySimpleTestRowPDF = ({ left, right }: { left: VocabularyItem; rig
     {right ? (
       <>
         <View style={styles.simpleColId}>
-          <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          <View style={styles.idBadgeContainer}>
+            <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          </View>
         </View>
         <View style={styles.simpleColWord}>
           <Text style={styles.simpleWord}>{right.word}</Text>
@@ -708,7 +748,9 @@ const VocabularyTestRowPDF = ({ left, right, allData }: {
     <View style={styles.testRow} wrap={false}>
       <View style={styles.testCol}>
         <View style={styles.testHeader}>
-          <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+          <View style={styles.idBadgeContainer}>
+            <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+          </View>
           <Text style={styles.testWord}>{left.word}</Text>
           <Text style={styles.testMeaningLabel}>뜻:</Text>
           <View style={styles.testMeaningLine} />
@@ -725,7 +767,9 @@ const VocabularyTestRowPDF = ({ left, right, allData }: {
       {rightQ ? (
         <View style={styles.testColRight}>
           <View style={styles.testHeader}>
-            <Text style={styles.idBadge}>{String(right!.id).padStart(3, '0')}</Text>
+            <View style={styles.idBadgeContainer}>
+              <Text style={styles.idBadge}>{String(right!.id).padStart(3, '0')}</Text>
+            </View>
             <Text style={styles.testWord}>{right!.word}</Text>
             <Text style={styles.testMeaningLabel}>뜻:</Text>
             <View style={styles.testMeaningLine} />
@@ -751,7 +795,9 @@ const VocabularyDefTestRowPDF = ({ left, right }: { left: VocabularyItem; right:
   <View style={styles.testRow} wrap={false}>
     <View style={styles.testCol}>
       <View style={styles.testHeader}>
-        <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+        <View style={styles.idBadgeContainer}>
+          <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+        </View>
       </View>
       {left.definition && <Text style={styles.defTestDefinition}>{left.definition}</Text>}
       <View style={styles.defTestAnswerLine} />
@@ -759,7 +805,9 @@ const VocabularyDefTestRowPDF = ({ left, right }: { left: VocabularyItem; right:
     {right ? (
       <View style={styles.testColRight}>
         <View style={styles.testHeader}>
-          <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          <View style={styles.idBadgeContainer}>
+            <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          </View>
         </View>
         {right.definition && <Text style={styles.defTestDefinition}>{right.definition}</Text>}
         <View style={styles.defTestAnswerLine} />
@@ -783,7 +831,9 @@ const VocabularyAnswerRowPDF = ({ left, right, allData }: {
   const renderAnswerContent = (q: typeof leftQ, item: VocabularyItem) => (
     <>
       <View style={styles.testHeader}>
-        <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        <View style={styles.idBadgeContainer}>
+          <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        </View>
         <Text style={styles.testWord}>{item.word}</Text>
       </View>
       {/* 뜻 */}
@@ -826,7 +876,9 @@ const VocabularyDefAnswerRowPDF = ({ left, right }: { left: VocabularyItem; righ
   <View style={styles.testRow} wrap={false}>
     <View style={styles.testCol}>
       <View style={styles.testHeader}>
-        <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+        <View style={styles.idBadgeContainer}>
+          <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+        </View>
       </View>
       {left.definition && <Text style={styles.defTestDefinition}>{left.definition}</Text>}
       <Text style={styles.answerCorrect}>{left.word}</Text>
@@ -835,7 +887,9 @@ const VocabularyDefAnswerRowPDF = ({ left, right }: { left: VocabularyItem; righ
     {right ? (
       <View style={styles.testColRight}>
         <View style={styles.testHeader}>
-          <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          <View style={styles.idBadgeContainer}>
+            <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          </View>
         </View>
         {right.definition && <Text style={styles.defTestDefinition}>{right.definition}</Text>}
         <Text style={styles.answerCorrect}>{right.word}</Text>

@@ -129,8 +129,8 @@ TASK:
 For EACH word, generate a JSON object with the following fields:
 
 1. pronunciation: IPA phonetic notation (example: "/ˈwɜːrd/")
-2. partOfSpeech: Part of speech in Korean (examples: "n.", "v.", "adj.", "adv.")
-3. meaning: Korean meaning (use provided meaning if available, otherwise generate appropriate meaning)
+2. partOfSpeech: Part of speech abbreviation (examples: "n.", "v.", "adj.", "adv.", "v., n.")
+3. meaning: Korean meaning WITH part of speech prefix for EACH meaning group. When a word has multiple parts of speech, prefix each meaning group with its part of speech. (example for single: "행복, 기쁨" / example for multiple: "v. 겹치다, 중복되다; n. 중복, 겹침")
 4. definition: Short English definition in 8-12 words (example: "a feeling of great happiness and pleasure")
 5. synonyms: Array of 3-5 English synonym strings (example: ["happy", "joyful", "glad"])
 6. antonyms: Array of 2-3 English antonym strings (example: ["sad", "unhappy"])

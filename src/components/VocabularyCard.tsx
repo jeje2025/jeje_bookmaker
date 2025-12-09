@@ -87,8 +87,8 @@ const VocabularyCardComponent = ({
         <div className="grid gap-4 mb-3" style={{ gridTemplateColumns: '28% 72%' }}>
           {/* Left: Word */}
           <div>
-            <div className="inline-block px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60 mb-2">
-              <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+            <div className="inline-flex items-center justify-center px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full mb-2" style={{ border: '0.5px solid #cbd5e1' }}>
+              <p className="uppercase tracking-tight text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>
                 {String(id).padStart(3, '0')}
               </p>
             </div>
@@ -214,8 +214,8 @@ const VocabularyCardComponent = ({
           <div className="grid grid-cols-4 gap-2">
             {/* Synonyms - 25% */}
             <div>
-              <div className="inline-block px-1 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60 mb-0.5">
-                <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>동</p>
+              <div className="inline-flex items-center justify-center px-1 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full mb-0.5" style={{ border: '0.5px solid #cbd5e1' }}>
+                <p className="uppercase tracking-tight text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>동</p>
               </div>
               <div className="text-gray-600 print:text-black" style={{ fontSize: '10px' }}>
                 {isEditable ? (
@@ -239,8 +239,8 @@ const VocabularyCardComponent = ({
 
             {/* Antonyms - 25% */}
             <div>
-              <div className="inline-block px-1 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60 mb-0.5">
-                <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>반</p>
+              <div className="inline-flex items-center justify-center px-1 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full mb-0.5" style={{ border: '0.5px solid #cbd5e1' }}>
+                <p className="uppercase tracking-tight text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>반</p>
               </div>
               <div className="text-gray-600 print:text-black" style={{ fontSize: '10px' }}>
                 {isEditable ? (
@@ -264,8 +264,8 @@ const VocabularyCardComponent = ({
 
             {/* Etymology - 50% */}
             <div className="col-span-2">
-              <div className="inline-block px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60 mb-0.5">
-                <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>Tip</p>
+              <div className="inline-flex items-center justify-center px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full mb-0.5" style={{ border: '0.5px solid #cbd5e1' }}>
+                <p className="uppercase tracking-tight text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>Tip</p>
               </div>
               <div className="text-gray-600 print:text-black leading-snug" style={{ fontSize: '10px' }}>
                 {isEditable ? (
