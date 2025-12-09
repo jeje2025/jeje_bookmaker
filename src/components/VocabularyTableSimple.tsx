@@ -49,10 +49,10 @@ export function VocabularyTableSimple({ data, headerInfo }: VocabularyTableSimpl
         >
           {/* 왼쪽 - 번호 */}
           <td className="py-2 px-1 align-top" style={{ width: '4%' }}>
-            <div className="inline-block px-2 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60">
-              <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+            <div className="inline-flex items-center justify-center bg-slate-100/80 backdrop-blur-md rounded-full" style={{ boxShadow: '0 0 0 0.5px #cbd5e1', padding: '2px 6px', minWidth: '26px' }}>
+              <span className="text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>
                 {String(pair.left.id).padStart(3, '0')}
-              </p>
+              </span>
             </div>
           </td>
 
@@ -73,10 +73,10 @@ export function VocabularyTableSimple({ data, headerInfo }: VocabularyTableSimpl
           {/* 오른쪽 - 번호 */}
           <td className="py-2 px-1 align-top" style={{ width: '4%' }}>
             {pair.right && (
-              <div className="inline-block px-2 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60">
-                <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+              <div className="inline-flex items-center justify-center bg-slate-100/80 backdrop-blur-md rounded-full" style={{ boxShadow: '0 0 0 0.5px #cbd5e1', padding: '2px 6px', minWidth: '26px' }}>
+                <span className="text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>
                   {String(pair.right.id).padStart(3, '0')}
-                </p>
+                </span>
               </div>
             )}
           </td>

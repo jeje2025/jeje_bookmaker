@@ -117,10 +117,10 @@ export function VocabularyTest({ data, headerInfo }: VocabularyTestProps) {
             <div className="mb-3">
               <div className="flex items-start gap-2 my-[4px] mx-[0px] px-[0px] py-[4px]">
                 {/* 번호 */}
-                <div className="inline-block px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60" style={{ flexShrink: 0 }}>
-                  <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+                <div className="inline-flex items-center justify-center px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full min-w-[28px]" style={{ flexShrink: 0, boxShadow: '0 0 0 0.5px #cbd5e1' }}>
+                  <span className="text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>
                     {String(pair.left.id).padStart(3, '0')}
-                  </p>
+                  </span>
                 </div>
                 
                 {/* 단어 */}
@@ -164,10 +164,10 @@ export function VocabularyTest({ data, headerInfo }: VocabularyTestProps) {
                 <div className="mb-3">
                   <div className="flex items-start gap-2 my-[4px] mx-[0px] px-[0px] py-[4px]">
                     {/* 번호 */}
-                    <div className="inline-block px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60" style={{ flexShrink: 0 }}>
-                      <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+                    <div className="inline-flex items-center justify-center px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full min-w-[28px]" style={{ flexShrink: 0, boxShadow: '0 0 0 0.5px #cbd5e1' }}>
+                      <span className="text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>
                         {String(pair.right.id).padStart(3, '0')}
-                      </p>
+                      </span>
                     </div>
                     
                     {/* 단어 */}

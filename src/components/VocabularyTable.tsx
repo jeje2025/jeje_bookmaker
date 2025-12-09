@@ -65,10 +65,10 @@ const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpda
         >
           {/* 번호 */}
           <td className="pt-1 pb-2 px-1 align-top" style={{ width: '3%' }}>
-            <div className="inline-block px-2 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60">
-              <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+            <div className="inline-flex items-center justify-center px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full min-w-[28px]" style={{ boxShadow: '0 0 0 0.5px #cbd5e1' }}>
+              <span className="text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>
                 {String(item.id).padStart(3, '0')}
-              </p>
+              </span>
             </div>
           </td>
 
@@ -169,8 +169,8 @@ const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpda
 
           {/* 동의어 */}
           <td className="pt-1 pb-2 px-3 align-top" style={{ width: '14%' }}>
-            <div className="inline-block px-1 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60 mb-0.5">
-              <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>동</p>
+            <div className="inline-flex items-center justify-center px-1 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full mb-0.5" style={{ boxShadow: '0 0 0 0.5px #cbd5e1' }}>
+              <span className="text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>동</span>
             </div>
             <div className="text-gray-600 print:text-black" style={{ fontSize: '10px', lineHeight: '1.4' }}>
               {isEditable ? (
@@ -194,8 +194,8 @@ const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpda
 
           {/* 반의어 */}
           <td className="pt-1 pb-2 px-3 align-top text-[16px]" style={{ width: '14%' }}>
-            <div className="inline-block px-1 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60 mb-0.5">
-              <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>반</p>
+            <div className="inline-flex items-center justify-center px-1 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full mb-0.5" style={{ boxShadow: '0 0 0 0.5px #cbd5e1' }}>
+              <span className="text-slate-600 font-medium text-center" style={{ fontSize: '8px' }}>반</span>
             </div>
             <div className="text-gray-600 print:text-black" style={{ fontSize: '10px', lineHeight: '1.4' }}>
               {isEditable ? (
