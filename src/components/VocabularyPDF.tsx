@@ -7,21 +7,21 @@ import {
   Font,
 } from '@react-pdf/renderer';
 
-// 한글 폰트 등록 (Pretendard - 더 안정적인 CDN)
+// 한글 폰트 등록 (Pretendard - 로컬 번들링)
 Font.register({
   family: 'Pretendard',
   fonts: [
     {
-      src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Regular.otf',
+      src: '/fonts/Pretendard-Regular.otf',
       fontWeight: 400,
     },
     {
-      src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Regular.otf',
+      src: '/fonts/Pretendard-Regular.otf',
       fontWeight: 400,
       fontStyle: 'italic',
     },
     {
-      src: 'https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/packages/pretendard/dist/public/static/Pretendard-Bold.otf',
+      src: '/fonts/Pretendard-Bold.otf',
       fontWeight: 700,
     },
   ],
