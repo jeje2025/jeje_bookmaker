@@ -225,6 +225,7 @@ export default function App() {
   const [testQuestionCount, setTestQuestionCount] = useState<number | null>(null); // 테스트 문제 수 (null = 전체)
   // const [isPDFModalOpen, setIsPDFModalOpen] = useState(false); // PDF 저장 모달 - 사용 안 함
   const [isPDFLoading, setIsPDFLoading] = useState(false); // PDF 생성 로딩 상태
+  const [pdfProgress, setPdfProgress] = useState({ progress: 0, message: '' }); // PDF 진행률
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -790,8 +791,11 @@ export default function App() {
 
               // PDF 다운로드 (현재 viewMode 전달)
               setIsPDFLoading(true);
+              setPdfProgress({ progress: 0, message: '' });
               try {
-                await downloadPDF(vocabularyList, headerInfo, viewMode, filename);
+                await downloadPDF(vocabularyList, headerInfo, viewMode, filename, (progress, message) => {
+                  setPdfProgress({ progress, message });
+                });
                 toast.success('PDF 다운로드 완료!', { duration: 2000 });
               } catch (error) {
                 console.error('PDF 생성 오류:', error);
@@ -977,10 +981,19 @@ export default function App() {
                   {vocabularyList.length}개 단어를 처리하고 있습니다
                 </p>
               </div>
-              <div className="flex items-center justify-center py-4">
-                <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" />
+              {/* 진행률 바 */}
+              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                <div
+                  className="bg-slate-800 h-full rounded-full transition-all duration-300 ease-out"
+                  style={{ width: `${pdfProgress.progress}%` }}
+                />
               </div>
-              <p className="text-muted-foreground text-xs text-center">잠시만 기다려주세요</p>
+              <p className="text-muted-foreground text-sm text-center">
+                {pdfProgress.message || '준비 중...'}
+              </p>
+              <p className="text-slate-800 font-semibold text-center">
+                {pdfProgress.progress}%
+              </p>
             </div>
           </div>
         </div>
