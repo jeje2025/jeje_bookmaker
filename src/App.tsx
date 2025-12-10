@@ -291,20 +291,31 @@ export default function App() {
         console.error('Failed to fetch from Supabase:', supabaseError);
       }
 
-      // 3. 두 소스의 데이터 합치기 (timestamp + headerTitle 기준 중복 제거)
+      // 디버그: 원본 데이터 확인
+      console.log('🔍 localStorage:', localLogs.length, '개', localLogs.map(l => l.timestamp));
+      console.log('🔍 Supabase:', supabaseLogs.length, '개', supabaseLogs.map(l => l.timestamp));
+
+      // 3. 두 소스의 데이터 합치기 (headerTitle + 분 단위 기준 중복 제거)
       const allLogsMap = new Map();
+
+      // 분 단위로 키 생성
+      const getKey = (log: any) => {
+        const ts = new Date(log.timestamp);
+        return `${log.headerTitle || ''}_${ts.toISOString().slice(0, 16)}`; // YYYY-MM-DDTHH:mm
+      };
 
       // localStorage 데이터 먼저 추가
       localLogs.forEach((log: any) => {
-        const key = `${log.timestamp}_${log.headerTitle || ''}`;
-        allLogsMap.set(key, log);
+        allLogsMap.set(getKey(log), log);
       });
 
       // Supabase 데이터 추가 (같은 키면 덮어쓰기)
       supabaseLogs.forEach((log: any) => {
-        const key = `${log.timestamp}_${log.headerTitle || ''}`;
-        allLogsMap.set(key, log);
+        allLogsMap.set(getKey(log), log);
       });
+
+      // 디버그: 병합 후 확인
+      console.log('🔍 병합 후:', allLogsMap.size, '개');
 
       // 4. Map을 배열로 변환하고 최신순 정렬 후 최근 5개만 선택
       const mergedLogs = Array.from(allLogsMap.values())
