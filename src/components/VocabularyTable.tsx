@@ -30,9 +30,10 @@ interface VocabularyTableProps {
   isEditable?: boolean;
   onUpdate?: (id: number, field: string, value: any) => void;
   onHeaderChange?: (headerInfo: { headerTitle: string; headerDescription: string }) => void;
+  unitNumber?: number;
 }
 
-const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpdate, onHeaderChange }: VocabularyTableProps) => {
+const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpdate, onHeaderChange, unitNumber }: VocabularyTableProps) => {
   const highlightWord = (text: string, wordToHighlight: string) => {
     // 대소문자 구분 없이 찾기
     const lowerText = text.toLowerCase();
@@ -224,11 +225,12 @@ const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpda
   return (
     <A4PageLayout
       headerContent={
-        <HeaderFooter 
-          headerInfo={headerInfo} 
+        <HeaderFooter
+          headerInfo={headerInfo}
           showFooter={false}
           isEditable={isEditable}
           onHeaderChange={onHeaderChange}
+          unitNumber={unitNumber}
         />
       }
       showHeaderOnFirstPageOnly={true}

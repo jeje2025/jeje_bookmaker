@@ -26,6 +26,7 @@ interface HeaderInfo {
 interface VocabularyTestDefinitionAnswerProps {
   data: VocabularyItem[];
   headerInfo?: HeaderInfo;
+  unitNumber?: number;
 }
 
 interface TestQuestion {
@@ -36,7 +37,7 @@ interface TestQuestion {
   allChoices: Array<{ definition: string; isCorrect: boolean; sourceWord?: string }>;
 }
 
-export function VocabularyTestDefinitionAnswer({ data, headerInfo }: VocabularyTestDefinitionAnswerProps) {
+export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }: VocabularyTestDefinitionAnswerProps) {
   // 영영정의 테스트 문제 생성 (테스트지와 동일한 로직)
   const generateTestQuestions = (): TestQuestion[] => {
     return data.map((item) => {
@@ -243,7 +244,7 @@ export function VocabularyTestDefinitionAnswer({ data, headerInfo }: VocabularyT
 
   return (
     <A4PageLayout
-      headerContent={<HeaderFooter headerInfo={headerInfo} showFooter={false} />}
+      headerContent={<HeaderFooter headerInfo={headerInfo} showFooter={false} unitNumber={unitNumber} />}
       showHeaderOnFirstPageOnly={true}
     >
       {answerRows}

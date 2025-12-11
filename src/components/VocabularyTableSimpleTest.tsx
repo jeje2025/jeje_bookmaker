@@ -24,9 +24,10 @@ interface HeaderInfo {
 interface VocabularyTableSimpleTestProps {
   data: VocabularyItem[];
   headerInfo?: HeaderInfo;
+  unitNumber?: number;
 }
 
-export function VocabularyTableSimpleTest({ data, headerInfo }: VocabularyTableSimpleTestProps) {
+export function VocabularyTableSimpleTest({ data, headerInfo, unitNumber }: VocabularyTableSimpleTestProps) {
   // 데이터를 2개씩 묶기
   const pairedData = [];
   for (let i = 0; i < data.length; i += 2) {
@@ -89,7 +90,7 @@ export function VocabularyTableSimpleTest({ data, headerInfo }: VocabularyTableS
 
   return (
     <A4PageLayout
-      headerContent={<HeaderFooter headerInfo={headerInfo} showFooter={false} />}
+      headerContent={<HeaderFooter headerInfo={headerInfo} showFooter={false} unitNumber={unitNumber} />}
       showHeaderOnFirstPageOnly={true}
     >
       {tableRows}

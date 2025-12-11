@@ -25,6 +25,7 @@ interface HeaderInfo {
 interface VocabularyTestAnswerProps {
   data: VocabularyItem[];
   headerInfo?: HeaderInfo;
+  unitNumber?: number;
 }
 
 // seed 기반 랜덤 함수 (일관된 셔플을 위해)
@@ -45,7 +46,7 @@ function seededShuffle<T>(array: T[], seed: number): T[] {
   return result;
 }
 
-export function VocabularyTestAnswer({ data, headerInfo }: VocabularyTestAnswerProps) {
+export function VocabularyTestAnswer({ data, headerInfo, unitNumber }: VocabularyTestAnswerProps) {
   // 테스트 문제 생성 (테스트지와 동일한 로직)
   const questions = useMemo((): TestQuestion[] => {
     return data.map((item) => {
@@ -214,7 +215,7 @@ export function VocabularyTestAnswer({ data, headerInfo }: VocabularyTestAnswerP
 
   return (
     <A4PageLayout
-      headerContent={<HeaderFooter headerInfo={headerInfo} showFooter={false} />}
+      headerContent={<HeaderFooter headerInfo={headerInfo} showFooter={false} unitNumber={unitNumber} />}
       showHeaderOnFirstPageOnly={true}
     >
       {answerRows}

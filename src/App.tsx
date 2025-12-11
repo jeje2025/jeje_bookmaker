@@ -1,18 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from './components/ui/button';
-import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Settings, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Save, Shuffle, Layers, Image, SplitSquareHorizontal } from 'lucide-react';
-import { VocabularyCard } from './components/VocabularyCard';
-import { VocabularyTable } from './components/VocabularyTable';
-import { VocabularyTableSimple } from './components/VocabularyTableSimple';
-import { VocabularyTableSimpleTest } from './components/VocabularyTableSimpleTest';
-import { VocabularyTest } from './components/VocabularyTest';
-import { VocabularyTestDefinition } from './components/VocabularyTestDefinition';
-import { VocabularyTestAnswer } from './components/VocabularyTestAnswer';
-import { VocabularyTestDefinitionAnswer } from './components/VocabularyTestDefinitionAnswer';
+import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Settings, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Save, Shuffle, Layers, Image } from 'lucide-react';
 import { VocabularyCover } from './components/VocabularyCover';
-import { HeaderFooter } from './components/HeaderFooter';
 import { VocabularyInput } from './components/VocabularyInput';
-import { A4PageLayout } from './components/A4PageLayout';
+import { UnitSplitButton } from './components/UnitSplitButton';
+import { VocabularyView } from './components/VocabularyView';
 // import { PDFSaveModal } from './components/PDFSaveModal'; // 모달 없이 바로 저장으로 변경
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog';
 import { Input } from './components/ui/input';
@@ -227,8 +219,7 @@ export default function App() {
   const [isPDFLoading, setIsPDFLoading] = useState(false); // PDF 생성 로딩 상태
   const [pdfProgress, setPdfProgress] = useState({ progress: 0, message: '' }); // PDF 진행률
   const [unitSize, setUnitSize] = useState<number | null>(null); // 유닛당 단어 수 (null = 분할 안 함)
-  const [showUnitDialog, setShowUnitDialog] = useState(false); // 유닛 설정 다이얼로그
-  const [unitInputValue, setUnitInputValue] = useState('50'); // 유닛 입력값
+  const [currentUnit, setCurrentUnit] = useState<number>(1); // 현재 보고 있는 유닛 번호
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -294,10 +285,6 @@ export default function App() {
         console.error('Failed to fetch from Supabase:', supabaseError);
       }
 
-      // 디버그: 원본 데이터 확인
-      console.log('🔍 localStorage:', localLogs.length, '개', localLogs.map(l => l.timestamp));
-      console.log('🔍 Supabase:', supabaseLogs.length, '개', supabaseLogs.map(l => l.timestamp));
-
       // 3. 두 소스의 데이터 합치기 (headerTitle + 분 단위 기준 중복 제거)
       const allLogsMap = new Map();
 
@@ -316,9 +303,6 @@ export default function App() {
       supabaseLogs.forEach((log: any) => {
         allLogsMap.set(getKey(log), log);
       });
-
-      // 디버그: 병합 후 확인
-      console.log('🔍 병합 후:', allLogsMap.size, '개');
 
       // 4. Map을 배열로 변환하고 최신순 정렬 후 최근 5개만 선택
       const mergedLogs = Array.from(allLogsMap.values())
@@ -512,11 +496,46 @@ export default function App() {
     }
   };
 
-  const handleWordUpdate = (id: number, field: string, value: any) => {
-    setVocabularyList(prev => prev.map(item => 
+  const handleWordUpdate = useCallback((id: number, field: string, value: any) => {
+    setVocabularyList(prev => prev.map(item =>
       item.id === id ? { ...item, [field]: value } : item
     ));
-  };
+  }, []);
+
+  // 유닛별 데이터 계산
+  const totalWords = useMemo(() => vocabularyList.length, [vocabularyList]);
+  const totalUnits = unitSize ? Math.ceil(totalWords / unitSize) : 1;
+  const currentUnitData = useMemo(() => {
+    if (!unitSize) return vocabularyList;
+    const start = (currentUnit - 1) * unitSize;
+    const end = Math.min(start + unitSize, vocabularyList.length);
+    return vocabularyList.slice(start, end);
+  }, [vocabularyList, unitSize, currentUnit]);
+  const unitNumber = useMemo(() => unitSize ? currentUnit : undefined, [unitSize, currentUnit]);
+
+  // currentUnit이 totalUnits를 초과하지 않도록
+  useEffect(() => {
+    if (currentUnit > totalUnits) {
+      setCurrentUnit(Math.max(1, totalUnits));
+    }
+  }, [totalUnits, currentUnit]);
+
+  // 유닛 분할 콜백 (메모이제이션)
+  const handleUnitApply = useCallback((size: number) => {
+    setUnitSize(size);
+    setCurrentUnit(1);
+    toast.success(`${size}개씩 유닛 분할 설정됨`, { duration: 1500 });
+  }, []);
+
+  const handleUnitReset = useCallback(() => {
+    setUnitSize(null);
+    setCurrentUnit(1);
+  }, []);
+
+  // 헤더 변경 콜백 (메모이제이션)
+  const handleHeaderChange = useCallback((updated: { headerTitle?: string; headerDescription?: string; footerLeft?: string }) => {
+    setHeaderInfo((prev: { headerTitle: string; headerDescription: string; footerLeft: string }) => ({ ...prev, ...updated }));
+  }, []);
 
   // 단어 순서 랜덤 섞기 (ID는 1부터 유지)
   const handleShuffleWords = () => {
@@ -775,14 +794,12 @@ export default function App() {
           )}
 
           {/* 유닛 분할 버튼 */}
-          <Button
-            variant="outline"
-            onClick={() => setShowUnitDialog(true)}
-            className="flex items-center gap-2"
-          >
-            <SplitSquareHorizontal size={16} />
-            {unitSize ? `${unitSize}개씩` : '분할'}
-          </Button>
+          <UnitSplitButton
+            totalWords={totalWords}
+            currentUnitSize={unitSize}
+            onApply={handleUnitApply}
+            onReset={handleUnitReset}
+          />
 
           {/* PDF 저장 버튼 */}
           <Button
@@ -875,68 +892,33 @@ export default function App() {
         <div className="flex-1 overflow-auto bg-gray-100 print:bg-white print:overflow-visible">
           <div className="py-8 print:py-0">
             <div className="page-container">
-              {viewMode === 'card' ? (
-                <A4PageLayout
-                  headerContent={
-                    <HeaderFooter
-                      headerInfo={headerInfo}
-                      showFooter={false}
-                      isEditable={isEditMode}
-                      onHeaderChange={(updated) => setHeaderInfo({ ...headerInfo, ...updated })}
-                      unitNumber={unitSize ? 1 : undefined}
-                    />
-                  }
-                  showHeaderOnFirstPageOnly={true}
-                >
-                  {vocabularyList.map((word) => (
-                    <VocabularyCard 
-                      key={word.id} 
-                      {...word} 
-                      isEditable={isEditMode}
-                      onUpdate={handleWordUpdate}
-                    />
-                  ))}
-                </A4PageLayout>
-              ) : viewMode === 'table' ? (
-                <VocabularyTable 
-                  data={vocabularyList}
-                  headerInfo={headerInfo}
-                  isEditable={isEditMode}
-                  onUpdate={handleWordUpdate}
-                  onHeaderChange={(updated) => setHeaderInfo({ ...headerInfo, ...updated })}
-                />
-              ) : viewMode === 'tableSimple' ? (
-                <VocabularyTableSimple 
-                  data={vocabularyList}
-                  headerInfo={headerInfo}
-                />
-              ) : viewMode === 'tableSimpleTest' ? (
-                <VocabularyTableSimpleTest 
-                  data={vocabularyList}
-                  headerInfo={headerInfo}
-                />
-              ) : viewMode === 'test' ? (
-                <VocabularyTest 
-                  data={vocabularyList}
-                  headerInfo={headerInfo}
-                />
-              ) : viewMode === 'testDefinition' ? (
-                <VocabularyTestDefinition 
-                  data={vocabularyList}
-                  headerInfo={headerInfo}
-                />
-              ) : viewMode === 'testAnswer' ? (
-                <VocabularyTestAnswer 
-                  data={vocabularyList}
-                  headerInfo={headerInfo}
-                />
-              ) : viewMode === 'testDefinitionAnswer' ? (
-                <VocabularyTestDefinitionAnswer 
-                  data={vocabularyList}
-                  headerInfo={headerInfo}
-                />
-              ) : (
-                <VocabularyCover 
+              {/* 유닛 선택 UI */}
+              {unitSize && totalUnits > 1 && (
+                <div className="flex items-center justify-center gap-2 mb-4 print:hidden">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentUnit(Math.max(1, currentUnit - 1))}
+                    disabled={currentUnit === 1}
+                  >
+                    ◀ 이전
+                  </Button>
+                  <span className="px-4 py-1 bg-slate-800 text-white rounded font-medium">
+                    Unit {currentUnit} / {totalUnits}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentUnit(Math.min(totalUnits, currentUnit + 1))}
+                    disabled={currentUnit === totalUnits}
+                  >
+                    다음 ▶
+                  </Button>
+                </div>
+              )}
+
+              {viewMode === 'cover' ? (
+                <VocabularyCover
                   data={vocabularyList}
                   headerInfo={headerInfo}
                   photo={coverPhoto}
@@ -945,6 +927,16 @@ export default function App() {
                   onPhotoUpload={(photoUrl) => setCoverPhoto(photoUrl)}
                   onHeaderInfoChange={(info) => setHeaderInfo(info)}
                   onAuthorNameChange={(name) => setCoverAuthorName(name)}
+                />
+              ) : (
+                <VocabularyView
+                  viewMode={viewMode as 'card' | 'table' | 'tableSimple' | 'tableSimpleTest' | 'test' | 'testDefinition' | 'testAnswer' | 'testDefinitionAnswer'}
+                  data={currentUnitData}
+                  headerInfo={headerInfo}
+                  isEditMode={isEditMode}
+                  unitNumber={unitNumber}
+                  onWordUpdate={handleWordUpdate}
+                  onHeaderChange={handleHeaderChange}
                 />
               )}
             </div>
@@ -1018,63 +1010,6 @@ export default function App() {
             >
               확인
             </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* 유닛 분할 설정 다이얼로그 */}
-      <Dialog open={showUnitDialog} onOpenChange={setShowUnitDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>유닛 분할 설정</DialogTitle>
-            <DialogDescription>
-              PDF 저장 시 유닛당 단어 수를 설정합니다. 총 {vocabularyList.length}개 단어
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="unitSize">유닛당 단어 수</Label>
-              <Input
-                id="unitSize"
-                type="number"
-                min="1"
-                max={vocabularyList.length}
-                value={unitInputValue}
-                onChange={(e) => setUnitInputValue(e.target.value)}
-                placeholder="예: 50"
-              />
-              {unitInputValue && parseInt(unitInputValue) > 0 && (
-                <p className="text-xs text-muted-foreground">
-                  → {Math.ceil(vocabularyList.length / parseInt(unitInputValue))}개 유닛으로 분할됩니다
-                </p>
-              )}
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                className="flex-1"
-                onClick={() => {
-                  setUnitSize(null);
-                  setUnitInputValue('50');
-                  setShowUnitDialog(false);
-                }}
-              >
-                분할 해제
-              </Button>
-              <Button
-                className="flex-1"
-                onClick={() => {
-                  const size = parseInt(unitInputValue);
-                  if (size > 0) {
-                    setUnitSize(size);
-                    setShowUnitDialog(false);
-                    toast.success(`${size}개씩 유닛 분할 설정됨`, { duration: 1500 });
-                  }
-                }}
-              >
-                적용
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>

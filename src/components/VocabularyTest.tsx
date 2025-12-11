@@ -25,6 +25,7 @@ interface HeaderInfo {
 interface VocabularyTestProps {
   data: VocabularyItem[];
   headerInfo?: HeaderInfo;
+  unitNumber?: number;
 }
 
 interface TestQuestion {
@@ -52,7 +53,7 @@ function seededShuffle<T>(array: T[], seed: number): T[] {
   return result;
 }
 
-export function VocabularyTest({ data, headerInfo }: VocabularyTestProps) {
+export function VocabularyTest({ data, headerInfo, unitNumber }: VocabularyTestProps) {
   // ⚡ 테스트 문제 생성을 useMemo로 캐싱 (메모리 최적화)
   const questions = useMemo((): TestQuestion[] => {
     return data.map((item) => {
@@ -212,7 +213,7 @@ export function VocabularyTest({ data, headerInfo }: VocabularyTestProps) {
 
   return (
     <A4PageLayout
-      headerContent={<HeaderFooter headerInfo={headerInfo} showFooter={false} />}
+      headerContent={<HeaderFooter headerInfo={headerInfo} showFooter={false} unitNumber={unitNumber} />}
       showHeaderOnFirstPageOnly={true}
     >
       {testRows}
