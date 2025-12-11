@@ -11,15 +11,17 @@ interface HeaderFooterProps {
   isEditable?: boolean;
   onFooterChange?: (value: string) => void;
   onHeaderChange?: (headerInfo: { headerTitle: string; headerDescription: string }) => void;
+  unitNumber?: number;
 }
 
-export function HeaderFooter({ 
-  headerInfo, 
-  showHeader = true, 
+export function HeaderFooter({
+  headerInfo,
+  showHeader = true,
   showFooter = true,
   isEditable = false,
   onFooterChange,
-  onHeaderChange
+  onHeaderChange,
+  unitNumber
 }: HeaderFooterProps) {
   if (!headerInfo) return null;
 
@@ -29,7 +31,13 @@ export function HeaderFooter({
     <>
       {/* Header - 세련된 라벨 스타일 */}
       {showHeader && hasHeaderContent && (
-        <div className="mb-6">
+        <div className="mb-6 relative">
+          {/* 유닛 배지 */}
+          {unitNumber && (
+            <div className="absolute top-0 left-0 px-2 py-1 bg-slate-200 text-slate-600 text-xs font-bold rounded">
+              Unit {unitNumber}
+            </div>
+          )}
           {/* 상단 중앙 라벨 */}
           <div className="flex justify-center mb-4">
             <div className="inline-block px-4 py-1.5 bg-slate-100 backdrop-blur-md border border-slate-300 rounded-xl rounded-bl-none">

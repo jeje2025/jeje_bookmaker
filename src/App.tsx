@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from './components/ui/button';
-import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Settings, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Save, Shuffle, Layers, Image } from 'lucide-react';
+import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Settings, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Save, Shuffle, Layers, Image, SplitSquareHorizontal } from 'lucide-react';
 import { VocabularyCard } from './components/VocabularyCard';
 import { VocabularyTable } from './components/VocabularyTable';
 import { VocabularyTableSimple } from './components/VocabularyTableSimple';
@@ -226,6 +226,9 @@ export default function App() {
   // const [isPDFModalOpen, setIsPDFModalOpen] = useState(false); // PDF 저장 모달 - 사용 안 함
   const [isPDFLoading, setIsPDFLoading] = useState(false); // PDF 생성 로딩 상태
   const [pdfProgress, setPdfProgress] = useState({ progress: 0, message: '' }); // PDF 진행률
+  const [unitSize, setUnitSize] = useState<number | null>(null); // 유닛당 단어 수 (null = 분할 안 함)
+  const [showUnitDialog, setShowUnitDialog] = useState(false); // 유닛 설정 다이얼로그
+  const [unitInputValue, setUnitInputValue] = useState('50'); // 유닛 입력값
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -771,6 +774,16 @@ export default function App() {
             </>
           )}
 
+          {/* 유닛 분할 버튼 */}
+          <Button
+            variant="outline"
+            onClick={() => setShowUnitDialog(true)}
+            className="flex items-center gap-2"
+          >
+            <SplitSquareHorizontal size={16} />
+            {unitSize ? `${unitSize}개씩` : '분할'}
+          </Button>
+
           {/* PDF 저장 버튼 */}
           <Button
             onClick={async () => {
@@ -798,16 +811,43 @@ export default function App() {
                 testDefinitionAnswer: '영영정의 답지',
               };
               const viewModeName = viewModeNames[viewMode] || viewMode;
-              const filename = `${headerInfo.headerTitle} - ${viewModeName}`;
 
-              // PDF 다운로드 (현재 viewMode 전달)
+              // 유닛 분할 여부에 따라 PDF 생성
               setIsPDFLoading(true);
               setPdfProgress({ progress: 0, message: '' });
+
               try {
-                await downloadPDF(vocabularyList, headerInfo, viewMode, filename, (progress, message) => {
-                  setPdfProgress({ progress, message });
-                });
-                toast.success('PDF 다운로드 완료!', { duration: 2000 });
+                if (unitSize) {
+                  // 유닛별로 순차 생성
+                  const totalUnits = Math.ceil(vocabularyList.length / unitSize);
+
+                  for (let i = 0; i < totalUnits; i++) {
+                    const start = i * unitSize;
+                    const end = Math.min(start + unitSize, vocabularyList.length);
+                    const unitData = vocabularyList.slice(start, end);
+                    const unitNum = i + 1;
+                    const unitFilename = `${headerInfo.headerTitle} - ${viewModeName} - Unit ${unitNum}`;
+
+                    await downloadPDF(unitData, headerInfo, viewMode, unitFilename, unitNum, (progress, message) => {
+                      // 전체 진행률 계산: (완료 유닛 + 현재 유닛 진행률) / 전체 유닛
+                      const overallProgress = Math.round(((i + progress / 100) / totalUnits) * 100);
+                      setPdfProgress({ progress: overallProgress, message: `Unit ${unitNum}/${totalUnits}: ${message}` });
+                    });
+
+                    // 다음 파일 전 딜레이
+                    if (i < totalUnits - 1) {
+                      await new Promise(resolve => setTimeout(resolve, 500));
+                    }
+                  }
+                  toast.success(`${totalUnits}개 유닛 PDF 다운로드 완료!`, { duration: 2000 });
+                } else {
+                  // 전체 저장
+                  const filename = `${headerInfo.headerTitle} - ${viewModeName}`;
+                  await downloadPDF(vocabularyList, headerInfo, viewMode, filename, undefined, (progress, message) => {
+                    setPdfProgress({ progress, message });
+                  });
+                  toast.success('PDF 다운로드 완료!', { duration: 2000 });
+                }
               } catch (error) {
                 console.error('PDF 생성 오류:', error);
                 toast.error('PDF 생성에 실패했습니다.', { duration: 2000 });
@@ -838,11 +878,12 @@ export default function App() {
               {viewMode === 'card' ? (
                 <A4PageLayout
                   headerContent={
-                    <HeaderFooter 
-                      headerInfo={headerInfo} 
+                    <HeaderFooter
+                      headerInfo={headerInfo}
                       showFooter={false}
                       isEditable={isEditMode}
                       onHeaderChange={(updated) => setHeaderInfo({ ...headerInfo, ...updated })}
+                      unitNumber={unitSize ? 1 : undefined}
                     />
                   }
                   showHeaderOnFirstPageOnly={true}
@@ -981,6 +1022,63 @@ export default function App() {
         </DialogContent>
       </Dialog>
 
+      {/* 유닛 분할 설정 다이얼로그 */}
+      <Dialog open={showUnitDialog} onOpenChange={setShowUnitDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>유닛 분할 설정</DialogTitle>
+            <DialogDescription>
+              PDF 저장 시 유닛당 단어 수를 설정합니다. 총 {vocabularyList.length}개 단어
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="unitSize">유닛당 단어 수</Label>
+              <Input
+                id="unitSize"
+                type="number"
+                min="1"
+                max={vocabularyList.length}
+                value={unitInputValue}
+                onChange={(e) => setUnitInputValue(e.target.value)}
+                placeholder="예: 50"
+              />
+              {unitInputValue && parseInt(unitInputValue) > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  → {Math.ceil(vocabularyList.length / parseInt(unitInputValue))}개 유닛으로 분할됩니다
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setUnitSize(null);
+                  setUnitInputValue('50');
+                  setShowUnitDialog(false);
+                }}
+              >
+                분할 해제
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={() => {
+                  const size = parseInt(unitInputValue);
+                  if (size > 0) {
+                    setUnitSize(size);
+                    setShowUnitDialog(false);
+                    toast.success(`${size}개씩 유닛 분할 설정됨`, { duration: 1500 });
+                  }
+                }}
+              >
+                적용
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* PDF 로딩 모달 */}
       {isPDFLoading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 data-[state=open]:animate-in data-[state=open]:fade-in-0" data-state="open">
@@ -989,7 +1087,7 @@ export default function App() {
               <div className="flex flex-col gap-2 text-center sm:text-left">
                 <h2 className="text-lg leading-none font-semibold">PDF 생성 중</h2>
                 <p className="text-muted-foreground text-sm">
-                  {vocabularyList.length}개 단어를 처리하고 있습니다
+                  {pdfProgress.message || `${vocabularyList.length}개 단어를 처리하고 있습니다`}
                 </p>
               </div>
               {/* 진행률 바 */}
@@ -999,9 +1097,6 @@ export default function App() {
                   style={{ width: `${pdfProgress.progress}%` }}
                 />
               </div>
-              <p className="text-muted-foreground text-sm text-center">
-                {pdfProgress.message || '준비 중...'}
-              </p>
               <p className="text-slate-800 font-semibold text-center">
                 {pdfProgress.progress}%
               </p>

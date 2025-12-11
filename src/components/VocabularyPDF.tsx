@@ -34,6 +34,19 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 16,
     alignItems: 'center',
+    position: 'relative',
+  },
+  unitBadge: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    fontSize: 8,
+    color: '#475569',
+    backgroundColor: '#e2e8f0',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    fontWeight: 700,
   },
   headerTitle: {
     fontSize: 10,
@@ -492,6 +505,7 @@ interface VocabularyPDFProps {
   data: VocabularyItem[];
   headerInfo: HeaderInfo;
   viewMode?: ViewMode;
+  unitNumber?: number;
 }
 
 // seed 기반 랜덤 함수 (테스트지용)
@@ -916,7 +930,7 @@ function pairData<T>(data: T[]): Array<{ left: T; right: T | null }> {
 }
 
 // 메인 PDF 문서
-export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card' }: VocabularyPDFProps) => {
+export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber }: VocabularyPDFProps) => {
   const pairedData = pairData(data);
 
   // 콘텐츠 렌더링 함수
@@ -967,6 +981,9 @@ export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card' }: Vocabular
         {/* Header */}
         {headerInfo.headerTitle && (
           <View style={styles.header}>
+            {unitNumber && (
+              <Text style={styles.unitBadge}>Unit {unitNumber}</Text>
+            )}
             <Text style={styles.headerTitle}>{headerInfo.headerTitle}</Text>
             {headerInfo.headerDescription && (
               <Text style={styles.headerDescription}>

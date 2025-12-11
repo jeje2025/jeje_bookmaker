@@ -33,6 +33,17 @@ type ProgressCallback = (progress: number, message: string) => void;
 // 청크 크기 설정 (단어 수 기준)
 const CHUNK_SIZE = 100;
 
+// 브라우저가 UI를 업데이트할 수 있도록 양보
+const yieldToMain = (): Promise<void> => {
+  return new Promise(resolve => {
+    if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => resolve(), { timeout: 100 });
+    } else {
+      setTimeout(resolve, 0);
+    }
+  });
+};
+
 // 데이터를 청크로 분할
 function chunkArray<T>(array: T[], size: number): T[][] {
   const chunks: T[][] = [];
@@ -47,7 +58,8 @@ async function generateChunkPDF(
   chunk: VocabularyItem[],
   headerInfo: HeaderInfo,
   viewMode: ViewMode,
-  isFirstChunk: boolean
+  isFirstChunk: boolean,
+  unitNumber?: number
 ): Promise<Uint8Array> {
   // 첫 번째 청크만 헤더 표시
   const chunkHeaderInfo = isFirstChunk ? headerInfo : { ...headerInfo, headerTitle: '', headerDescription: '' };
@@ -55,8 +67,12 @@ async function generateChunkPDF(
   const doc = createElement(VocabularyPDF, {
     data: chunk,
     headerInfo: chunkHeaderInfo,
-    viewMode
+    viewMode,
+    unitNumber
   });
+
+  // 브라우저 UI 업데이트 기회 제공
+  await yieldToMain();
 
   const blob = await pdf(doc).toBlob();
   const arrayBuffer = await blob.arrayBuffer();
@@ -82,6 +98,7 @@ export async function downloadPDF(
   headerInfo: HeaderInfo,
   viewMode: ViewMode = 'card',
   filename?: string,
+  unitNumber?: number,
   onProgress?: ProgressCallback
 ): Promise<void> {
   const totalItems = data.length;
@@ -89,7 +106,9 @@ export async function downloadPDF(
   // 100개 이하면 기존 방식으로 빠르게 처리
   if (totalItems <= CHUNK_SIZE) {
     onProgress?.(10, 'PDF 생성 중...');
-    const doc = createElement(VocabularyPDF, { data, headerInfo, viewMode });
+    await yieldToMain();
+    const doc = createElement(VocabularyPDF, { data, headerInfo, viewMode, unitNumber });
+    await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
     const blob = await pdf(doc).toBlob();
     onProgress?.(90, '다운로드 준비 중...');
     downloadBlob(blob, filename, headerInfo);
@@ -110,21 +129,22 @@ export async function downloadPDF(
     const isFirstChunk = i === 0;
 
     onProgress?.(
-      5 + Math.round((i / totalChunks) * 75),
+      Math.round((i / totalChunks) * 100),
       `청크 ${i + 1}/${totalChunks} 생성 중... (${chunk.length}개 단어)`
     );
 
-    const pdfBuffer = await generateChunkPDF(chunk, headerInfo, viewMode, isFirstChunk);
+    const pdfBuffer = await generateChunkPDF(chunk, headerInfo, viewMode, isFirstChunk, unitNumber);
     pdfBuffers.push(pdfBuffer);
 
     // 청크 완료 후 진행률 업데이트
     onProgress?.(
-      5 + Math.round(((i + 1) / totalChunks) * 75),
+      Math.round(((i + 1) / totalChunks) * 100),
       `청크 ${i + 1}/${totalChunks} 완료`
     );
-  }
 
-  onProgress?.(80, 'PDF 병합 중...');
+    // 브라우저가 숨 쉴 틈 제공
+    await yieldToMain();
+  }
 
   // PDF 병합
   const mergedPdfBytes = await mergePDFs(pdfBuffers);

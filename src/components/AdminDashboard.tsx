@@ -573,7 +573,34 @@ export function AdminDashboard({ onClose, onLoad }: { onClose: () => void; onLoa
                         </td>
                         <td className="px-2 py-2 text-center">
                           <button
-                            onClick={() => onLoad && onLoad(log)}
+                            onClick={async () => {
+                              if (!onLoad) return;
+                              try {
+                                // API에서 단어 목록 포함한 전체 데이터 가져오기
+                                const apiLogId = log.id || log.timestamp;
+                                const response = await fetch(
+                                  `https://${projectId}.supabase.co/functions/v1/make-server-7e289e1b/load-log/${encodeURIComponent(apiLogId)}`,
+                                  {
+                                    headers: {
+                                      Authorization: `Bearer ${publicAnonKey}`,
+                                    },
+                                  }
+                                );
+                                if (response.ok) {
+                                  const data = await response.json();
+                                  if (data.success && data.log) {
+                                    onLoad(data.log);
+                                  } else {
+                                    toast.error('데이터를 불러올 수 없습니다.', { duration: 1500 });
+                                  }
+                                } else {
+                                  toast.error('불러오기 실패', { duration: 1500 });
+                                }
+                              } catch (error) {
+                                console.error('Load error:', error);
+                                toast.error('불러오기 중 오류 발생', { duration: 1500 });
+                              }
+                            }}
                             className="text-slate-400 hover:text-slate-700 transition-colors"
                           >
                             <Upload size={16} />
