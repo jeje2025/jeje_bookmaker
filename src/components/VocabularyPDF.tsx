@@ -570,6 +570,9 @@ const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
           <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
         </View>
         <Text style={styles.word}>{item.word}</Text>
+        {item.pronunciation && (
+          <Text style={{ fontSize: 8, color: '#9ca3af', marginTop: -1 }}>{item.pronunciation}</Text>
+        )}
       </View>
 
       {/* Right: Meaning & Examples */}
@@ -647,6 +650,9 @@ const VocabularyTableRowPDF = ({ item }: { item: VocabularyItem }) => (
     </View>
     <View style={styles.tableColWord}>
       <Text style={styles.tableWord}>{item.word}</Text>
+      {item.pronunciation && (
+        <Text style={{ fontSize: 7, color: '#9ca3af', marginTop: -1 }}>{item.pronunciation}</Text>
+      )}
       {item.derivatives.map((der, idx) => (
         <View key={idx} style={styles.tableDerivative}>
           <Text style={styles.tableDerivativeWord}>{der.word}</Text>

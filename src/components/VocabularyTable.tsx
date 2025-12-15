@@ -76,17 +76,34 @@ const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpda
           {/* 단어 / 파생어 */}
           <td className="pt-1 pb-2 px-3 align-top" style={{ width: '18%' }}>
             <div className="space-y-1">
-              <div style={{ fontSize: '14px', fontWeight: 'bold' }} className="text-black">
-                {isEditable ? (
-                  <EditableText
-                    value={item.word}
-                    onChange={(val) => onUpdate?.(item.id, 'word', val)}
-                    isEditable={true}
-                    className="text-black"
-                    style={{ fontSize: '14px', fontWeight: 'bold' }}
-                  />
-                ) : (
-                  item.word
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold' }} className="text-black">
+                  {isEditable ? (
+                    <EditableText
+                      value={item.word}
+                      onChange={(val) => onUpdate?.(item.id, 'word', val)}
+                      isEditable={true}
+                      className="text-black"
+                      style={{ fontSize: '14px', fontWeight: 'bold' }}
+                    />
+                  ) : (
+                    item.word
+                  )}
+                </div>
+                {item.pronunciation && (
+                  <div className="text-gray-400" style={{ fontSize: '9px', marginTop: '-1px' }}>
+                    {isEditable ? (
+                      <EditableText
+                        value={item.pronunciation}
+                        onChange={(val) => onUpdate?.(item.id, 'pronunciation', val)}
+                        isEditable={true}
+                        className="text-gray-400"
+                        style={{ fontSize: '9px' }}
+                      />
+                    ) : (
+                      item.pronunciation
+                    )}
+                  </div>
                 )}
               </div>
               <div className="space-y-1 pb-1">

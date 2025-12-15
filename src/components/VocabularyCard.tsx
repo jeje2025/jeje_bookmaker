@@ -105,6 +105,21 @@ const VocabularyCardComponent = ({
                 word
               )}
             </h2>
+            {pronunciation && (
+              <p className="text-gray-400" style={{ fontSize: '10px', marginTop: '-2px' }}>
+                {isEditable ? (
+                  <EditableText
+                    value={pronunciation}
+                    onChange={(val) => onUpdate?.(id, 'pronunciation', val)}
+                    isEditable={true}
+                    className="text-gray-400"
+                    style={{ fontSize: '10px' }}
+                  />
+                ) : (
+                  pronunciation
+                )}
+              </p>
+            )}
           </div>
           
           {/* Right: Meaning & Examples + Checkboxes */}
