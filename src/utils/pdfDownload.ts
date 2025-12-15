@@ -1,5 +1,5 @@
 import { pdf } from '@react-pdf/renderer';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { VocabularyPDF } from '../components/VocabularyPDF';
 import { createElement } from 'react';
 
@@ -31,7 +31,7 @@ type ViewMode = 'card' | 'table' | 'tableSimple' | 'tableSimpleTest' | 'test' | 
 type ProgressCallback = (progress: number, message: string) => void;
 
 // 청크 크기 설정 (단어 수 기준)
-const CHUNK_SIZE = 100;
+const CHUNK_SIZE = 200;
 
 // 브라우저가 UI를 업데이트할 수 있도록 양보
 const yieldToMain = (): Promise<void> => {
@@ -53,7 +53,7 @@ function chunkArray<T>(array: T[], size: number): T[][] {
   return chunks;
 }
 
-// 청크별 PDF 생성
+// 청크별 PDF 생성 (페이지 번호 없이)
 async function generateChunkPDF(
   chunk: VocabularyItem[],
   headerInfo: HeaderInfo,
@@ -68,7 +68,8 @@ async function generateChunkPDF(
     data: chunk,
     headerInfo: chunkHeaderInfo,
     viewMode,
-    unitNumber
+    unitNumber,
+    showPageNumber: false  // 청크에서는 페이지 번호 숨김 (병합 후 추가)
   });
 
   // 브라우저 UI 업데이트 기회 제공
@@ -79,7 +80,7 @@ async function generateChunkPDF(
   return new Uint8Array(arrayBuffer);
 }
 
-// 여러 PDF를 하나로 병합
+// 여러 PDF를 하나로 병합하고 연속 페이지 번호 추가
 async function mergePDFs(pdfBuffers: Uint8Array[]): Promise<Uint8Array> {
   const mergedPdf = await PDFDocument.create();
 
@@ -88,6 +89,27 @@ async function mergePDFs(pdfBuffers: Uint8Array[]): Promise<Uint8Array> {
     const pages = await mergedPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
     pages.forEach(page => mergedPdf.addPage(page));
   }
+
+  // 연속 페이지 번호 추가
+  const totalPages = mergedPdf.getPageCount();
+  const font = await mergedPdf.embedFont(StandardFonts.Helvetica);
+  const fontSize = 6;
+  const color = rgb(0.61, 0.64, 0.69); // #9ca3af
+
+  const allPages = mergedPdf.getPages();
+  allPages.forEach((page, index) => {
+    const { width } = page.getSize();
+    const pageNumberText = `${index + 1} / ${totalPages}`;
+    const textWidth = font.widthOfTextAtSize(pageNumberText, fontSize);
+
+    page.drawText(pageNumberText, {
+      x: width - 30 - textWidth / 2,  // 오른쪽 여백 30pt에서 중앙 정렬
+      y: 20,  // 하단 20pt 위치
+      size: fontSize,
+      font: font,
+      color: color,
+    });
+  });
 
   return await mergedPdf.save();
 }

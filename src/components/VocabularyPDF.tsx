@@ -506,6 +506,7 @@ interface VocabularyPDFProps {
   headerInfo: HeaderInfo;
   viewMode?: ViewMode;
   unitNumber?: number;
+  showPageNumber?: boolean;  // 페이지 번호 표시 여부 (청크 병합 시 false)
 }
 
 // seed 기반 랜덤 함수 (테스트지용)
@@ -936,7 +937,7 @@ function pairData<T>(data: T[]): Array<{ left: T; right: T | null }> {
 }
 
 // 메인 PDF 문서
-export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber }: VocabularyPDFProps) => {
+export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber, showPageNumber = true }: VocabularyPDFProps) => {
   const pairedData = pairData(data);
 
   // 콘텐츠 렌더링 함수
@@ -1009,14 +1010,16 @@ export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber 
           </View>
         )}
 
-        {/* Page Number */}
-        <Text
-          style={styles.pageNumber}
-          render={({ pageNumber, totalPages }) =>
-            `${pageNumber} / ${totalPages}`
-          }
-          fixed
-        />
+        {/* Page Number - 청크 병합 시 숨김 */}
+        {showPageNumber && (
+          <Text
+            style={styles.pageNumber}
+            render={({ pageNumber, totalPages }) =>
+              `${pageNumber} / ${totalPages}`
+            }
+            fixed
+          />
+        )}
       </Page>
     </Document>
   );

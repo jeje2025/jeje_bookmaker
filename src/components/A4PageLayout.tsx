@@ -176,6 +176,11 @@ export function A4PageLayout({
           {(showFooterOnLastPageOnly ? pageIndex === pages.length - 1 : true) && footerContent && (
             <div className="page-footer">{footerContent}</div>
           )}
+
+          {/* 페이지 번호 - 우하단 */}
+          <div className="page-number-bottom-right">
+            {pageIndex + 1} / {pages.length}
+          </div>
         </div>
       ))}
     </>
