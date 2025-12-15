@@ -30,62 +30,8 @@ type ViewMode = 'card' | 'table' | 'tableSimple' | 'tableSimpleTest' | 'test' | 
 // 진행률 콜백 타입
 type ProgressCallback = (progress: number, message: string) => void;
 
-// 서버사이드 PDF 생성 사용 여부
-const USE_SERVER_PDF = true;
-
-// 클라이언트 청크 크기 (폴백용)
+// 청크 크기 설정 (단어 수 기준)
 const CHUNK_SIZE = 200;
-
-// API 엔드포인트
-const PDF_API_URL = '/api/generate-pdf';
-
-// ==================== 서버사이드 PDF 생성 ====================
-
-async function downloadPDFServer(
-  data: VocabularyItem[],
-  headerInfo: HeaderInfo,
-  viewMode: ViewMode,
-  filename?: string,
-  unitNumber?: number,
-  onProgress?: ProgressCallback
-): Promise<void> {
-  onProgress?.(10, '서버에 PDF 생성 요청 중...');
-
-  try {
-    const response = await fetch(PDF_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        data,
-        headerInfo,
-        viewMode,
-        unitNumber
-      })
-    });
-
-    onProgress?.(50, 'PDF 생성 중...');
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}`);
-    }
-
-    onProgress?.(80, '다운로드 준비 중...');
-
-    const blob = await response.blob();
-    downloadBlob(blob, filename, headerInfo);
-
-    onProgress?.(100, '완료!');
-  } catch (error) {
-    console.error('서버 PDF 생성 실패, 클라이언트로 폴백:', error);
-    // 서버 실패 시 클라이언트에서 생성
-    await downloadPDFClient(data, headerInfo, viewMode, filename, unitNumber, onProgress);
-  }
-}
-
-// ==================== 클라이언트사이드 PDF 생성 (폴백) ====================
 
 // 브라우저가 UI를 업데이트할 수 있도록 양보
 const yieldToMain = (): Promise<void> => {
@@ -115,6 +61,7 @@ async function generateChunkPDF(
   isFirstChunk: boolean,
   unitNumber?: number
 ): Promise<Uint8Array> {
+  // 첫 번째 청크만 헤더 표시
   const chunkHeaderInfo = isFirstChunk ? headerInfo : { ...headerInfo, headerTitle: '', headerDescription: '' };
 
   const doc = createElement(VocabularyPDF, {
@@ -122,9 +69,10 @@ async function generateChunkPDF(
     headerInfo: chunkHeaderInfo,
     viewMode,
     unitNumber,
-    showPageNumber: false
+    showPageNumber: false  // 청크에서는 페이지 번호 숨김 (병합 후 추가)
   });
 
+  // 브라우저 UI 업데이트 기회 제공
   await yieldToMain();
 
   const blob = await pdf(doc).toBlob();
@@ -142,10 +90,11 @@ async function mergePDFs(pdfBuffers: Uint8Array[]): Promise<Uint8Array> {
     pages.forEach(page => mergedPdf.addPage(page));
   }
 
+  // 연속 페이지 번호 추가
   const totalPages = mergedPdf.getPageCount();
   const font = await mergedPdf.embedFont(StandardFonts.Helvetica);
   const fontSize = 6;
-  const color = rgb(0.61, 0.64, 0.69);
+  const color = rgb(0.61, 0.64, 0.69); // #9ca3af
 
   const allPages = mergedPdf.getPages();
   allPages.forEach((page, index) => {
@@ -154,8 +103,8 @@ async function mergePDFs(pdfBuffers: Uint8Array[]): Promise<Uint8Array> {
     const textWidth = font.widthOfTextAtSize(pageNumberText, fontSize);
 
     page.drawText(pageNumberText, {
-      x: width - 30 - textWidth / 2,
-      y: 20,
+      x: width - 30 - textWidth / 2,  // 오른쪽 여백 30pt에서 중앙 정렬
+      y: 20,  // 하단 20pt 위치
       size: fontSize,
       font: font,
       color: color,
@@ -165,7 +114,8 @@ async function mergePDFs(pdfBuffers: Uint8Array[]): Promise<Uint8Array> {
   return await mergedPdf.save();
 }
 
-async function downloadPDFClient(
+// 메인 다운로드 함수 (청크 분할 + 병합)
+export async function downloadPDF(
   data: VocabularyItem[],
   headerInfo: HeaderInfo,
   viewMode: ViewMode = 'card',
@@ -175,6 +125,7 @@ async function downloadPDFClient(
 ): Promise<void> {
   const totalItems = data.length;
 
+  // 100개 이하면 기존 방식으로 빠르게 처리
   if (totalItems <= CHUNK_SIZE) {
     onProgress?.(10, 'PDF 생성 중...');
     await yieldToMain();
@@ -187,12 +138,14 @@ async function downloadPDFClient(
     return;
   }
 
+  // 청크 분할
   const chunks = chunkArray(data, CHUNK_SIZE);
   const totalChunks = chunks.length;
   const pdfBuffers: Uint8Array[] = [];
 
   onProgress?.(5, `${totalItems}개 단어를 ${totalChunks}개 청크로 분할...`);
 
+  // 청크별 PDF 생성
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
     const isFirstChunk = i === 0;
@@ -205,37 +158,26 @@ async function downloadPDFClient(
     const pdfBuffer = await generateChunkPDF(chunk, headerInfo, viewMode, isFirstChunk, unitNumber);
     pdfBuffers.push(pdfBuffer);
 
+    // 청크 완료 후 진행률 업데이트
     onProgress?.(
       Math.round(((i + 1) / totalChunks) * 100),
       `청크 ${i + 1}/${totalChunks} 완료`
     );
 
+    // 브라우저가 숨 쉴 틈 제공
     await yieldToMain();
   }
 
+  // PDF 병합
   const mergedPdfBytes = await mergePDFs(pdfBuffers);
   const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
 
   onProgress?.(95, '다운로드 준비 중...');
+
+  // 다운로드
   downloadBlob(blob, filename, headerInfo);
+
   onProgress?.(100, '완료!');
-}
-
-// ==================== 메인 다운로드 함수 ====================
-
-export async function downloadPDF(
-  data: VocabularyItem[],
-  headerInfo: HeaderInfo,
-  viewMode: ViewMode = 'card',
-  filename?: string,
-  unitNumber?: number,
-  onProgress?: ProgressCallback
-): Promise<void> {
-  if (USE_SERVER_PDF) {
-    await downloadPDFServer(data, headerInfo, viewMode, filename, unitNumber, onProgress);
-  } else {
-    await downloadPDFClient(data, headerInfo, viewMode, filename, unitNumber, onProgress);
-  }
 }
 
 // Blob 다운로드 헬퍼
