@@ -3144,6 +3144,11 @@ body {
   animation: .6s cubic-bezier(.36, .07, .19, .97) both shake;
 }
 
+/* 스크롤바 숨김 (TopBar용) */
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
 @property --tw-translate-x {
   syntax: "*";
   inherits: false;

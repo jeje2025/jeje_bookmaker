@@ -710,7 +710,10 @@ export default function App() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar - 인쇄 시 숨김, 한 줄로 표시 */}
-        <div className="bg-white border-b border-gray-200 px-3 py-2 print:hidden flex-shrink-0 flex items-center gap-2 overflow-x-auto">
+        <div
+          className="bg-white border-b border-gray-200 px-3 py-2 print:hidden flex-shrink-0 flex items-center gap-2 overflow-x-auto"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
           {/* 사이드바 펼치기 버튼 - 접혀있을 때만 표시 */}
           {isSidebarCollapsed && (
             <button
@@ -896,7 +899,7 @@ export default function App() {
           <Button
             onClick={handleSavePDFClick}
             disabled={isPDFLoading}
-            className="shrink-0 bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 h-8 px-3 text-xs"
+            className="shrink-0 bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2 justify-center"
             size="sm"
           >
             <Save size={14} />
@@ -1041,8 +1044,8 @@ export default function App() {
 
       {/* PDF 로딩 모달 */}
       {isPDFLoading && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 data-[state=open]:animate-in data-[state=open]:fade-in-0" data-state="open">
-          <div className="bg-background w-full max-w-[calc(100%-2rem)] sm:max-w-md rounded-lg border p-6 shadow-lg data-[state=open]:animate-in data-[state=open]:zoom-in-95" data-state="open">
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{ width: '320px', backgroundColor: 'white', borderRadius: '8px', padding: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-2 text-center sm:text-left">
                 <h2 className="text-lg leading-none font-semibold">PDF 생성 중</h2>
