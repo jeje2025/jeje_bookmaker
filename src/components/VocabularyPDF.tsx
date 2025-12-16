@@ -507,29 +507,28 @@ interface VocabularyPDFProps {
   viewMode?: ViewMode;
   unitNumber?: number;
   showPageNumber?: boolean;  // 페이지 번호 표시 여부 (청크 병합 시 false)
+  allData?: VocabularyItem[];  // 오답 선택지 생성용 전체 데이터 (청크 분할 시 필요)
 }
 
-// seed 기반 랜덤 함수 (테스트지용)
-function seededRandom(seed: number): () => number {
-  return function() {
-    seed = (seed * 9301 + 49297) % 233280;
-    return seed / 233280;
-  };
+// seed 기반 랜덤 함수 (웹 미리보기와 동일)
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
 }
 
 function seededShuffle<T>(array: T[], seed: number): T[] {
   const result = [...array];
-  const random = seededRandom(seed);
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
+    const j = Math.floor(seededRandom(seed + i) * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
 }
 
-// 테스트 문제 생성 함수
-function generateTestQuestions(data: VocabularyItem[]) {
+// 동의어 테스트 문제 생성 함수
+function generateTestQuestions(data: VocabularyItem[], unitNumber?: number) {
   return data.map((item) => {
+    const baseSeed = (unitNumber || 0) * 10000 + item.id;
     const correctSynonyms = item.synonyms.slice(0, Math.min(3, item.synonyms.length));
     const distractors: Array<{ word: string; meaning: string }> = [];
 
@@ -541,7 +540,7 @@ function generateTestQuestions(data: VocabularyItem[]) {
       });
     }
 
-    const shuffledDistractors = seededShuffle(distractors, item.id);
+    const shuffledDistractors = seededShuffle(distractors, baseSeed);
     const selectedDistractors = shuffledDistractors.slice(0, 4);
 
     const allChoices = [
@@ -555,7 +554,51 @@ function generateTestQuestions(data: VocabularyItem[]) {
       meaning: item.meaning,
       definition: item.definition,
       correctSynonyms,
-      allChoices: seededShuffle(allChoices, item.id + 1000)
+      allChoices: seededShuffle(allChoices, baseSeed * 1000)
+    };
+  });
+}
+
+// 영영정의 테스트 문제 생성 함수 (웹 미리보기와 동일)
+function generateDefinitionTestQuestions(data: VocabularyItem[], unitNumber?: number) {
+  return data.map((item) => {
+    const correctDefinition = item.definition || '';
+    const distractors: Array<{ definition: string; sourceWord: string }> = [];
+
+    const otherWords = data.filter(d => d.id !== item.id && d.definition);
+    for (const other of otherWords) {
+      if (other.definition) {
+        distractors.push({
+          definition: other.definition,
+          sourceWord: other.word
+        });
+      }
+    }
+
+    // 시드 기반으로 오답 선택 (3개) - item.id와 unitNumber를 시드로 사용
+    const baseSeed = (unitNumber || 0) * 10000 + item.id;
+    const shuffledDistractors = seededShuffle(distractors, baseSeed);
+    const selectedDistractors = shuffledDistractors.slice(0, 3);
+
+    // 정답과 오답 합치기
+    const allChoices = [
+      { definition: correctDefinition, isCorrect: true, sourceWord: '' },
+      ...selectedDistractors.map(d => ({
+        definition: d.definition,
+        isCorrect: false,
+        sourceWord: d.sourceWord
+      }))
+    ];
+
+    // 시드 기반으로 섞기
+    const shuffledChoices = seededShuffle(allChoices, baseSeed * 1000);
+
+    return {
+      id: item.id,
+      word: item.word,
+      meaning: item.meaning,
+      correctDefinition,
+      allChoices: shuffledChoices
     };
   });
 }
@@ -761,12 +804,13 @@ const VocabularySimpleTestRowPDF = ({ left, right }: { left: VocabularyItem; rig
 );
 
 // ===== 동의어 테스트지 컴포넌트 =====
-const VocabularyTestRowPDF = ({ left, right, allData }: {
+const VocabularyTestRowPDF = ({ left, right, allData, unitNumber }: {
   left: VocabularyItem;
   right: VocabularyItem | null;
   allData: VocabularyItem[];
+  unitNumber?: number;
 }) => {
-  const questions = generateTestQuestions(allData);
+  const questions = generateTestQuestions(allData, unitNumber);
   const leftQ = questions.find(q => q.id === left.id);
   const rightQ = right ? questions.find(q => q.id === right.id) : null;
 
@@ -816,41 +860,76 @@ const VocabularyTestRowPDF = ({ left, right, allData }: {
   );
 };
 
-// ===== 영영정의 테스트지 컴포넌트 =====
-const VocabularyDefTestRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
-  <View style={styles.testRow} wrap={false}>
-    <View style={styles.testCol}>
-      <View style={styles.testHeader}>
-        <View style={styles.idBadgeContainer}>
-          <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
-        </View>
-      </View>
-      {left.definition && <Text style={styles.defTestDefinition}>{left.definition}</Text>}
-      <View style={styles.defTestAnswerLine} />
-    </View>
-    {right ? (
-      <View style={styles.testColRight}>
-        <View style={styles.testHeader}>
-          <View style={styles.idBadgeContainer}>
-            <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
-          </View>
-        </View>
-        {right.definition && <Text style={styles.defTestDefinition}>{right.definition}</Text>}
-        <View style={styles.defTestAnswerLine} />
-      </View>
-    ) : (
-      <View style={styles.testColRight} />
-    )}
-  </View>
-);
-
-// ===== 동의어 답지 컴포넌트 =====
-const VocabularyAnswerRowPDF = ({ left, right, allData }: {
+// ===== 영영정의 테스트지 컴포넌트 (4지선다) =====
+const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber }: {
   left: VocabularyItem;
   right: VocabularyItem | null;
   allData: VocabularyItem[];
+  unitNumber?: number;
 }) => {
-  const questions = generateTestQuestions(allData);
+  const questions = generateDefinitionTestQuestions(allData, unitNumber);
+  const leftQ = questions.find(q => q.id === left.id);
+  const rightQ = right ? questions.find(q => q.id === right.id) : null;
+
+  const renderTestContent = (q: typeof leftQ, item: VocabularyItem) => (
+    <>
+      <View style={styles.testHeader}>
+        <View style={styles.idBadgeContainer}>
+          <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        </View>
+        <Text style={styles.testWord}>{item.word}</Text>
+      </View>
+      {/* 뜻 쓰는 칸 */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+        <Text style={{ fontSize: 6.5, color: '#6b7280', marginRight: 4 }}>뜻:</Text>
+        <View style={{ flex: 1, borderBottomWidth: 1, borderBottomColor: '#d1d5db', height: 12 }} />
+      </View>
+      {/* 4지선다 */}
+      {q?.allChoices.map((choice, idx) => (
+        <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 3 }}>
+          <View style={{
+            width: 12,
+            height: 12,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: '#d1d5db',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 4,
+            marginTop: 1
+          }}>
+            <Text style={{ fontSize: 6, color: '#6b7280' }}>{idx + 1}</Text>
+          </View>
+          <Text style={{ fontSize: 7, color: '#374151', flex: 1 }}>{choice.definition}</Text>
+        </View>
+      ))}
+    </>
+  );
+
+  return (
+    <View style={styles.testRow} wrap={false}>
+      <View style={styles.testCol}>
+        {renderTestContent(leftQ, left)}
+      </View>
+      {right ? (
+        <View style={styles.testColRight}>
+          {renderTestContent(rightQ, right)}
+        </View>
+      ) : (
+        <View style={styles.testColRight} />
+      )}
+    </View>
+  );
+};
+
+// ===== 동의어 답지 컴포넌트 =====
+const VocabularyAnswerRowPDF = ({ left, right, allData, unitNumber }: {
+  left: VocabularyItem;
+  right: VocabularyItem | null;
+  allData: VocabularyItem[];
+  unitNumber?: number;
+}) => {
+  const questions = generateTestQuestions(allData, unitNumber);
   const leftQ = questions.find(q => q.id === left.id);
   const rightQ = right ? questions.find(q => q.id === right.id) : null;
 
@@ -897,35 +976,72 @@ const VocabularyAnswerRowPDF = ({ left, right, allData }: {
   );
 };
 
-// ===== 영영정의 답지 컴포넌트 =====
-const VocabularyDefAnswerRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
-  <View style={styles.testRow} wrap={false}>
-    <View style={styles.testCol}>
+// ===== 영영정의 답지 컴포넌트 (4지선다 정답 표시) =====
+const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber }: {
+  left: VocabularyItem;
+  right: VocabularyItem | null;
+  allData: VocabularyItem[];
+  unitNumber?: number;
+}) => {
+  const questions = generateDefinitionTestQuestions(allData, unitNumber);
+  const leftQ = questions.find(q => q.id === left.id);
+  const rightQ = right ? questions.find(q => q.id === right.id) : null;
+
+  const renderAnswerContent = (q: typeof leftQ, item: VocabularyItem) => (
+    <>
       <View style={styles.testHeader}>
         <View style={styles.idBadgeContainer}>
-          <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+          <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
         </View>
+        <Text style={styles.testWord}>{item.word}</Text>
       </View>
-      {left.definition && <Text style={styles.defTestDefinition}>{left.definition}</Text>}
-      <Text style={styles.answerCorrect}>{left.word}</Text>
-      <Text style={styles.simpleMeaning}>{left.meaning}</Text>
-    </View>
-    {right ? (
-      <View style={styles.testColRight}>
-        <View style={styles.testHeader}>
-          <View style={styles.idBadgeContainer}>
-            <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+      {/* 뜻 */}
+      <Text style={styles.answerMeaningLabel}>뜻: {item.meaning}</Text>
+      {/* 4지선다 정답/오답 표시 */}
+      {q?.allChoices.map((choice, idx) => (
+        <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 }}>
+          <View style={{
+            width: 12,
+            height: 12,
+            borderRadius: 6,
+            borderWidth: 1,
+            borderColor: choice.isCorrect ? '#3b82f6' : '#d1d5db',
+            backgroundColor: choice.isCorrect ? '#eff6ff' : '#ffffff',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginRight: 4,
+            marginTop: 1
+          }}>
+            <Text style={{ fontSize: 6, color: choice.isCorrect ? '#3b82f6' : '#6b7280', fontWeight: choice.isCorrect ? 700 : 400 }}>{idx + 1}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 7, color: choice.isCorrect ? '#3b82f6' : '#6b7280', fontWeight: choice.isCorrect ? 700 : 400 }}>
+              {choice.definition}
+            </Text>
+            {!choice.isCorrect && choice.sourceWord && (
+              <Text style={{ fontSize: 6, color: '#9ca3af' }}>({choice.sourceWord})</Text>
+            )}
           </View>
         </View>
-        {right.definition && <Text style={styles.defTestDefinition}>{right.definition}</Text>}
-        <Text style={styles.answerCorrect}>{right.word}</Text>
-        <Text style={styles.simpleMeaning}>{right.meaning}</Text>
+      ))}
+    </>
+  );
+
+  return (
+    <View style={styles.testRow} wrap={false}>
+      <View style={styles.testCol}>
+        {renderAnswerContent(leftQ, left)}
       </View>
-    ) : (
-      <View style={styles.testColRight} />
-    )}
-  </View>
-);
+      {right ? (
+        <View style={styles.testColRight}>
+          {renderAnswerContent(rightQ, right)}
+        </View>
+      ) : (
+        <View style={styles.testColRight} />
+      )}
+    </View>
+  );
+};
 
 // 데이터를 2개씩 묶는 헬퍼 함수
 function pairData<T>(data: T[]): Array<{ left: T; right: T | null }> {
@@ -937,8 +1053,10 @@ function pairData<T>(data: T[]): Array<{ left: T; right: T | null }> {
 }
 
 // 메인 PDF 문서
-export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber, showPageNumber = true }: VocabularyPDFProps) => {
+export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber, showPageNumber = true, allData }: VocabularyPDFProps) => {
   const pairedData = pairData(data);
+  // 오답 선택지 생성용 전체 데이터 (allData가 없으면 data 사용)
+  const fullData = allData || data;
 
   // 콘텐츠 렌더링 함수
   const renderContent = () => {
@@ -958,22 +1076,22 @@ export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber,
 
       case 'test':
         return pairedData.map((pair, idx) => (
-          <VocabularyTestRowPDF key={idx} left={pair.left} right={pair.right} allData={data} />
+          <VocabularyTestRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} />
         ));
 
       case 'testDefinition':
         return pairedData.map((pair, idx) => (
-          <VocabularyDefTestRowPDF key={idx} left={pair.left} right={pair.right} />
+          <VocabularyDefTestRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} />
         ));
 
       case 'testAnswer':
         return pairedData.map((pair, idx) => (
-          <VocabularyAnswerRowPDF key={idx} left={pair.left} right={pair.right} allData={data} />
+          <VocabularyAnswerRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} />
         ));
 
       case 'testDefinitionAnswer':
         return pairedData.map((pair, idx) => (
-          <VocabularyDefAnswerRowPDF key={idx} left={pair.left} right={pair.right} />
+          <VocabularyDefAnswerRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} />
         ));
 
       case 'card':

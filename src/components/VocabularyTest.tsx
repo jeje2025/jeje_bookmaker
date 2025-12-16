@@ -35,19 +35,16 @@ interface TestQuestion {
   allChoices: Array<{ word: string; isCorrect: boolean; meaning?: string }>;
 }
 
-// seed 기반 랜덤 함수 (일관된 셔플을 위해)
-function seededRandom(seed: number): () => number {
-  return function() {
-    seed = (seed * 9301 + 49297) % 233280;
-    return seed / 233280;
-  };
+// seed 기반 랜덤 함수 (PDF와 동일)
+function seededRandom(seed: number): number {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
 }
 
 function seededShuffle<T>(array: T[], seed: number): T[] {
   const result = [...array];
-  const random = seededRandom(seed);
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
+    const j = Math.floor(seededRandom(seed + i) * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
@@ -71,8 +68,9 @@ export function VocabularyTest({ data, headerInfo, unitNumber }: VocabularyTestP
         });
       }
 
-      // seed 기반으로 오답 선택 (item.id를 seed로 사용)
-      const shuffledDistractors = seededShuffle(distractors, item.id);
+      // seed 기반으로 오답 선택 (item.id와 unitNumber를 seed로 사용)
+      const baseSeed = (unitNumber || 0) * 10000 + item.id;
+      const shuffledDistractors = seededShuffle(distractors, baseSeed);
       const selectedDistractors = shuffledDistractors.slice(0, 4);
 
       // 정답과 오답 합치기
@@ -82,7 +80,7 @@ export function VocabularyTest({ data, headerInfo, unitNumber }: VocabularyTestP
       ];
 
       // seed 기반으로 섞기
-      const shuffledChoices = seededShuffle(allChoices, item.id + 1000);
+      const shuffledChoices = seededShuffle(allChoices, baseSeed * 1000);
 
       return {
         id: item.id,
