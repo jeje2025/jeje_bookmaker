@@ -1044,26 +1044,56 @@ export default function App() {
 
       {/* PDF 로딩 모달 */}
       {isPDFLoading && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <div style={{ width: '320px', backgroundColor: 'white', borderRadius: '8px', padding: '20px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-2 text-center sm:text-left">
-                <h2 className="text-lg leading-none font-semibold">PDF 생성 중</h2>
-                <p className="text-muted-foreground text-sm">
-                  {pdfProgress.message || `${vocabularyList.length}개 단어를 처리하고 있습니다`}
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <div style={{
+            width: '320px',
+            backgroundColor: 'white',
+            borderRadius: '8px',
+            padding: '20px',
+            border: '1px solid var(--badge-border, #e5e7eb)',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+          }}>
+            {/* 상단 뱃지 */}
+            <div className="flex justify-center mb-4">
+              <div
+                className="inline-flex items-center justify-center px-3 py-1 rounded-full"
+                style={{
+                  backgroundColor: 'var(--badge-bg, #f1f5f9)',
+                  boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)'
+                }}
+              >
+                <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: '10px', color: 'var(--badge-text, #475569)' }}>
+                  PDF
                 </p>
               </div>
-              {/* 진행률 바 */}
-              <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className="bg-slate-800 h-full rounded-full transition-all duration-300 ease-out"
-                  style={{ width: `${pdfProgress.progress}%` }}
-                />
-              </div>
-              <p className="text-slate-800 font-semibold text-center">
-                {pdfProgress.progress}%
-              </p>
             </div>
+
+            {/* 제목 */}
+            <h2 className="text-center mb-1" style={{ fontSize: '18px', fontWeight: 'bold', color: 'var(--badge-text, #000)' }}>
+              PDF 생성 중
+            </h2>
+            <p className="text-gray-500 text-xs text-center mb-4">
+              {pdfProgress.message || `${vocabularyList.length}개 단어를 처리하고 있습니다`}
+            </p>
+
+            {/* 진행률 바 */}
+            <div
+              className="w-full h-2 rounded-full overflow-hidden mb-2"
+              style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)' }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-300 ease-out"
+                style={{
+                  width: `${pdfProgress.progress}%`,
+                  backgroundColor: 'var(--badge-text, #475569)'
+                }}
+              />
+            </div>
+
+            {/* 퍼센트 */}
+            <p className="text-center font-semibold" style={{ fontSize: '13px', color: 'var(--badge-text, #475569)' }}>
+              {pdfProgress.progress}%
+            </p>
           </div>
         </div>
       )}
