@@ -37,40 +37,57 @@ interface TestQuestion {
 }
 
 export function VocabularyTestDefinition({ data, headerInfo, unitNumber }: VocabularyTestDefinitionProps) {
+  // 시드 기반 랜덤 함수 (일관된 결과를 위해)
+  const seededRandom = (seed: number) => {
+    const x = Math.sin(seed) * 10000;
+    return x - Math.floor(x);
+  };
+
+  // 시드 기반 셔플 함수
+  const seededShuffle = <T,>(array: T[], seed: number): T[] => {
+    const result = [...array];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(seededRandom(seed + i) * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
+  };
+
   // 영영정의 테스트 문제 생성
   const generateTestQuestions = (): TestQuestion[] => {
     return data.map((item) => {
       const correctDefinition = item.definition || '';
       const distractors: Array<{ definition: string; sourceWord: string }> = [];
-      
+
       // 다른 단어들의 영영정의에서 오답 선택지 생성
       const otherWords = data.filter(d => d.id !== item.id && d.definition);
       for (const other of otherWords) {
         if (other.definition) {
-          distractors.push({ 
-            definition: other.definition, 
-            sourceWord: other.word 
+          distractors.push({
+            definition: other.definition,
+            sourceWord: other.word
           });
         }
       }
-      
-      // 랜덤하게 오답 선택 (3개)
-      const shuffledDistractors = distractors.sort(() => Math.random() - 0.5);
+
+      // 시드 기반으로 오답 선택 (3개) - item.id와 unitNumber를 시드로 사용
+      const baseSeed = (unitNumber || 0) * 10000 + item.id;
+      const shuffledDistractors = seededShuffle(distractors, baseSeed);
       const selectedDistractors = shuffledDistractors.slice(0, 3);
-      
+
       // 정답과 오답 합치기
       const allChoices = [
         { definition: correctDefinition, isCorrect: true },
-        ...selectedDistractors.map(d => ({ 
-          definition: d.definition, 
-          isCorrect: false, 
-          sourceWord: d.sourceWord 
+        ...selectedDistractors.map(d => ({
+          definition: d.definition,
+          isCorrect: false,
+          sourceWord: d.sourceWord
         }))
       ];
-      
-      // 섞기
-      const shuffledChoices = allChoices.sort(() => Math.random() - 0.5);
-      
+
+      // 시드 기반으로 섞기 - baseSeed * 1000을 시드로 사용
+      const shuffledChoices = seededShuffle(allChoices, baseSeed * 1000);
+
       return {
         id: item.id,
         word: item.word,
