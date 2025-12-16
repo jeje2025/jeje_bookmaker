@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from './components/ui/button';
-import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image } from 'lucide-react';
-import { type PaletteKey, pantoneColors } from './components/ColorPaletteSelector';
-import { FloatingMenu } from './components/FloatingMenu';
+import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image, Save, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { type PaletteKey, pantoneColors, ColorPaletteSelector } from './components/ColorPaletteSelector';
+import { UnitSplitButton } from './components/UnitSplitButton';
 import { VocabularyCover } from './components/VocabularyCover';
 import { VocabularyInput } from './components/VocabularyInput';
 import { VocabularyView } from './components/VocabularyView';
@@ -222,6 +222,7 @@ export default function App() {
   const [unitSize, setUnitSize] = useState<number | null>(null); // 유닛당 단어 수 (null = 분할 안 함)
   const [currentUnit, setCurrentUnit] = useState<number>(1); // 현재 보고 있는 유닛 번호
   const [colorPalette, setColorPalette] = useState<PaletteKey>('default'); // 배경색 팔레트
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // 사이드바 접기
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -629,11 +630,22 @@ export default function App() {
   return (
     <div className="flex h-screen bg-gray-50 print:bg-white print:block overflow-hidden">
       {/* Left Sidebar - 단어 입력창 - 인쇄 시 숨김 */}
-      <div className="w-[420px] bg-white border-r border-gray-200 flex flex-col print:hidden overflow-hidden flex-shrink-0">
+      <div
+        className="bg-white border-r border-gray-200 flex flex-col print:hidden overflow-hidden flex-shrink-0 transition-all duration-300"
+        style={{ width: isSidebarCollapsed ? 0 : 420, minWidth: isSidebarCollapsed ? 0 : 420, borderRightWidth: isSidebarCollapsed ? 0 : 1 }}
+      >
         {/* 헤더 - 고정, 높이 정확히 맞춤 */}
-        <div className="px-6 border-b border-gray-200 flex-shrink-0" style={{ height: '73px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div className="px-6 border-b border-gray-200 flex-shrink-0 relative" style={{ height: '73px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
           <h1 className="text-slate-800">단어장 생성기</h1>
           <p className="text-slate-500 text-xs mt-1">크롬 권장 · Made By 제제샘</p>
+          {/* 접기 버튼 */}
+          <button
+            onClick={() => setIsSidebarCollapsed(true)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+            title="사이드바 접기"
+          >
+            <PanelLeftClose size={18} />
+          </button>
         </div>
 
         {/* 단어 입력 + 최근 생성 영역 - 함께 스크롤 */}
@@ -699,6 +711,17 @@ export default function App() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar - 인쇄 시 숨김, 한 줄로 표시 */}
         <div className="bg-white border-b border-gray-200 px-3 py-2 print:hidden flex-shrink-0 flex items-center gap-2 overflow-x-auto">
+          {/* 사이드바 펼치기 버튼 - 접혀있을 때만 표시 */}
+          {isSidebarCollapsed && (
+            <button
+              onClick={() => setIsSidebarCollapsed(false)}
+              className="shrink-0 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded transition-colors"
+              title="사이드바 펼치기"
+            >
+              <PanelLeft size={18} />
+            </button>
+          )}
+
           <button
             onClick={() => setViewMode('card')}
             className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
@@ -844,6 +867,50 @@ export default function App() {
               </SelectContent>
             </Select>
           )}
+
+          {/* 구분선 */}
+          <div className="h-4 w-px bg-slate-200 mx-1 shrink-0" />
+
+          {/* 유닛 분할 */}
+          <div className="shrink-0">
+            <UnitSplitButton
+              totalWords={totalWords}
+              currentUnitSize={unitSize}
+              onApply={handleUnitApply}
+              onReset={handleUnitReset}
+            />
+          </div>
+
+          {/* 컬러 팔레트 */}
+          <div className="shrink-0">
+            <ColorPaletteSelector
+              currentPalette={colorPalette}
+              onPaletteChange={setColorPalette}
+            />
+          </div>
+
+          {/* 구분선 */}
+          <div className="h-4 w-px bg-slate-200 mx-1 shrink-0" />
+
+          {/* PDF 저장 */}
+          <Button
+            onClick={handleSavePDFClick}
+            disabled={isPDFLoading}
+            className="shrink-0 bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 h-8 px-3 text-xs"
+            size="sm"
+          >
+            <Save size={14} />
+            {isPDFLoading ? '생성 중...' : 'PDF 저장'}
+          </Button>
+
+          {/* 관리자 버튼 */}
+          <button
+            onClick={handleAdminClick}
+            className="shrink-0 p-1.5 text-slate-400 hover:text-slate-600 transition-colors rounded hover:bg-slate-100"
+            title="관리자"
+          >
+            <Settings size={14} />
+          </button>
         </div>
 
         {/* Preview Area */}
@@ -901,19 +968,6 @@ export default function App() {
           </div>
         </div>
       </div>
-
-      {/* 플로팅 메뉴 */}
-      <FloatingMenu
-        totalWords={totalWords}
-        currentUnitSize={unitSize}
-        onUnitApply={handleUnitApply}
-        onUnitReset={handleUnitReset}
-        colorPalette={colorPalette}
-        onColorPaletteChange={setColorPalette}
-        onSavePDF={handleSavePDFClick}
-        isPDFLoading={isPDFLoading}
-        onAdminClick={handleAdminClick}
-      />
 
       {/* 관리자 대시보드 */}
       {isAdminOpen && (
