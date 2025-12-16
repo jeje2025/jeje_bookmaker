@@ -684,7 +684,7 @@ type DynamicStyles = ReturnType<typeof createDynamicStyles>;
 
 // ===== 카드 컴포넌트 =====
 const VocabularyCardPDF = ({ item, dynamicStyles, textColor }: { item: VocabularyItem; dynamicStyles: DynamicStyles; textColor: string }) => (
-  <View style={styles.card} wrap={false}>
+  <View style={dynamicStyles.cardDynamic} wrap={false}>
     {/* Top section */}
     <View style={styles.cardTop}>
       {/* Left: Word */}
@@ -1243,16 +1243,16 @@ const createDynamicStyles = (palette: PaletteColors) => {
       marginBottom: 1.5,
       letterSpacing: -0.2,
     },
-    // 발음기호 (동적 팔레트 - borderColor 사용)
+    // 발음기호 (원래 회색)
     pronunciationDynamic: {
       fontSize: 8,
-      color: borderColor,
+      color: '#9ca3af',
       marginTop: -1,
     },
-    // 발음기호 테이블용 (동적 팔레트 - borderColor 사용)
+    // 발음기호 테이블용 (원래 회색)
     pronunciationTableDynamic: {
       fontSize: 7,
-      color: borderColor,
+      color: '#9ca3af',
       marginTop: -1,
     },
     // 체크박스 (동적 팔레트 - borderColor 사용)
@@ -1261,6 +1261,18 @@ const createDynamicStyles = (palette: PaletteColors) => {
       height: 6,
       borderWidth: 1,
       borderColor: borderColor,
+    },
+    // 카드 테두리 (동적 팔레트 - borderColor 사용)
+    cardDynamic: {
+      borderWidth: 1,
+      borderColor: borderColor,
+      borderRadius: 6,
+      backgroundColor: '#ffffff',
+      paddingTop: 10,
+      paddingBottom: 10,
+      paddingLeft: 14,
+      paddingRight: 14,
+      marginBottom: 10,
     },
   });
 };

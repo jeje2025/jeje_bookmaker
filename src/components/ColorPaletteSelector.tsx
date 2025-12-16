@@ -24,7 +24,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#f1f5f9',           // slate-100
     badgeBgOpacity: 0.5,
     badgeText: '#475569',         // slate-600
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#cbd5e1',       // slate-300
     badgeBorderOpacity: 0.5,
   },
@@ -33,7 +33,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#dbeafe',           // blue-100
     badgeBgOpacity: 0.5,
     badgeText: '#1e40af',         // blue-800
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#93c5fd',       // blue-300
     badgeBorderOpacity: 0.5,
   },
@@ -42,7 +42,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#ffe4e6',           // rose-100
     badgeBgOpacity: 0.5,
     badgeText: '#be123c',         // rose-700
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#fda4af',       // rose-300
     badgeBorderOpacity: 0.5,
   },
@@ -51,7 +51,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#ede9fe',           // violet-100
     badgeBgOpacity: 0.5,
     badgeText: '#6d28d9',         // violet-700
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#c4b5fd',       // violet-300
     badgeBorderOpacity: 0.5,
   },
@@ -60,7 +60,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#dcfce7',           // green-100
     badgeBgOpacity: 0.5,
     badgeText: '#15803d',         // green-700
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#86efac',       // green-300
     badgeBorderOpacity: 0.5,
   },
@@ -69,7 +69,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#ffedd5',           // orange-100
     badgeBgOpacity: 0.5,
     badgeText: '#c2410c',         // orange-700
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#fdba74',       // orange-300
     badgeBorderOpacity: 0.5,
   },
@@ -78,7 +78,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#fce7f3',           // pink-100
     badgeBgOpacity: 0.5,
     badgeText: '#be185d',         // pink-700
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#f9a8d4',       // pink-300
     badgeBorderOpacity: 0.5,
   },
@@ -87,7 +87,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#fef3c7',           // amber-100
     badgeBgOpacity: 0.5,
     badgeText: '#92400e',         // amber-800
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#fcd34d',       // amber-300
     badgeBorderOpacity: 0.5,
   },
@@ -96,7 +96,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#e0e7ff',           // indigo-100
     badgeBgOpacity: 0.5,
     badgeText: '#3730a3',         // indigo-800
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#a5b4fc',       // indigo-300
     badgeBorderOpacity: 0.5,
   },
@@ -105,7 +105,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#fee2e2',           // red-100
     badgeBgOpacity: 0.5,
     badgeText: '#991b1b',         // red-800
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#fca5a5',       // red-300
     badgeBorderOpacity: 0.5,
   },
@@ -114,7 +114,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#ccfbf1',           // teal-100
     badgeBgOpacity: 0.5,
     badgeText: '#0f766e',         // teal-700
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#5eead4',       // teal-300
     badgeBorderOpacity: 0.5,
   },
@@ -123,7 +123,7 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
     badgeBg: '#cffafe',           // cyan-100
     badgeBgOpacity: 0.5,
     badgeText: '#0e7490',         // cyan-700
-    badgeTextOpacity: 0.7,
+    badgeTextOpacity: 0.8,
     badgeBorder: '#67e8f9',       // cyan-300
     badgeBorderOpacity: 0.5,
   },

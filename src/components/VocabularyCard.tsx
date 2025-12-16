@@ -73,13 +73,14 @@ const VocabularyCardComponent = ({
   };
 
   return (
-    <div 
-      className="vocabulary-card border border-gray-200/60 rounded-lg bg-white/80 backdrop-blur-sm py-3 pl-4 pr-8 mb-3 shadow-sm"
+    <div
+      className="vocabulary-card rounded-lg bg-white/80 backdrop-blur-sm py-3 pl-4 pr-8 mb-3 shadow-sm"
       style={{
         pageBreakInside: 'avoid',
         breakInside: 'avoid',
         overflow: 'visible',
-        marginBottom: '12px'
+        marginBottom: '12px',
+        border: '1px solid var(--badge-border, #e5e7eb)'
       }}
     >
       <div style={{ overflow: 'visible' }}>
@@ -106,13 +107,14 @@ const VocabularyCardComponent = ({
               )}
             </h2>
             {pronunciation && (
-              <p style={{ fontSize: '10px', marginTop: '-2px', color: 'var(--badge-border, #9ca3af)' }}>
+              <p className="text-gray-400" style={{ fontSize: '10px', marginTop: '-2px' }}>
                 {isEditable ? (
                   <EditableText
                     value={pronunciation}
                     onChange={(val) => onUpdate?.(id, 'pronunciation', val)}
                     isEditable={true}
-                    style={{ fontSize: '10px', color: 'var(--badge-border, #9ca3af)' }}
+                    className="text-gray-400"
+                    style={{ fontSize: '10px' }}
                   />
                 ) : (
                   pronunciation
