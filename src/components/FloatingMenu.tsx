@@ -34,7 +34,15 @@ export function FloatingMenu({
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <div className="fixed right-8 bottom-2 z-40 print:hidden flex items-end gap-2">
+    <div
+      className="print:hidden flex items-end gap-2"
+      style={{
+        position: 'fixed',
+        right: '2rem',
+        bottom: '0.5rem',
+        zIndex: 40
+      }}
+    >
       {/* 메뉴 패널 - 버튼 왼쪽에 위치 */}
       <div
         className={`transition-all duration-300 ${
