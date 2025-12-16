@@ -35,7 +35,7 @@ export function FloatingMenu({
 
   return (
     <div
-      className="print:hidden flex items-end gap-2"
+      className="flex items-end gap-2"
       style={{
         position: 'fixed',
         right: '2rem',
