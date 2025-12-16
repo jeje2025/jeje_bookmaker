@@ -493,6 +493,61 @@ interface VocabularyItem {
   etymology: string;
 }
 
+// 예문에서 표제어를 찾아 bold로 렌더링하는 헬퍼 함수 (highlightColor 옵션 추가)
+const renderHighlightedExample = (text: string, wordToHighlight: string, textStyle: any, highlightColor?: string) => {
+  const lowerText = text.toLowerCase();
+  const lowerWord = wordToHighlight.toLowerCase();
+  const index = lowerText.indexOf(lowerWord);
+
+  if (index === -1) {
+    return <Text style={textStyle}>{text}</Text>;
+  }
+
+  const before = text.substring(0, index);
+  const match = text.substring(index, index + wordToHighlight.length);
+  const after = text.substring(index + wordToHighlight.length);
+
+  const highlightStyle = highlightColor
+    ? { fontWeight: 700 as const, color: highlightColor }
+    : { fontWeight: 700 as const };
+
+  return (
+    <Text style={textStyle}>
+      {before}
+      <Text style={highlightStyle}>{match}</Text>
+      {after}
+    </Text>
+  );
+};
+
+// 번역에서 특정 문구를 bold로 렌더링하는 헬퍼 함수 (highlightColor 옵션 추가)
+const renderHighlightedTranslation = (text: string, highlightText: string | undefined, textStyle: any, highlightColor?: string) => {
+  if (!highlightText) {
+    return <Text style={textStyle}>{text}</Text>;
+  }
+
+  const index = text.indexOf(highlightText);
+  if (index === -1) {
+    return <Text style={textStyle}>{text}</Text>;
+  }
+
+  const before = text.substring(0, index);
+  const match = highlightText;
+  const after = text.substring(index + highlightText.length);
+
+  const highlightStyle = highlightColor
+    ? { fontWeight: 700 as const, color: highlightColor }
+    : { fontWeight: 700 as const };
+
+  return (
+    <Text style={textStyle}>
+      {before}
+      <Text style={highlightStyle}>{match}</Text>
+      {after}
+    </Text>
+  );
+};
+
 interface HeaderInfo {
   headerTitle: string;
   headerDescription: string;
@@ -506,6 +561,7 @@ interface PaletteColors {
   badgeBg: string;           // HEX 색상
   badgeBgOpacity: number;    // 배경 투명도
   badgeText: string;         // HEX 색상
+  badgeTextOpacity: number;  // 텍스트 투명도
   badgeBorder: string;       // HEX 색상
   badgeBorderOpacity: number; // 테두리 투명도
 }
@@ -513,8 +569,9 @@ interface PaletteColors {
 // 기본 팔레트 (슬레이트)
 const defaultPalette: PaletteColors = {
   badgeBg: '#f1f5f9',
-  badgeBgOpacity: 0.9,
+  badgeBgOpacity: 0.5,
   badgeText: '#475569',
+  badgeTextOpacity: 0.7,
   badgeBorder: '#cbd5e1',
   badgeBorderOpacity: 0.5,
 };
@@ -626,7 +683,7 @@ function generateDefinitionTestQuestions(data: VocabularyItem[], unitNumber?: nu
 type DynamicStyles = ReturnType<typeof createDynamicStyles>;
 
 // ===== 카드 컴포넌트 =====
-const VocabularyCardPDF = ({ item, dynamicStyles }: { item: VocabularyItem; dynamicStyles: DynamicStyles }) => (
+const VocabularyCardPDF = ({ item, dynamicStyles, textColor }: { item: VocabularyItem; dynamicStyles: DynamicStyles; textColor: string }) => (
   <View style={styles.card} wrap={false}>
     {/* Top section */}
     <View style={styles.cardTop}>
@@ -635,9 +692,9 @@ const VocabularyCardPDF = ({ item, dynamicStyles }: { item: VocabularyItem; dyna
         <View style={dynamicStyles.idBadgeContainerDynamic}>
           <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
         </View>
-        <Text style={styles.word}>{item.word}</Text>
+        <Text style={dynamicStyles.wordDynamic}>{item.word}</Text>
         {item.pronunciation && (
-          <Text style={{ fontSize: 8, color: '#9ca3af', marginTop: -1 }}>{item.pronunciation}</Text>
+          <Text style={dynamicStyles.pronunciationDynamic}>{item.pronunciation}</Text>
         )}
       </View>
 
@@ -654,14 +711,14 @@ const VocabularyCardPDF = ({ item, dynamicStyles }: { item: VocabularyItem; dyna
             )}
           </View>
           <View style={styles.exampleContainer}>
-            <Text style={styles.example}>{item.example}</Text>
-            <Text style={styles.translation}>{item.translation}</Text>
+            {renderHighlightedExample(item.example, item.word, styles.example, textColor)}
+            {renderHighlightedTranslation(item.translation, item.translationHighlight, styles.translation, textColor)}
           </View>
         </View>
         <View style={styles.checkboxContainer}>
-          <View style={styles.checkbox} />
-          <View style={styles.checkbox} />
-          <View style={styles.checkbox} />
+          <View style={dynamicStyles.checkboxDynamic} />
+          <View style={dynamicStyles.checkboxDynamic} />
+          <View style={dynamicStyles.checkboxDynamic} />
         </View>
       </View>
     </View>
@@ -707,7 +764,7 @@ const VocabularyCardPDF = ({ item, dynamicStyles }: { item: VocabularyItem; dyna
 );
 
 // ===== 표버전 컴포넌트 =====
-const VocabularyTableRowPDF = ({ item, dynamicStyles }: { item: VocabularyItem; dynamicStyles: DynamicStyles }) => (
+const VocabularyTableRowPDF = ({ item, dynamicStyles, textColor }: { item: VocabularyItem; dynamicStyles: DynamicStyles; textColor: string }) => (
   <View style={styles.tableRow} wrap={false}>
     <View style={styles.tableColId}>
       <View style={dynamicStyles.idBadgeContainerDynamic}>
@@ -715,9 +772,9 @@ const VocabularyTableRowPDF = ({ item, dynamicStyles }: { item: VocabularyItem; 
       </View>
     </View>
     <View style={styles.tableColWord}>
-      <Text style={styles.tableWord}>{item.word}</Text>
+      <Text style={[styles.tableWord, { color: textColor }]}>{item.word}</Text>
       {item.pronunciation && (
-        <Text style={{ fontSize: 7, color: '#9ca3af', marginTop: -1 }}>{item.pronunciation}</Text>
+        <Text style={dynamicStyles.pronunciationTableDynamic}>{item.pronunciation}</Text>
       )}
       {item.derivatives.map((der, idx) => (
         <View key={idx} style={styles.tableDerivative}>
@@ -731,8 +788,8 @@ const VocabularyTableRowPDF = ({ item, dynamicStyles }: { item: VocabularyItem; 
     <View style={styles.tableColMeaning}>
       <Text style={styles.tableMeaning}>{item.meaning}</Text>
       {item.definition && <Text style={styles.tableDefinition}>{item.definition}</Text>}
-      <Text style={styles.tableExample}>{item.example}</Text>
-      <Text style={styles.tableTranslation}>{item.translation}</Text>
+      {renderHighlightedExample(item.example, item.word, styles.tableExample, textColor)}
+      {renderHighlightedTranslation(item.translation, item.translationHighlight, styles.tableTranslation, textColor)}
     </View>
     <View style={styles.tableColSyn}>
       <View style={dynamicStyles.infoBadgeContainerDynamic}>
@@ -1100,6 +1157,7 @@ const createDynamicStyles = (palette: PaletteColors) => {
   // 흰색 배경에 혼합된 불투명 색상으로 투명도 시뮬레이션
   const bgColor = blendWithWhite(palette.badgeBg, palette.badgeBgOpacity);
   const borderColor = blendWithWhite(palette.badgeBorder, palette.badgeBorderOpacity);
+  const textColor = blendWithWhite(palette.badgeText, palette.badgeTextOpacity);
 
   return StyleSheet.create({
     // 헤더 타이틀 (동적 팔레트)
@@ -1108,7 +1166,7 @@ const createDynamicStyles = (palette: PaletteColors) => {
       fontWeight: 700,
       textTransform: 'uppercase',
       letterSpacing: 1.5,
-      color: palette.badgeText,
+      color: textColor,
       backgroundColor: bgColor,
       paddingHorizontal: 12,
       paddingVertical: 5,
@@ -1138,7 +1196,7 @@ const createDynamicStyles = (palette: PaletteColors) => {
     idBadgeDynamic: {
       fontSize: 6,
       fontWeight: 700,
-      color: palette.badgeText,
+      color: textColor,
       textAlign: 'center',
     },
     // 정보 배지 컨테이너 (동, 반, Tip) (동적 팔레트)
@@ -1159,7 +1217,7 @@ const createDynamicStyles = (palette: PaletteColors) => {
     infoBadgeDynamic: {
       fontSize: 6,
       fontWeight: 700,
-      color: palette.badgeText,
+      color: textColor,
       textAlign: 'center',
     },
     // Unit 배지 (동적 팔레트)
@@ -1168,13 +1226,40 @@ const createDynamicStyles = (palette: PaletteColors) => {
       top: 0,
       left: 0,
       fontSize: 8,
-      color: palette.badgeText,
+      color: textColor,
       backgroundColor: bgColor,
       paddingHorizontal: 8,
       paddingVertical: 3,
       borderRadius: 4,
       fontWeight: 700,
       borderWidth: 0.5,
+      borderColor: borderColor,
+    },
+    // 단어 (동적 팔레트)
+    wordDynamic: {
+      fontSize: 16,
+      fontWeight: 700,
+      color: textColor,
+      marginBottom: 1.5,
+      letterSpacing: -0.2,
+    },
+    // 발음기호 (동적 팔레트 - borderColor 사용)
+    pronunciationDynamic: {
+      fontSize: 8,
+      color: borderColor,
+      marginTop: -1,
+    },
+    // 발음기호 테이블용 (동적 팔레트 - borderColor 사용)
+    pronunciationTableDynamic: {
+      fontSize: 7,
+      color: borderColor,
+      marginTop: -1,
+    },
+    // 체크박스 (동적 팔레트 - borderColor 사용)
+    checkboxDynamic: {
+      width: 6,
+      height: 6,
+      borderWidth: 1,
       borderColor: borderColor,
     },
   });
@@ -1189,12 +1274,14 @@ export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber,
   const palette = paletteColors || defaultPalette;
   // 동적 스타일 생성
   const dynamicStyles = createDynamicStyles(palette);
+  // 텍스트 색상 (문장 내 단어 하이라이트용)
+  const textColor = blendWithWhite(palette.badgeText, palette.badgeTextOpacity);
 
   // 콘텐츠 렌더링 함수
   const renderContent = () => {
     switch (viewMode) {
       case 'table':
-        return data.map((item) => <VocabularyTableRowPDF key={item.id} item={item} dynamicStyles={dynamicStyles} />);
+        return data.map((item) => <VocabularyTableRowPDF key={item.id} item={item} dynamicStyles={dynamicStyles} textColor={textColor} />);
 
       case 'tableSimple':
         return pairedData.map((pair, idx) => (
@@ -1228,7 +1315,7 @@ export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber,
 
       case 'card':
       default:
-        return data.map((item) => <VocabularyCardPDF key={item.id} item={item} dynamicStyles={dynamicStyles} />);
+        return data.map((item) => <VocabularyCardPDF key={item.id} item={item} dynamicStyles={dynamicStyles} textColor={textColor} />);
     }
   };
 

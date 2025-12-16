@@ -50,7 +50,7 @@ const VocabularyCardComponent = ({
     return (
       <>
         {text.substring(0, index)}
-        <span style={{ fontWeight: 'bold' }}>{text.substring(index, index + wordToHighlight.length)}</span>
+        <span style={{ fontWeight: 'bold', color: 'var(--badge-text)' }}>{text.substring(index, index + wordToHighlight.length)}</span>
         {text.substring(index + wordToHighlight.length)}
       </>
     );
@@ -66,7 +66,7 @@ const VocabularyCardComponent = ({
     return (
       <>
         {text.substring(0, index)}
-        <span style={{ fontWeight: 'bold' }}>{highlightText}</span>
+        <span style={{ fontWeight: 'bold', color: 'var(--badge-text)' }}>{highlightText}</span>
         {text.substring(index + highlightText.length)}
       </>
     );
@@ -92,28 +92,27 @@ const VocabularyCardComponent = ({
                 {String(id).padStart(3, '0')}
               </p>
             </div>
-            <h2 className="text-black mb-0.5 tracking-tight" style={{ fontSize: '22px', fontWeight: 'bold' }}>
+            <h2 className="mb-0.5 tracking-tight" style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--badge-text, #000)' }}>
               {isEditable ? (
                 <EditableText
                   value={word}
                   onChange={(val) => onUpdate?.(id, 'word', val)}
                   isEditable={true}
-                  className="text-black tracking-tight"
-                  style={{ fontSize: '22px', fontWeight: 'bold' }}
+                  className="tracking-tight"
+                  style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--badge-text, #000)' }}
                 />
               ) : (
                 word
               )}
             </h2>
             {pronunciation && (
-              <p className="text-gray-400" style={{ fontSize: '10px', marginTop: '-2px' }}>
+              <p style={{ fontSize: '10px', marginTop: '-2px', color: 'var(--badge-border, #9ca3af)' }}>
                 {isEditable ? (
                   <EditableText
                     value={pronunciation}
                     onChange={(val) => onUpdate?.(id, 'pronunciation', val)}
                     isEditable={true}
-                    className="text-gray-400"
-                    style={{ fontSize: '10px' }}
+                    style={{ fontSize: '10px', color: 'var(--badge-border, #9ca3af)' }}
                   />
                 ) : (
                   pronunciation
@@ -203,9 +202,9 @@ const VocabularyCardComponent = ({
 
             {/* Checkboxes */}
             <div className="flex gap-1.5 items-start">
-              <div className="w-2 h-2 border-gray-300" style={{ border: '1px solid #d1d5db' }}></div>
-              <div className="w-2 h-2 border-gray-300" style={{ border: '1px solid #d1d5db' }}></div>
-              <div className="w-2 h-2 border-gray-300" style={{ border: '1px solid #d1d5db' }}></div>
+              <div className="w-2 h-2" style={{ border: '1px solid var(--badge-border, #d1d5db)' }}></div>
+              <div className="w-2 h-2" style={{ border: '1px solid var(--badge-border, #d1d5db)' }}></div>
+              <div className="w-2 h-2" style={{ border: '1px solid var(--badge-border, #d1d5db)' }}></div>
             </div>
           </div>
         </div>

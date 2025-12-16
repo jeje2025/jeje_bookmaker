@@ -12,6 +12,7 @@ interface PaletteColorInfo {
   badgeBg: string;       // HEX 색상
   badgeBgOpacity: number; // 배경 투명도
   badgeText: string;     // HEX 색상
+  badgeTextOpacity: number; // 텍스트 투명도
   badgeBorder: string;   // HEX 색상
   badgeBorderOpacity: number; // 테두리 투명도
 }
@@ -21,96 +22,108 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
   default: {
     name: '기본 (슬레이트)',
     badgeBg: '#f1f5f9',           // slate-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#475569',         // slate-600
+    badgeTextOpacity: 0.7,
     badgeBorder: '#cbd5e1',       // slate-300
     badgeBorderOpacity: 0.5,
   },
   'classic-blue': {
     name: 'Classic Blue',
     badgeBg: '#dbeafe',           // blue-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#1e40af',         // blue-800
+    badgeTextOpacity: 0.7,
     badgeBorder: '#93c5fd',       // blue-300
     badgeBorderOpacity: 0.5,
   },
   'living-coral': {
     name: 'Living Coral',
     badgeBg: '#ffe4e6',           // rose-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#be123c',         // rose-700
+    badgeTextOpacity: 0.7,
     badgeBorder: '#fda4af',       // rose-300
     badgeBorderOpacity: 0.5,
   },
   'ultra-violet': {
     name: 'Ultra Violet',
     badgeBg: '#ede9fe',           // violet-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#6d28d9',         // violet-700
+    badgeTextOpacity: 0.7,
     badgeBorder: '#c4b5fd',       // violet-300
     badgeBorderOpacity: 0.5,
   },
   greenery: {
     name: 'Greenery',
     badgeBg: '#dcfce7',           // green-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#15803d',         // green-700
+    badgeTextOpacity: 0.7,
     badgeBorder: '#86efac',       // green-300
     badgeBorderOpacity: 0.5,
   },
   'peach-fuzz': {
     name: 'Peach Fuzz',
     badgeBg: '#ffedd5',           // orange-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#c2410c',         // orange-700
+    badgeTextOpacity: 0.7,
     badgeBorder: '#fdba74',       // orange-300
     badgeBorderOpacity: 0.5,
   },
   'viva-magenta': {
     name: 'Viva Magenta',
     badgeBg: '#fce7f3',           // pink-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#be185d',         // pink-700
+    badgeTextOpacity: 0.7,
     badgeBorder: '#f9a8d4',       // pink-300
     badgeBorderOpacity: 0.5,
   },
   'mocha-mousse': {
     name: 'Mocha Mousse',
     badgeBg: '#fef3c7',           // amber-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#92400e',         // amber-800
+    badgeTextOpacity: 0.7,
     badgeBorder: '#fcd34d',       // amber-300
     badgeBorderOpacity: 0.5,
   },
   serenity: {
     name: 'Serenity',
     badgeBg: '#e0e7ff',           // indigo-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#3730a3',         // indigo-800
+    badgeTextOpacity: 0.7,
     badgeBorder: '#a5b4fc',       // indigo-300
     badgeBorderOpacity: 0.5,
   },
   marsala: {
     name: 'Marsala',
     badgeBg: '#fee2e2',           // red-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#991b1b',         // red-800
+    badgeTextOpacity: 0.7,
     badgeBorder: '#fca5a5',       // red-300
     badgeBorderOpacity: 0.5,
   },
   teal: {
     name: 'Teal',
     badgeBg: '#ccfbf1',           // teal-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#0f766e',         // teal-700
+    badgeTextOpacity: 0.7,
     badgeBorder: '#5eead4',       // teal-300
     badgeBorderOpacity: 0.5,
   },
   cyan: {
     name: 'Cyan',
     badgeBg: '#cffafe',           // cyan-100
-    badgeBgOpacity: 0.9,
+    badgeBgOpacity: 0.5,
     badgeText: '#0e7490',         // cyan-700
+    badgeTextOpacity: 0.7,
     badgeBorder: '#67e8f9',       // cyan-300
     badgeBorderOpacity: 0.5,
   },
@@ -200,7 +213,7 @@ export function applyPalette(paletteKey: PaletteKey) {
 
   // 뱃지 색상 CSS 변수 설정 (RGBA로 변환)
   root.style.setProperty('--badge-bg', hexToRgba(palette.badgeBg, palette.badgeBgOpacity));
-  root.style.setProperty('--badge-text', palette.badgeText);
+  root.style.setProperty('--badge-text', hexToRgba(palette.badgeText, palette.badgeTextOpacity));
   root.style.setProperty('--badge-border', hexToRgba(palette.badgeBorder, palette.badgeBorderOpacity));
   root.setAttribute('data-palette', paletteKey);
 }
