@@ -1,6 +1,6 @@
 import { pdf } from '@react-pdf/renderer';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { VocabularyPDF } from '../components/VocabularyPDF';
+import { VocabularyPDF, type PaletteColors } from '../components/VocabularyPDF';
 import { createElement } from 'react';
 
 interface VocabularyItem {
@@ -60,7 +60,8 @@ async function generateChunkPDF(
   viewMode: ViewMode,
   isFirstChunk: boolean,
   unitNumber?: number,
-  allData?: VocabularyItem[]  // 오답 선택지 생성용 전체 데이터
+  allData?: VocabularyItem[],  // 오답 선택지 생성용 전체 데이터
+  paletteColors?: PaletteColors  // 컬러 팔레트
 ): Promise<Uint8Array> {
   // 첫 번째 청크만 헤더 표시
   const chunkHeaderInfo = isFirstChunk ? headerInfo : { ...headerInfo, headerTitle: '', headerDescription: '' };
@@ -71,7 +72,8 @@ async function generateChunkPDF(
     viewMode,
     unitNumber,
     showPageNumber: false,  // 청크에서는 페이지 번호 숨김 (병합 후 추가)
-    allData  // 오답 선택지 생성용 전체 데이터 전달
+    allData,  // 오답 선택지 생성용 전체 데이터 전달
+    paletteColors  // 컬러 팔레트 전달
   });
 
   // 브라우저 UI 업데이트 기회 제공
@@ -123,7 +125,8 @@ export async function downloadPDF(
   viewMode: ViewMode = 'card',
   filename?: string,
   unitNumber?: number,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  paletteColors?: PaletteColors  // 컬러 팔레트
 ): Promise<void> {
   const totalItems = data.length;
 
@@ -131,7 +134,7 @@ export async function downloadPDF(
   if (totalItems <= CHUNK_SIZE) {
     onProgress?.(10, 'PDF 생성 중...');
     await yieldToMain();
-    const doc = createElement(VocabularyPDF, { data, headerInfo, viewMode, unitNumber });
+    const doc = createElement(VocabularyPDF, { data, headerInfo, viewMode, unitNumber, paletteColors });
     await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
     const blob = await pdf(doc).toBlob();
     onProgress?.(90, '다운로드 준비 중...');
@@ -157,7 +160,7 @@ export async function downloadPDF(
       `청크 ${i + 1}/${totalChunks} 생성 중... (${chunk.length}개 단어)`
     );
 
-    const pdfBuffer = await generateChunkPDF(chunk, headerInfo, viewMode, isFirstChunk, unitNumber, data);
+    const pdfBuffer = await generateChunkPDF(chunk, headerInfo, viewMode, isFirstChunk, unitNumber, data, paletteColors);
     pdfBuffers.push(pdfBuffer);
 
     // 청크 완료 후 진행률 업데이트

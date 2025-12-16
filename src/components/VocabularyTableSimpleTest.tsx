@@ -50,8 +50,8 @@ export function VocabularyTableSimpleTest({ data, headerInfo, unitNumber }: Voca
         >
           {/* 왼쪽 - 번호 */}
           <td className="py-2 px-1 align-top" style={{ width: '4%' }}>
-            <div className="inline-block px-2 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60">
-              <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+            <div className="inline-block px-2 py-0.5 backdrop-blur-md rounded-full" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
+              <p className="uppercase tracking-tight font-medium" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
                 {String(pair.left.id).padStart(3, '0')}
               </p>
             </div>
@@ -67,8 +67,8 @@ export function VocabularyTableSimpleTest({ data, headerInfo, unitNumber }: Voca
           {/* 오른쪽 - 번호 */}
           <td className="py-2 px-1 align-top" style={{ width: '4%' }}>
             {pair.right && (
-              <div className="inline-block px-2 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60">
-                <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+              <div className="inline-block px-2 py-0.5 backdrop-blur-md rounded-full" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
+                <p className="uppercase tracking-tight font-medium" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
                   {String(pair.right.id).padStart(3, '0')}
                 </p>
               </div>

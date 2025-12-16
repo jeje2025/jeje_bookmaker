@@ -501,6 +501,24 @@ interface HeaderInfo {
 
 type ViewMode = 'card' | 'table' | 'tableSimple' | 'tableSimpleTest' | 'test' | 'testDefinition' | 'testAnswer' | 'testDefinitionAnswer';
 
+// 팔레트 색상 타입 (HEX + opacity 분리)
+interface PaletteColors {
+  badgeBg: string;           // HEX 색상
+  badgeBgOpacity: number;    // 배경 투명도
+  badgeText: string;         // HEX 색상
+  badgeBorder: string;       // HEX 색상
+  badgeBorderOpacity: number; // 테두리 투명도
+}
+
+// 기본 팔레트 (슬레이트)
+const defaultPalette: PaletteColors = {
+  badgeBg: '#f1f5f9',
+  badgeBgOpacity: 0.9,
+  badgeText: '#475569',
+  badgeBorder: '#cbd5e1',
+  badgeBorderOpacity: 0.5,
+};
+
 interface VocabularyPDFProps {
   data: VocabularyItem[];
   headerInfo: HeaderInfo;
@@ -508,6 +526,7 @@ interface VocabularyPDFProps {
   unitNumber?: number;
   showPageNumber?: boolean;  // 페이지 번호 표시 여부 (청크 병합 시 false)
   allData?: VocabularyItem[];  // 오답 선택지 생성용 전체 데이터 (청크 분할 시 필요)
+  paletteColors?: PaletteColors;  // 컬러 팔레트 (뱃지 색상)
 }
 
 // seed 기반 랜덤 함수 (웹 미리보기와 동일)
@@ -603,15 +622,18 @@ function generateDefinitionTestQuestions(data: VocabularyItem[], unitNumber?: nu
   });
 }
 
+// 동적 스타일 타입
+type DynamicStyles = ReturnType<typeof createDynamicStyles>;
+
 // ===== 카드 컴포넌트 =====
-const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
+const VocabularyCardPDF = ({ item, dynamicStyles }: { item: VocabularyItem; dynamicStyles: DynamicStyles }) => (
   <View style={styles.card} wrap={false}>
     {/* Top section */}
     <View style={styles.cardTop}>
       {/* Left: Word */}
       <View style={styles.cardLeft}>
-        <View style={styles.idBadgeContainer}>
-          <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        <View style={dynamicStyles.idBadgeContainerDynamic}>
+          <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
         </View>
         <Text style={styles.word}>{item.word}</Text>
         {item.pronunciation && (
@@ -662,20 +684,20 @@ const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
       {/* Right: Synonyms, Antonyms, Etymology */}
       <View style={styles.infoContainer}>
         <View style={styles.infoSection}>
-          <View style={styles.infoBadgeContainer}>
-            <Text style={styles.infoBadge}>동</Text>
+          <View style={dynamicStyles.infoBadgeContainerDynamic}>
+            <Text style={dynamicStyles.infoBadgeDynamic}>동</Text>
           </View>
           <Text style={styles.infoText}>{item.synonyms.join(', ')}</Text>
         </View>
         <View style={styles.infoSection}>
-          <View style={styles.infoBadgeContainer}>
-            <Text style={styles.infoBadge}>반</Text>
+          <View style={dynamicStyles.infoBadgeContainerDynamic}>
+            <Text style={dynamicStyles.infoBadgeDynamic}>반</Text>
           </View>
           <Text style={styles.infoText}>{item.antonyms.join(', ')}</Text>
         </View>
         <View style={styles.infoSectionWide}>
-          <View style={styles.infoBadgeContainer}>
-            <Text style={styles.infoBadge}>Tip</Text>
+          <View style={dynamicStyles.infoBadgeContainerDynamic}>
+            <Text style={dynamicStyles.infoBadgeDynamic}>Tip</Text>
           </View>
           <Text style={styles.infoText}>{item.etymology}</Text>
         </View>
@@ -685,11 +707,11 @@ const VocabularyCardPDF = ({ item }: { item: VocabularyItem }) => (
 );
 
 // ===== 표버전 컴포넌트 =====
-const VocabularyTableRowPDF = ({ item }: { item: VocabularyItem }) => (
+const VocabularyTableRowPDF = ({ item, dynamicStyles }: { item: VocabularyItem; dynamicStyles: DynamicStyles }) => (
   <View style={styles.tableRow} wrap={false}>
     <View style={styles.tableColId}>
-      <View style={styles.idBadgeContainer}>
-        <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+      <View style={dynamicStyles.idBadgeContainerDynamic}>
+        <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
       </View>
     </View>
     <View style={styles.tableColWord}>
@@ -713,14 +735,14 @@ const VocabularyTableRowPDF = ({ item }: { item: VocabularyItem }) => (
       <Text style={styles.tableTranslation}>{item.translation}</Text>
     </View>
     <View style={styles.tableColSyn}>
-      <View style={styles.infoBadgeContainer}>
-        <Text style={styles.infoBadge}>동</Text>
+      <View style={dynamicStyles.infoBadgeContainerDynamic}>
+        <Text style={dynamicStyles.infoBadgeDynamic}>동</Text>
       </View>
       <Text style={styles.infoText}>{item.synonyms.join(', ')}</Text>
     </View>
     <View style={styles.tableColAnt}>
-      <View style={styles.infoBadgeContainer}>
-        <Text style={styles.infoBadge}>반</Text>
+      <View style={dynamicStyles.infoBadgeContainerDynamic}>
+        <Text style={dynamicStyles.infoBadgeDynamic}>반</Text>
       </View>
       <Text style={styles.infoText}>{item.antonyms.join(', ')}</Text>
     </View>
@@ -728,11 +750,11 @@ const VocabularyTableRowPDF = ({ item }: { item: VocabularyItem }) => (
 );
 
 // ===== 간단버전 컴포넌트 =====
-const VocabularySimpleRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
+const VocabularySimpleRowPDF = ({ left, right, dynamicStyles }: { left: VocabularyItem; right: VocabularyItem | null; dynamicStyles: DynamicStyles }) => (
   <View style={styles.simpleRow} wrap={false}>
     <View style={styles.simpleColId}>
-      <View style={styles.idBadgeContainer}>
-        <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+      <View style={dynamicStyles.idBadgeContainerDynamic}>
+        <Text style={dynamicStyles.idBadgeDynamic}>{String(left.id).padStart(3, '0')}</Text>
       </View>
     </View>
     <View style={styles.simpleColWord}>
@@ -744,8 +766,8 @@ const VocabularySimpleRowPDF = ({ left, right }: { left: VocabularyItem; right: 
     {right ? (
       <>
         <View style={styles.simpleColId}>
-          <View style={styles.idBadgeContainer}>
-            <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          <View style={dynamicStyles.idBadgeContainerDynamic}>
+            <Text style={dynamicStyles.idBadgeDynamic}>{String(right.id).padStart(3, '0')}</Text>
           </View>
         </View>
         <View style={styles.simpleColWord}>
@@ -766,11 +788,11 @@ const VocabularySimpleRowPDF = ({ left, right }: { left: VocabularyItem; right: 
 );
 
 // ===== 테스트용 간단버전 컴포넌트 (뜻 숨김) =====
-const VocabularySimpleTestRowPDF = ({ left, right }: { left: VocabularyItem; right: VocabularyItem | null }) => (
+const VocabularySimpleTestRowPDF = ({ left, right, dynamicStyles }: { left: VocabularyItem; right: VocabularyItem | null; dynamicStyles: DynamicStyles }) => (
   <View style={styles.simpleRow} wrap={false}>
     <View style={styles.simpleColId}>
-      <View style={styles.idBadgeContainer}>
-        <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+      <View style={dynamicStyles.idBadgeContainerDynamic}>
+        <Text style={dynamicStyles.idBadgeDynamic}>{String(left.id).padStart(3, '0')}</Text>
       </View>
     </View>
     <View style={styles.simpleColWord}>
@@ -782,8 +804,8 @@ const VocabularySimpleTestRowPDF = ({ left, right }: { left: VocabularyItem; rig
     {right ? (
       <>
         <View style={styles.simpleColId}>
-          <View style={styles.idBadgeContainer}>
-            <Text style={styles.idBadge}>{String(right.id).padStart(3, '0')}</Text>
+          <View style={dynamicStyles.idBadgeContainerDynamic}>
+            <Text style={dynamicStyles.idBadgeDynamic}>{String(right.id).padStart(3, '0')}</Text>
           </View>
         </View>
         <View style={styles.simpleColWord}>
@@ -804,11 +826,12 @@ const VocabularySimpleTestRowPDF = ({ left, right }: { left: VocabularyItem; rig
 );
 
 // ===== 동의어 테스트지 컴포넌트 =====
-const VocabularyTestRowPDF = ({ left, right, allData, unitNumber }: {
+const VocabularyTestRowPDF = ({ left, right, allData, unitNumber, dynamicStyles }: {
   left: VocabularyItem;
   right: VocabularyItem | null;
   allData: VocabularyItem[];
   unitNumber?: number;
+  dynamicStyles: DynamicStyles;
 }) => {
   const questions = generateTestQuestions(allData, unitNumber);
   const leftQ = questions.find(q => q.id === left.id);
@@ -818,8 +841,8 @@ const VocabularyTestRowPDF = ({ left, right, allData, unitNumber }: {
     <View style={styles.testRow} wrap={false}>
       <View style={styles.testCol}>
         <View style={styles.testHeader}>
-          <View style={styles.idBadgeContainer}>
-            <Text style={styles.idBadge}>{String(left.id).padStart(3, '0')}</Text>
+          <View style={dynamicStyles.idBadgeContainerDynamic}>
+            <Text style={dynamicStyles.idBadgeDynamic}>{String(left.id).padStart(3, '0')}</Text>
           </View>
           <Text style={styles.testWord}>{left.word}</Text>
           <Text style={styles.testMeaningLabel}>뜻:</Text>
@@ -837,8 +860,8 @@ const VocabularyTestRowPDF = ({ left, right, allData, unitNumber }: {
       {rightQ ? (
         <View style={styles.testColRight}>
           <View style={styles.testHeader}>
-            <View style={styles.idBadgeContainer}>
-              <Text style={styles.idBadge}>{String(right!.id).padStart(3, '0')}</Text>
+            <View style={dynamicStyles.idBadgeContainerDynamic}>
+              <Text style={dynamicStyles.idBadgeDynamic}>{String(right!.id).padStart(3, '0')}</Text>
             </View>
             <Text style={styles.testWord}>{right!.word}</Text>
             <Text style={styles.testMeaningLabel}>뜻:</Text>
@@ -861,11 +884,12 @@ const VocabularyTestRowPDF = ({ left, right, allData, unitNumber }: {
 };
 
 // ===== 영영정의 테스트지 컴포넌트 (4지선다) =====
-const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber }: {
+const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber, dynamicStyles }: {
   left: VocabularyItem;
   right: VocabularyItem | null;
   allData: VocabularyItem[];
   unitNumber?: number;
+  dynamicStyles: DynamicStyles;
 }) => {
   const questions = generateDefinitionTestQuestions(allData, unitNumber);
   const leftQ = questions.find(q => q.id === left.id);
@@ -874,8 +898,8 @@ const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber }: {
   const renderTestContent = (q: typeof leftQ, item: VocabularyItem) => (
     <>
       <View style={styles.testHeader}>
-        <View style={styles.idBadgeContainer}>
-          <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        <View style={dynamicStyles.idBadgeContainerDynamic}>
+          <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
         </View>
         <Text style={styles.testWord}>{item.word}</Text>
       </View>
@@ -923,11 +947,12 @@ const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber }: {
 };
 
 // ===== 동의어 답지 컴포넌트 =====
-const VocabularyAnswerRowPDF = ({ left, right, allData, unitNumber }: {
+const VocabularyAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicStyles }: {
   left: VocabularyItem;
   right: VocabularyItem | null;
   allData: VocabularyItem[];
   unitNumber?: number;
+  dynamicStyles: DynamicStyles;
 }) => {
   const questions = generateTestQuestions(allData, unitNumber);
   const leftQ = questions.find(q => q.id === left.id);
@@ -936,8 +961,8 @@ const VocabularyAnswerRowPDF = ({ left, right, allData, unitNumber }: {
   const renderAnswerContent = (q: typeof leftQ, item: VocabularyItem) => (
     <>
       <View style={styles.testHeader}>
-        <View style={styles.idBadgeContainer}>
-          <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        <View style={dynamicStyles.idBadgeContainerDynamic}>
+          <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
         </View>
         <Text style={styles.testWord}>{item.word}</Text>
       </View>
@@ -977,11 +1002,12 @@ const VocabularyAnswerRowPDF = ({ left, right, allData, unitNumber }: {
 };
 
 // ===== 영영정의 답지 컴포넌트 (4지선다 정답 표시) =====
-const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber }: {
+const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicStyles }: {
   left: VocabularyItem;
   right: VocabularyItem | null;
   allData: VocabularyItem[];
   unitNumber?: number;
+  dynamicStyles: DynamicStyles;
 }) => {
   const questions = generateDefinitionTestQuestions(allData, unitNumber);
   const leftQ = questions.find(q => q.id === left.id);
@@ -990,8 +1016,8 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber }: {
   const renderAnswerContent = (q: typeof leftQ, item: VocabularyItem) => (
     <>
       <View style={styles.testHeader}>
-        <View style={styles.idBadgeContainer}>
-          <Text style={styles.idBadge}>{String(item.id).padStart(3, '0')}</Text>
+        <View style={dynamicStyles.idBadgeContainerDynamic}>
+          <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
         </View>
         <Text style={styles.testWord}>{item.word}</Text>
       </View>
@@ -1052,51 +1078,157 @@ function pairData<T>(data: T[]): Array<{ left: T; right: T | null }> {
   return pairs;
 }
 
+// HEX + opacity를 흰색 배경에 혼합한 불투명 색상으로 변환
+// @react-pdf/renderer가 알파 채널을 제대로 지원하지 않아 색상 혼합으로 투명도 시뮬레이션
+const blendWithWhite = (hex: string, opacity: number): string => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  // 흰색(255)과 혼합: result = color * opacity + white * (1 - opacity)
+  const blendedR = Math.round(r * opacity + 255 * (1 - opacity));
+  const blendedG = Math.round(g * opacity + 255 * (1 - opacity));
+  const blendedB = Math.round(b * opacity + 255 * (1 - opacity));
+
+  // HEX 문자열로 반환
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${toHex(blendedR)}${toHex(blendedG)}${toHex(blendedB)}`;
+};
+
+// 동적 스타일 생성 함수
+const createDynamicStyles = (palette: PaletteColors) => {
+  // 흰색 배경에 혼합된 불투명 색상으로 투명도 시뮬레이션
+  const bgColor = blendWithWhite(palette.badgeBg, palette.badgeBgOpacity);
+  const borderColor = blendWithWhite(palette.badgeBorder, palette.badgeBorderOpacity);
+
+  return StyleSheet.create({
+    // 헤더 타이틀 (동적 팔레트)
+    headerTitleDynamic: {
+      fontSize: 10,
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      letterSpacing: 1.5,
+      color: palette.badgeText,
+      backgroundColor: bgColor,
+      paddingHorizontal: 12,
+      paddingVertical: 5,
+      borderTopLeftRadius: 8,
+      borderTopRightRadius: 8,
+      borderBottomLeftRadius: 8,
+      borderBottomRightRadius: 0,
+      borderWidth: 0.5,
+      borderColor: borderColor,
+      textAlign: 'center',
+    },
+    // ID 배지 컨테이너 (동적 팔레트)
+    idBadgeContainerDynamic: {
+      backgroundColor: bgColor,
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+      borderRadius: 10,
+      borderWidth: 0.5,
+      borderColor: borderColor,
+      marginBottom: 6,
+      alignSelf: 'flex-start',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 20,
+    },
+    // ID 배지 텍스트 (동적 팔레트)
+    idBadgeDynamic: {
+      fontSize: 6,
+      fontWeight: 700,
+      color: palette.badgeText,
+      textAlign: 'center',
+    },
+    // 정보 배지 컨테이너 (동, 반, Tip) (동적 팔레트)
+    infoBadgeContainerDynamic: {
+      backgroundColor: bgColor,
+      paddingHorizontal: 3,
+      paddingVertical: 1.5,
+      borderRadius: 10,
+      borderWidth: 0.5,
+      borderColor: borderColor,
+      marginBottom: 3,
+      alignSelf: 'flex-start',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 14,
+    },
+    // 정보 배지 텍스트 (동, 반, Tip) (동적 팔레트)
+    infoBadgeDynamic: {
+      fontSize: 6,
+      fontWeight: 700,
+      color: palette.badgeText,
+      textAlign: 'center',
+    },
+    // Unit 배지 (동적 팔레트)
+    unitBadgeDynamic: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      fontSize: 8,
+      color: palette.badgeText,
+      backgroundColor: bgColor,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 4,
+      fontWeight: 700,
+      borderWidth: 0.5,
+      borderColor: borderColor,
+    },
+  });
+};
+
 // 메인 PDF 문서
-export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber, showPageNumber = true, allData }: VocabularyPDFProps) => {
+export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber, showPageNumber = true, allData, paletteColors }: VocabularyPDFProps) => {
   const pairedData = pairData(data);
   // 오답 선택지 생성용 전체 데이터 (allData가 없으면 data 사용)
   const fullData = allData || data;
+  // 팔레트 색상 (없으면 기본값 사용)
+  const palette = paletteColors || defaultPalette;
+  // 동적 스타일 생성
+  const dynamicStyles = createDynamicStyles(palette);
 
   // 콘텐츠 렌더링 함수
   const renderContent = () => {
     switch (viewMode) {
       case 'table':
-        return data.map((item) => <VocabularyTableRowPDF key={item.id} item={item} />);
+        return data.map((item) => <VocabularyTableRowPDF key={item.id} item={item} dynamicStyles={dynamicStyles} />);
 
       case 'tableSimple':
         return pairedData.map((pair, idx) => (
-          <VocabularySimpleRowPDF key={idx} left={pair.left} right={pair.right} />
+          <VocabularySimpleRowPDF key={idx} left={pair.left} right={pair.right} dynamicStyles={dynamicStyles} />
         ));
 
       case 'tableSimpleTest':
         return pairedData.map((pair, idx) => (
-          <VocabularySimpleTestRowPDF key={idx} left={pair.left} right={pair.right} />
+          <VocabularySimpleTestRowPDF key={idx} left={pair.left} right={pair.right} dynamicStyles={dynamicStyles} />
         ));
 
       case 'test':
         return pairedData.map((pair, idx) => (
-          <VocabularyTestRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} />
+          <VocabularyTestRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} dynamicStyles={dynamicStyles} />
         ));
 
       case 'testDefinition':
         return pairedData.map((pair, idx) => (
-          <VocabularyDefTestRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} />
+          <VocabularyDefTestRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} dynamicStyles={dynamicStyles} />
         ));
 
       case 'testAnswer':
         return pairedData.map((pair, idx) => (
-          <VocabularyAnswerRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} />
+          <VocabularyAnswerRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} dynamicStyles={dynamicStyles} />
         ));
 
       case 'testDefinitionAnswer':
         return pairedData.map((pair, idx) => (
-          <VocabularyDefAnswerRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} />
+          <VocabularyDefAnswerRowPDF key={idx} left={pair.left} right={pair.right} allData={fullData} unitNumber={unitNumber} dynamicStyles={dynamicStyles} />
         ));
 
       case 'card':
       default:
-        return data.map((item) => <VocabularyCardPDF key={item.id} item={item} />);
+        return data.map((item) => <VocabularyCardPDF key={item.id} item={item} dynamicStyles={dynamicStyles} />);
     }
   };
 
@@ -1107,9 +1239,9 @@ export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber,
         {headerInfo.headerTitle && (
           <View style={styles.header}>
             {unitNumber && (
-              <Text style={styles.unitBadge}>Unit {unitNumber}</Text>
+              <Text style={dynamicStyles.unitBadgeDynamic}>Unit {unitNumber}</Text>
             )}
-            <Text style={styles.headerTitle}>{headerInfo.headerTitle}</Text>
+            <Text style={dynamicStyles.headerTitleDynamic}>{headerInfo.headerTitle}</Text>
             {headerInfo.headerDescription && (
               <Text style={styles.headerDescription}>
                 {headerInfo.headerDescription}
@@ -1144,3 +1276,4 @@ export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber,
 };
 
 export default VocabularyPDF;
+export type { PaletteColors };

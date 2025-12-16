@@ -34,23 +34,31 @@ export function HeaderFooter({
         <div className="mb-6 relative">
           {/* 유닛 배지 */}
           {unitNumber && (
-            <div className="absolute top-0 left-0 px-2 py-1 bg-slate-200 text-slate-600 text-xs font-bold rounded">
+            <div
+              className="absolute top-0 left-0 px-2 py-1 text-xs font-bold rounded"
+              style={{
+                backgroundColor: 'var(--badge-bg, #e2e8f0)',
+                color: 'var(--badge-text, #475569)',
+                boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)'
+              }}
+            >
               Unit {unitNumber}
             </div>
           )}
           {/* 상단 중앙 라벨 */}
           <div className="flex justify-center mb-4">
-            <div className="inline-block px-4 py-1.5 bg-slate-100 backdrop-blur-md border border-slate-300 rounded-xl rounded-bl-none">
+            <div className="inline-block px-4 py-1.5 backdrop-blur-md rounded-xl rounded-bl-none" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 1px var(--badge-border, #cbd5e1)' }}>
               {isEditable ? (
                 <input
                   type="text"
                   value={headerInfo.headerTitle || ''}
                   onChange={(e) => onHeaderChange?.({ ...headerInfo, headerTitle: e.target.value })}
                   placeholder="제목 입력"
-                  className="text-xs uppercase tracking-[0.2em] text-slate-800 placeholder-slate-400 font-medium bg-transparent border-none outline-none text-center min-w-[200px]"
+                  className="text-xs uppercase tracking-[0.2em] placeholder-slate-400 font-medium bg-transparent border-none outline-none text-center min-w-[200px]"
+                  style={{ color: 'var(--badge-text, #1e293b)' }}
                 />
               ) : (
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-800 font-medium">
+                <p className="text-xs uppercase tracking-[0.2em] font-medium" style={{ color: 'var(--badge-text, #1e293b)' }}>
                   {headerInfo.headerTitle || 'Vocabulary Builder'}
                 </p>
               )}

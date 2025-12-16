@@ -124,8 +124,8 @@ export function VocabularyTestDefinition({ data, headerInfo, unitNumber }: Vocab
             <div className="mb-3">
               <div className="flex items-start gap-2 my-[4px] mx-[0px] px-[0px] py-[4px]">
                 {/* 번호 */}
-                <div className="inline-block px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60" style={{ flexShrink: 0 }}>
-                  <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+                <div className="inline-block px-1.5 py-0.5 backdrop-blur-md rounded-full" style={{ flexShrink: 0, backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
+                  <p className="uppercase tracking-tight font-medium" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
                     {String(pair.left.id).padStart(3, '0')}
                   </p>
                 </div>
@@ -181,8 +181,8 @@ export function VocabularyTestDefinition({ data, headerInfo, unitNumber }: Vocab
                 <div className="mb-3">
                   <div className="flex items-start gap-2 my-[4px] mx-[0px] px-[0px] py-[4px]">
                     {/* 번호 */}
-                    <div className="inline-block px-1.5 py-0.5 bg-slate-100/80 backdrop-blur-md rounded-full border border-slate-200/60" style={{ flexShrink: 0 }}>
-                      <p className="uppercase tracking-tight text-slate-600 font-medium" style={{ fontSize: '8px' }}>
+                    <div className="inline-block px-1.5 py-0.5 backdrop-blur-md rounded-full" style={{ flexShrink: 0, backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
+                      <p className="uppercase tracking-tight font-medium" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
                         {String(pair.right.id).padStart(3, '0')}
                       </p>
                     </div>

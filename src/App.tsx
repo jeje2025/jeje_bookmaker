@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from './components/ui/button';
-import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Settings, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Save, Shuffle, Layers, Image } from 'lucide-react';
+import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image } from 'lucide-react';
+import { type PaletteKey, pantoneColors } from './components/ColorPaletteSelector';
+import { FloatingMenu } from './components/FloatingMenu';
 import { VocabularyCover } from './components/VocabularyCover';
 import { VocabularyInput } from './components/VocabularyInput';
-import { UnitSplitButton } from './components/UnitSplitButton';
 import { VocabularyView } from './components/VocabularyView';
 // import { PDFSaveModal } from './components/PDFSaveModal'; // 모달 없이 바로 저장으로 변경
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog';
@@ -220,6 +221,7 @@ export default function App() {
   const [pdfProgress, setPdfProgress] = useState({ progress: 0, message: '' }); // PDF 진행률
   const [unitSize, setUnitSize] = useState<number | null>(null); // 유닛당 단어 수 (null = 분할 안 함)
   const [currentUnit, setCurrentUnit] = useState<number>(1); // 현재 보고 있는 유닛 번호
+  const [colorPalette, setColorPalette] = useState<PaletteKey>('default'); // 배경색 팔레트
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -537,6 +539,77 @@ export default function App() {
     setHeaderInfo((prev: { headerTitle: string; headerDescription: string; footerLeft: string }) => ({ ...prev, ...updated }));
   }, []);
 
+  // PDF 저장 핸들러
+  const handleSavePDFClick = useCallback(async () => {
+    // 제목 필수 체크
+    if (!headerInfo.headerTitle.trim()) {
+      toast.error('제목을 입력해주세요.', { duration: 1000 });
+      return;
+    }
+
+    // 표지는 PDF 저장 지원 안 함
+    if (viewMode === 'cover' || viewMode === 'input') {
+      toast.error('이 화면은 PDF 저장을 지원하지 않습니다.', { duration: 1000 });
+      return;
+    }
+
+    // viewMode별 한글 이름 매핑
+    const viewModeNames: Record<string, string> = {
+      card: '카드형',
+      table: '표버전',
+      tableSimple: '간단버전',
+      tableSimpleTest: '테스트용 간단버전',
+      test: '동의어 테스트지',
+      testDefinition: '영영정의 테스트지',
+      testAnswer: '동의어 답지',
+      testDefinitionAnswer: '영영정의 답지',
+    };
+    const viewModeName = viewModeNames[viewMode] || viewMode;
+
+    // 유닛 분할 여부에 따라 PDF 생성
+    setIsPDFLoading(true);
+    setPdfProgress({ progress: 0, message: '' });
+
+    try {
+      if (unitSize) {
+        // 유닛별로 순차 생성
+        const unitsCount = Math.ceil(vocabularyList.length / unitSize);
+
+        for (let i = 0; i < unitsCount; i++) {
+          const start = i * unitSize;
+          const end = Math.min(start + unitSize, vocabularyList.length);
+          const unitData = vocabularyList.slice(start, end);
+          const unitNum = i + 1;
+          const unitFilename = `${headerInfo.headerTitle} - ${viewModeName} - Unit ${unitNum}`;
+
+          await downloadPDF(unitData, headerInfo, viewMode, unitFilename, unitNum, (progress, message) => {
+            // 전체 진행률 계산: (완료 유닛 + 현재 유닛 진행률) / 전체 유닛
+            const overallProgress = Math.round(((i + progress / 100) / unitsCount) * 100);
+            setPdfProgress({ progress: overallProgress, message: `Unit ${unitNum}/${unitsCount}: ${message}` });
+          }, pantoneColors[colorPalette]);
+
+          // 다음 파일 전 딜레이
+          if (i < unitsCount - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        }
+        toast.success(`${unitsCount}개 유닛 PDF 다운로드 완료!`, { duration: 2000 });
+      } else {
+        // 전체 저장
+        const filename = `${headerInfo.headerTitle} - ${viewModeName}`;
+        await downloadPDF(vocabularyList, headerInfo, viewMode, filename, undefined, (progress, message) => {
+          setPdfProgress({ progress, message });
+        }, pantoneColors[colorPalette]);
+        toast.success('PDF 다운로드 완료!', { duration: 2000 });
+      }
+    } catch (error) {
+      console.error('PDF 생성 오류:', error);
+      toast.error('PDF 생성에 실패했습니다.', { duration: 2000 });
+    } finally {
+      setIsPDFLoading(false);
+    }
+  }, [headerInfo, viewMode, unitSize, vocabularyList, colorPalette]);
+
   // 단어 순서 랜덤 섞기 (ID는 1부터 유지)
   const handleShuffleWords = () => {
     const shuffled = [...vocabularyList];
@@ -623,269 +696,154 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col print:block overflow-hidden">
-        {/* Top Bar - 인쇄 시 숨김 - 고정, 높이 정확히 맞춤 */}
-        <div className="bg-white border-b border-gray-200 px-6 flex items-center gap-3 print:hidden flex-shrink-0" style={{ height: '73px' }}>
-          {/* 뷰 모드 탭 */}
-          <div className="flex items-center gap-2 flex-1">
-            <button
-              onClick={() => setViewMode('card')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'card' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <FileText size={16} />
-              <span className="text-sm">카드형</span>
-            </button>
-            <button
-              onClick={() => setViewMode('table')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'table' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <Table2 size={16} />
-              <span className="text-sm">표버전</span>
-            </button>
-            <button
-              onClick={() => setViewMode('tableSimple')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'tableSimple' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <FileSpreadsheet size={16} />
-              <span className="text-sm">간단버전</span>
-            </button>
-            <button
-              onClick={() => setViewMode('tableSimpleTest')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'tableSimpleTest' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <FileSpreadsheet size={16} />
-              <span className="text-sm">테스트용 간단버전</span>
-            </button>
-            <button
-              onClick={() => setViewMode('test')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'test' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <FileQuestion size={16} />
-              <span className="text-sm">동의어 테스트지</span>
-            </button>
-            <button
-              onClick={() => setViewMode('testDefinition')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'testDefinition' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <BookOpen size={16} />
-              <span className="text-sm">영영정의 테스트지</span>
-            </button>
-            <button
-              onClick={() => setViewMode('testAnswer')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'testAnswer' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <FileCheck size={16} />
-              <span className="text-sm">동의어 답지</span>
-            </button>
-            <button
-              onClick={() => setViewMode('testDefinitionAnswer')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'testDefinitionAnswer' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <FileCheck size={16} />
-              <span className="text-sm">영영정의 답지</span>
-            </button>
-            <button
-              onClick={() => setViewMode('cover')}
-              className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                viewMode === 'cover' 
-                  ? 'bg-slate-100 text-slate-900' 
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
-            >
-              <Image size={16} />
-              <span className="text-sm">표지</span>
-            </button>
-          </div>
-
-          <Separator orientation="vertical" className="h-6" />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top Bar - 인쇄 시 숨김, 한 줄로 표시 */}
+        <div className="bg-white border-b border-gray-200 px-3 py-2 print:hidden flex-shrink-0 flex items-center gap-2 overflow-x-auto">
+          <button
+            onClick={() => setViewMode('card')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'card'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <FileText size={14} />
+            카드형
+          </button>
+          <button
+            onClick={() => setViewMode('table')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'table'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <Table2 size={14} />
+            표버전
+          </button>
+          <button
+            onClick={() => setViewMode('tableSimple')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'tableSimple'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <FileSpreadsheet size={14} />
+            간단버전
+          </button>
+          <button
+            onClick={() => setViewMode('tableSimpleTest')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'tableSimpleTest'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <FileSpreadsheet size={14} />
+            간단버전 테스트지
+          </button>
+          <button
+            onClick={() => setViewMode('test')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'test'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <FileQuestion size={14} />
+            동의어 테스트지
+          </button>
+          <button
+            onClick={() => setViewMode('testDefinition')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'testDefinition'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <BookOpen size={14} />
+            영영정의 테스트지
+          </button>
+          <button
+            onClick={() => setViewMode('testAnswer')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'testAnswer'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <FileCheck size={14} />
+            동의어 답지
+          </button>
+          <button
+            onClick={() => setViewMode('testDefinitionAnswer')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'testDefinitionAnswer'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <FileCheck size={14} />
+            영영정의 답지
+          </button>
+          <button
+            onClick={() => setViewMode('cover')}
+            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              viewMode === 'cover'
+                ? 'text-slate-900 font-semibold'
+                : 'text-slate-400 hover:text-slate-600'
+            }`}
+          >
+            <Image size={14} />
+            표지
+          </button>
 
           {/* 편집 모드 토글 버튼 - 표버전, 카드형에서만 표시 */}
           {(viewMode === 'table' || viewMode === 'card') && (
-            <>
-              <button
-                onClick={() => setIsEditMode(!isEditMode)}
-                className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                  isEditMode 
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-                title="편집 모드"
-              >
-                <Edit3 size={16} />
-                <span className="text-sm">{isEditMode ? '편집 중' : '편집'}</span>
-              </button>
-              <Separator orientation="vertical" className="h-6" />
-            </>
+            <button
+              onClick={() => setIsEditMode(!isEditMode)}
+              className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                isEditMode
+                  ? 'text-blue-600 font-semibold'
+                  : 'text-amber-600 hover:text-amber-700'
+              }`}
+            >
+              <Edit3 size={14} />
+              {isEditMode ? '편집중' : '편집'}
+            </button>
           )}
 
           {/* 단어 섞기 버튼 - 테스트에서만 표시 */}
           {viewMode === 'test' && (
-            <>
-              <button
-                onClick={() => {
-                  handleShuffleWords();
-                  toast.success('문제 순서가 섞였습니다!', { duration: 1000 });
-                }}
-                className="px-4 py-2 rounded-lg transition-all flex items-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200"
-                title="단어 섞기"
-              >
-                <Shuffle size={16} />
-                <span className="text-sm">랜덤</span>
-              </button>
-              <Separator orientation="vertical" className="h-6" />
-            </>
+            <button
+              onClick={() => {
+                handleShuffleWords();
+                toast.success('문제 순서가 섞였습니다!', { duration: 1000 });
+              }}
+              className="shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-600"
+            >
+              <Shuffle size={14} />
+              랜덤
+            </button>
           )}
 
           {/* 표지 설정 - 표지에서만 표시 */}
           {viewMode === 'cover' && (
-            <>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="cover-variant" className="text-xs text-slate-600 whitespace-nowrap">
-                  스타일:
-                </Label>
-                <Select 
-                  value={coverVariant} 
-                  onValueChange={(value: 'photo' | 'gradient' | 'minimal') => setCoverVariant(value)}
-                >
-                  <SelectTrigger className="w-28 h-9 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="photo">사진</SelectItem>
-                    <SelectItem value="gradient">그라디언트</SelectItem>
-                    <SelectItem value="minimal">미니멀</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Separator orientation="vertical" className="h-6" />
-            </>
+            <Select
+              value={coverVariant}
+              onValueChange={(value: 'photo' | 'gradient' | 'minimal') => setCoverVariant(value)}
+            >
+              <SelectTrigger className="shrink-0 w-24 h-8 text-xs border-0 shadow-none">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="photo">사진</SelectItem>
+                <SelectItem value="gradient">그라디언트</SelectItem>
+                <SelectItem value="minimal">미니멀</SelectItem>
+              </SelectContent>
+            </Select>
           )}
-
-          {/* 유닛 분할 버튼 */}
-          <UnitSplitButton
-            totalWords={totalWords}
-            currentUnitSize={unitSize}
-            onApply={handleUnitApply}
-            onReset={handleUnitReset}
-          />
-
-          {/* PDF 저장 버튼 */}
-          <Button
-            onClick={async () => {
-              // 제목 필수 체크
-              if (!headerInfo.headerTitle.trim()) {
-                toast.error('제목을 입력해주세요.', { duration: 1000 });
-                return;
-              }
-
-              // 표지는 PDF 저장 지원 안 함
-              if (viewMode === 'cover' || viewMode === 'input') {
-                toast.error('이 화면은 PDF 저장을 지원하지 않습니다.', { duration: 1000 });
-                return;
-              }
-
-              // viewMode별 한글 이름 매핑
-              const viewModeNames: Record<string, string> = {
-                card: '카드형',
-                table: '표버전',
-                tableSimple: '간단버전',
-                tableSimpleTest: '테스트용 간단버전',
-                test: '동의어 테스트지',
-                testDefinition: '영영정의 테스트지',
-                testAnswer: '동의어 답지',
-                testDefinitionAnswer: '영영정의 답지',
-              };
-              const viewModeName = viewModeNames[viewMode] || viewMode;
-
-              // 유닛 분할 여부에 따라 PDF 생성
-              setIsPDFLoading(true);
-              setPdfProgress({ progress: 0, message: '' });
-
-              try {
-                if (unitSize) {
-                  // 유닛별로 순차 생성
-                  const totalUnits = Math.ceil(vocabularyList.length / unitSize);
-
-                  for (let i = 0; i < totalUnits; i++) {
-                    const start = i * unitSize;
-                    const end = Math.min(start + unitSize, vocabularyList.length);
-                    const unitData = vocabularyList.slice(start, end);
-                    const unitNum = i + 1;
-                    const unitFilename = `${headerInfo.headerTitle} - ${viewModeName} - Unit ${unitNum}`;
-
-                    await downloadPDF(unitData, headerInfo, viewMode, unitFilename, unitNum, (progress, message) => {
-                      // 전체 진행률 계산: (완료 유닛 + 현재 유닛 진행률) / 전체 유닛
-                      const overallProgress = Math.round(((i + progress / 100) / totalUnits) * 100);
-                      setPdfProgress({ progress: overallProgress, message: `Unit ${unitNum}/${totalUnits}: ${message}` });
-                    });
-
-                    // 다음 파일 전 딜레이
-                    if (i < totalUnits - 1) {
-                      await new Promise(resolve => setTimeout(resolve, 500));
-                    }
-                  }
-                  toast.success(`${totalUnits}개 유닛 PDF 다운로드 완료!`, { duration: 2000 });
-                } else {
-                  // 전체 저장
-                  const filename = `${headerInfo.headerTitle} - ${viewModeName}`;
-                  await downloadPDF(vocabularyList, headerInfo, viewMode, filename, undefined, (progress, message) => {
-                    setPdfProgress({ progress, message });
-                  });
-                  toast.success('PDF 다운로드 완료!', { duration: 2000 });
-                }
-              } catch (error) {
-                console.error('PDF 생성 오류:', error);
-                toast.error('PDF 생성에 실패했습니다.', { duration: 2000 });
-              } finally {
-                setIsPDFLoading(false);
-              }
-            }}
-            className="bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2"
-          >
-            <Save size={16} />
-            PDF 저장
-          </Button>
-
-          {/* 관리자 버튼 */}
-          <button
-            onClick={handleAdminClick}
-            className="p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-lg hover:bg-slate-50"
-            title="관리자 대시보드"
-          >
-            <Settings size={18} />
-          </button>
         </div>
 
         {/* Preview Area */}
@@ -943,6 +901,19 @@ export default function App() {
           </div>
         </div>
       </div>
+
+      {/* 플로팅 메뉴 */}
+      <FloatingMenu
+        totalWords={totalWords}
+        currentUnitSize={unitSize}
+        onUnitApply={handleUnitApply}
+        onUnitReset={handleUnitReset}
+        colorPalette={colorPalette}
+        onColorPaletteChange={setColorPalette}
+        onSavePDF={handleSavePDFClick}
+        isPDFLoading={isPDFLoading}
+        onAdminClick={handleAdminClick}
+      />
 
       {/* 관리자 대시보드 */}
       {isAdminOpen && (
