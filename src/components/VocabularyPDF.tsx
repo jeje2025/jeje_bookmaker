@@ -639,14 +639,15 @@ function generateTestQuestions(data: VocabularyItem[], unitNumber?: number) {
 function generateDefinitionTestQuestions(data: VocabularyItem[], unitNumber?: number) {
   return data.map((item) => {
     const correctDefinition = item.definition || '';
-    const distractors: Array<{ definition: string; sourceWord: string }> = [];
+    const distractors: Array<{ definition: string; sourceWord: string; sourceMeaning: string }> = [];
 
     const otherWords = data.filter(d => d.id !== item.id && d.definition);
     for (const other of otherWords) {
       if (other.definition) {
         distractors.push({
           definition: other.definition,
-          sourceWord: other.word
+          sourceWord: other.word,
+          sourceMeaning: other.meaning
         });
       }
     }
@@ -658,11 +659,12 @@ function generateDefinitionTestQuestions(data: VocabularyItem[], unitNumber?: nu
 
     // 정답과 오답 합치기
     const allChoices = [
-      { definition: correctDefinition, isCorrect: true, sourceWord: '' },
+      { definition: correctDefinition, isCorrect: true, sourceWord: '', sourceMeaning: item.meaning },
       ...selectedDistractors.map(d => ({
         definition: d.definition,
         isCorrect: false,
-        sourceWord: d.sourceWord
+        sourceWord: d.sourceWord,
+        sourceMeaning: d.sourceMeaning
       }))
     ];
 
@@ -1101,8 +1103,11 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicSt
             <Text style={{ fontSize: 7, color: choice.isCorrect ? '#3b82f6' : '#6b7280', fontWeight: choice.isCorrect ? 700 : 400 }}>
               {choice.definition}
             </Text>
-            {!choice.isCorrect && choice.sourceWord && (
-              <Text style={{ fontSize: 6, color: '#9ca3af' }}>({choice.sourceWord})</Text>
+            {choice.isCorrect && choice.sourceMeaning && (
+              <Text style={{ fontSize: 6, color: '#3b82f6', fontWeight: 600 }}>({choice.sourceMeaning})</Text>
+            )}
+            {!choice.isCorrect && choice.sourceMeaning && (
+              <Text style={{ fontSize: 6, color: '#9ca3af' }}>({choice.sourceMeaning})</Text>
             )}
           </View>
         </View>

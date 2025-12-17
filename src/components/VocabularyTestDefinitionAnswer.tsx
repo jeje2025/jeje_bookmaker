@@ -34,7 +34,7 @@ interface TestQuestion {
   word: string;
   meaning: string;
   correctDefinition: string;
-  allChoices: Array<{ definition: string; isCorrect: boolean; sourceWord?: string }>;
+  allChoices: Array<{ definition: string; isCorrect: boolean; sourceWord?: string; sourceMeaning?: string }>;
 }
 
 export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }: VocabularyTestDefinitionAnswerProps) {
@@ -58,7 +58,7 @@ export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }:
   const generateTestQuestions = (): TestQuestion[] => {
     return data.map((item) => {
       const correctDefinition = item.definition || '';
-      const distractors: Array<{ definition: string; sourceWord: string }> = [];
+      const distractors: Array<{ definition: string; sourceWord: string; sourceMeaning: string }> = [];
 
       // 다른 단어들의 영영정의에서 오답 선택지 생성
       const otherWords = data.filter(d => d.id !== item.id && d.definition);
@@ -66,7 +66,8 @@ export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }:
         if (other.definition) {
           distractors.push({
             definition: other.definition,
-            sourceWord: other.word
+            sourceWord: other.word,
+            sourceMeaning: other.meaning
           });
         }
       }
@@ -78,11 +79,12 @@ export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }:
 
       // 정답과 오답 합치기
       const allChoices = [
-        { definition: correctDefinition, isCorrect: true },
+        { definition: correctDefinition, isCorrect: true, sourceMeaning: item.meaning },
         ...selectedDistractors.map(d => ({
           definition: d.definition,
           isCorrect: false,
-          sourceWord: d.sourceWord
+          sourceWord: d.sourceWord,
+          sourceMeaning: d.sourceMeaning
         }))
       ];
 
@@ -169,15 +171,20 @@ export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }:
                   </div>
                   <div className="flex-1">
                     <span className={`text-[11px] leading-relaxed ${
-                      choice.isCorrect 
-                        ? 'text-blue-700 print:text-black font-medium' 
+                      choice.isCorrect
+                        ? 'text-blue-700 print:text-black font-medium'
                         : 'text-gray-600 print:text-black'
                     }`}>
                       {choice.definition}
                     </span>
-                    {!choice.isCorrect && choice.sourceWord && (
+                    {choice.isCorrect && choice.sourceMeaning && (
+                      <span className="text-blue-500 print:text-gray-600 text-[10px] ml-1 font-medium">
+                        ({choice.sourceMeaning})
+                      </span>
+                    )}
+                    {!choice.isCorrect && choice.sourceMeaning && (
                       <span className="text-gray-400 print:text-gray-600 text-[10px] ml-1">
-                        ({choice.sourceWord})
+                        ({choice.sourceMeaning})
                       </span>
                     )}
                   </div>
@@ -236,15 +243,20 @@ export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }:
                       </div>
                       <div className="flex-1">
                         <span className={`text-[11px] leading-relaxed ${
-                          choice.isCorrect 
-                            ? 'text-blue-700 print:text-black font-medium' 
+                          choice.isCorrect
+                            ? 'text-blue-700 print:text-black font-medium'
                             : 'text-gray-600 print:text-black'
                         }`}>
                           {choice.definition}
                         </span>
-                        {!choice.isCorrect && choice.sourceWord && (
+                        {choice.isCorrect && choice.sourceMeaning && (
+                          <span className="text-blue-500 print:text-gray-600 text-[10px] ml-1 font-medium">
+                            ({choice.sourceMeaning})
+                          </span>
+                        )}
+                        {!choice.isCorrect && choice.sourceMeaning && (
                           <span className="text-gray-400 print:text-gray-600 text-[10px] ml-1">
-                            ({choice.sourceWord})
+                            ({choice.sourceMeaning})
                           </span>
                         )}
                       </div>
