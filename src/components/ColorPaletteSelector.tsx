@@ -22,11 +22,11 @@ const pantoneColors: Record<string, PaletteColorInfo> = {
   default: {
     name: '기본 (슬레이트)',
     badgeBg: '#f1f5f9',           // slate-100
-    badgeBgOpacity: 0.5,
-    badgeText: '#475569',         // slate-600
-    badgeTextOpacity: 0.8,
+    badgeBgOpacity: 1,
+    badgeText: '#000000',         // 검정
+    badgeTextOpacity: 1,
     badgeBorder: '#cbd5e1',       // slate-300
-    badgeBorderOpacity: 0.5,
+    badgeBorderOpacity: 1,
   },
   'classic-blue': {
     name: 'Classic Blue',

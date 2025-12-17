@@ -566,14 +566,14 @@ interface PaletteColors {
   badgeBorderOpacity: number; // 테두리 투명도
 }
 
-// 기본 팔레트 (슬레이트)
+// 기본 팔레트 (슬레이트) - ColorPaletteSelector와 동일해야 함
 const defaultPalette: PaletteColors = {
   badgeBg: '#f1f5f9',
-  badgeBgOpacity: 0.5,
-  badgeText: '#475569',
-  badgeTextOpacity: 0.7,
+  badgeBgOpacity: 1,
+  badgeText: '#000000',
+  badgeTextOpacity: 1,
   badgeBorder: '#cbd5e1',
-  badgeBorderOpacity: 0.5,
+  badgeBorderOpacity: 1,
 };
 
 interface VocabularyPDFProps {

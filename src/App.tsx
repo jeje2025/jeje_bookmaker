@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from './components/ui/button';
 import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image, Save, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
-import { type PaletteKey, pantoneColors, ColorPaletteSelector } from './components/ColorPaletteSelector';
+import { type PaletteKey, pantoneColors, ColorPaletteSelector, applyPalette } from './components/ColorPaletteSelector';
 import { UnitSplitButton } from './components/UnitSplitButton';
 import { VocabularyCover } from './components/VocabularyCover';
 import { VocabularyInput } from './components/VocabularyInput';
@@ -226,6 +226,11 @@ export default function App() {
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
+  // 앱 시작 시 기본 팔레트 적용
+  useEffect(() => {
+    applyPalette(colorPalette);
+  }, []);
+
   // 최근 로그 가져오기
   useEffect(() => {
     // localStorage 정리 (5개 초과 시 자동 삭제)
