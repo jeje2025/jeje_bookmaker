@@ -274,70 +274,70 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    paddingTop: 6,
-    paddingBottom: 10,
+    paddingTop: 8,
+    paddingBottom: 12,
   },
   tableColId: {
     width: '4%',
     paddingHorizontal: 4,
-    paddingLeft: 6,
+    paddingLeft: 8,
   },
   tableColWord: {
-    width: '16%',
-    paddingHorizontal: 10,
+    width: '18%',
+    paddingHorizontal: 12,
   },
   tableColMeaning: {
-    width: '44%',
-    paddingHorizontal: 10,
+    width: '42%',
+    paddingHorizontal: 12,
   },
   tableColSyn: {
     width: '16%',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
   },
   tableColAnt: {
     width: '16%',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
   },
   tableWord: {
-    fontSize: 10,     // 화면 14px -> PDF 10pt
+    fontSize: 11,     // 화면 14px -> PDF 11pt
     fontWeight: 700,
     color: '#000000',
     marginBottom: 3,
   },
   tableDerivative: {
-    marginTop: 3,
+    marginTop: 4,
   },
   tableDerivativeWord: {
-    fontSize: 8,      // 화면 11px -> PDF 8pt
+    fontSize: 9,      // 화면 11px -> PDF 9pt
     color: '#1f2937',
   },
   tableDerivativeMeaning: {
-    fontSize: 6,      // 화면 8px -> PDF 6pt
+    fontSize: 7,      // 화면 8px -> PDF 7pt
     color: '#6b7280',
   },
   tableMeaning: {
-    fontSize: 8.5,    // 화면 12px -> PDF 8.5pt
+    fontSize: 10,     // 화면 12px -> PDF 10pt
     color: '#000000',
-    lineHeight: 1.25,
-    marginBottom: 3,
+    lineHeight: 1.3,
+    marginBottom: 4,
   },
   tableDefinition: {
-    fontSize: 6.5,    // 화면 9px -> PDF 6.5pt
+    fontSize: 8,      // 화면 9px -> PDF 8pt
     color: '#6b7280',
     fontStyle: 'italic',
-    lineHeight: 1.25,
-    marginBottom: 3,
+    lineHeight: 1.3,
+    marginBottom: 4,
   },
   tableExample: {
-    fontSize: 7,      // 화면 10px -> PDF 7pt
+    fontSize: 9,      // 화면 10px -> PDF 9pt
     color: '#000000',
-    lineHeight: 1.25,
-    marginBottom: 3,
+    lineHeight: 1.3,
+    marginBottom: 4,
   },
   tableTranslation: {
-    fontSize: 6.5,    // 화면 9px -> PDF 6.5pt
+    fontSize: 8,      // 화면 9px -> PDF 8pt
     color: '#4b5563',
-    lineHeight: 1.25,
+    lineHeight: 1.3,
   },
   // ===== 간단버전 스타일 =====
   simpleRow: {
@@ -1350,42 +1350,42 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
     },
     // ===== 표버전 스타일 (스케일 적용) =====
     tableWordDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(11),
       fontWeight: 700,
       color: '#000000',
       marginBottom: 3,
     },
     tableDerivativeWordDynamic: {
-      fontSize: scaled(8),
+      fontSize: scaled(9),
       color: '#1f2937',
     },
     tableDerivativeMeaningDynamic: {
-      fontSize: scaled(6),
+      fontSize: scaled(7),
       color: '#6b7280',
     },
     tableMeaningDynamic: {
-      fontSize: scaled(8.5),
+      fontSize: scaled(10),
       color: '#000000',
-      lineHeight: 1.25,
-      marginBottom: 3,
+      lineHeight: 1.3,
+      marginBottom: 4,
     },
     tableDefinitionDynamic: {
-      fontSize: scaled(6.5),
+      fontSize: scaled(8),
       color: '#6b7280',
       fontStyle: 'italic',
-      lineHeight: 1.25,
-      marginBottom: 3,
+      lineHeight: 1.3,
+      marginBottom: 4,
     },
     tableExampleDynamic: {
-      fontSize: scaled(7),
+      fontSize: scaled(9),
       color: '#000000',
-      lineHeight: 1.25,
-      marginBottom: 3,
+      lineHeight: 1.3,
+      marginBottom: 4,
     },
     tableTranslationDynamic: {
-      fontSize: scaled(6.5),
+      fontSize: scaled(8),
       color: '#4b5563',
-      lineHeight: 1.25,
+      lineHeight: 1.3,
     },
     // ===== 간단버전 스타일 (스케일 적용) =====
     simpleRowDynamic: {
