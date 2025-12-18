@@ -169,7 +169,7 @@ const VocabularyCardComponent = ({
                   </p>
                 )}
               </div>
-              <div className="pl-2.5 border-l border-gray-300">
+              <div className="pl-2.5" style={{ borderLeft: '1px solid var(--badge-border, #cbd5e1)' }}>
                 <p className="text-black leading-snug mb-0.5" style={{ fontSize: scaledSize(12) }}>
                   {isEditable ? (
                     <EditableText
