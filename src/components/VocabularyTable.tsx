@@ -125,6 +125,9 @@ const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpda
           <td className="pt-1 pb-2 px-3 align-top" style={{ width: '42%' }}>
             <div className="space-y-1">
               <div>
+                <span style={{ fontSize: scaledSize(10), fontWeight: 'bold', color: 'var(--badge-text, #475569)', marginRight: '4px' }}>
+                  {item.partOfSpeech}
+                </span>
                 <span className="text-black" style={{ fontSize: scaledSize(12), lineHeight: '0.9' }}>
                   {isEditable ? (
                     <EditableText

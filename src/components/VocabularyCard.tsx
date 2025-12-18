@@ -129,14 +129,13 @@ const VocabularyCardComponent = ({
             <div className="flex-1">
               <div className="mb-2">
                 <p className="text-black leading-snug" style={{ fontSize: scaledSize(13) }}>
-                  <span className="text-gray-400 print:text-black" style={{ fontSize: scaledSize(10), fontWeight: 'bold' }}>
+                  <span style={{ fontSize: scaledSize(10), fontWeight: 'bold', color: 'var(--badge-text, #475569)' }}>
                     {isEditable ? (
                       <EditableText
                         value={partOfSpeech}
                         onChange={(val) => onUpdate?.(id, 'partOfSpeech', val)}
                         isEditable={true}
-                        className="text-gray-400"
-                        style={{ fontSize: scaledSize(10), fontWeight: 'bold' }}
+                        style={{ fontSize: scaledSize(10), fontWeight: 'bold', color: 'var(--badge-text, #475569)' }}
                       />
                     ) : (
                       partOfSpeech
@@ -221,7 +220,7 @@ const VocabularyCardComponent = ({
               {derivatives.map((der, idx) => (
                 <div key={idx} className="leading-tight flex items-baseline gap-1.5">
                   <span className="text-gray-800 print:text-black font-medium" style={{ fontSize: scaledSize(11) }}>{der.word}</span>
-                  {der.partOfSpeech && <span className="text-gray-400" style={{ fontSize: scaledSize(8) }}>{der.partOfSpeech}</span>}
+                  {der.partOfSpeech && <span style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>{der.partOfSpeech}</span>}
                   <span className="text-gray-500" style={{ fontSize: scaledSize(10) }}>{der.meaning}</span>
                 </div>
               ))}
