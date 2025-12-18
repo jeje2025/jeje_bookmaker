@@ -58,11 +58,11 @@ const VocabularyTableComponent = ({ data, headerInfo, isEditable = false, onUpda
   const tableRows = data.map((item) => (
     <table key={item.id} className="w-full border-collapse">
       <tbody>
-        <tr 
-          className="border-b border-gray-200"
+        <tr
           style={{
             pageBreakInside: 'avoid',
-            breakInside: 'avoid'
+            breakInside: 'avoid',
+            borderBottom: '1px solid var(--badge-border, #cbd5e1)'
           }}
         >
           {/* 번호 */}
