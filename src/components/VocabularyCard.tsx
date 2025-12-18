@@ -1,5 +1,6 @@
 import { EditableText } from './EditableText';
 import { memo } from 'react';
+import { scaledSize } from '../utils/fontScale';
 
 interface VocabularyCardProps {
   id: number;
@@ -89,32 +90,32 @@ const VocabularyCardComponent = ({
           {/* Left: Word */}
           <div>
             <div className="inline-flex items-center justify-center px-1.5 py-0.5 backdrop-blur-md rounded-full mb-2" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
-              <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
+              <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>
                 {String(id).padStart(3, '0')}
               </p>
             </div>
-            <h2 className="mb-0.5 tracking-tight" style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--badge-text, #000)' }}>
+            <h2 className="mb-0.5 tracking-tight" style={{ fontSize: scaledSize(22), fontWeight: 'bold', color: 'var(--badge-text, #000)' }}>
               {isEditable ? (
                 <EditableText
                   value={word}
                   onChange={(val) => onUpdate?.(id, 'word', val)}
                   isEditable={true}
                   className="tracking-tight"
-                  style={{ fontSize: '22px', fontWeight: 'bold', color: 'var(--badge-text, #000)' }}
+                  style={{ fontSize: scaledSize(22), fontWeight: 'bold', color: 'var(--badge-text, #000)' }}
                 />
               ) : (
                 word
               )}
             </h2>
             {pronunciation && (
-              <p className="text-gray-400" style={{ fontSize: '10px', marginTop: '-2px' }}>
+              <p className="text-gray-400" style={{ fontSize: scaledSize(10), marginTop: '-2px' }}>
                 {isEditable ? (
                   <EditableText
                     value={pronunciation}
                     onChange={(val) => onUpdate?.(id, 'pronunciation', val)}
                     isEditable={true}
                     className="text-gray-400"
-                    style={{ fontSize: '10px' }}
+                    style={{ fontSize: scaledSize(10) }}
                   />
                 ) : (
                   pronunciation
@@ -127,15 +128,15 @@ const VocabularyCardComponent = ({
           <div className="flex gap-3">
             <div className="flex-1">
               <div className="mb-2">
-                <p className="text-black leading-snug" style={{ fontSize: '13px' }}>
-                  <span className="text-gray-400 print:text-black" style={{ fontSize: '10px', fontWeight: 'bold' }}>
+                <p className="text-black leading-snug" style={{ fontSize: scaledSize(13) }}>
+                  <span className="text-gray-400 print:text-black" style={{ fontSize: scaledSize(10), fontWeight: 'bold' }}>
                     {isEditable ? (
                       <EditableText
                         value={partOfSpeech}
                         onChange={(val) => onUpdate?.(id, 'partOfSpeech', val)}
                         isEditable={true}
                         className="text-gray-400"
-                        style={{ fontSize: '10px', fontWeight: 'bold' }}
+                        style={{ fontSize: scaledSize(10), fontWeight: 'bold' }}
                       />
                     ) : (
                       partOfSpeech
@@ -147,21 +148,21 @@ const VocabularyCardComponent = ({
                       onChange={(val) => onUpdate?.(id, 'meaning', val)}
                       isEditable={true}
                       className="text-black leading-snug"
-                      style={{ fontSize: '13px' }}
+                      style={{ fontSize: scaledSize(13) }}
                     />
                   ) : (
                     meaning
                   )}
                 </p>
                 {definition && (
-                  <p className="text-gray-500 leading-snug mt-0.5 italic" style={{ fontSize: '10.5px' }}>
+                  <p className="text-gray-500 leading-snug mt-0.5 italic" style={{ fontSize: scaledSize(10.5) }}>
                     {isEditable ? (
                       <EditableText
                         value={definition}
                         onChange={(val) => onUpdate?.(id, 'definition', val)}
                         isEditable={true}
                         className="text-gray-500 leading-snug italic"
-                        style={{ fontSize: '10.5px' }}
+                        style={{ fontSize: scaledSize(10.5) }}
                       />
                     ) : (
                       definition
@@ -170,13 +171,14 @@ const VocabularyCardComponent = ({
                 )}
               </div>
               <div className="pl-2.5 border-l border-gray-300">
-                <p className="text-xs text-black leading-snug mb-0.5">
+                <p className="text-black leading-snug mb-0.5" style={{ fontSize: scaledSize(12) }}>
                   {isEditable ? (
                     <EditableText
                       value={example}
                       onChange={(val) => onUpdate?.(id, 'example', val)}
                       isEditable={isEditable}
-                      className="text-xs text-black leading-snug"
+                      className="text-black leading-snug"
+                      style={{ fontSize: scaledSize(12) }}
                     >
                       {highlightWord(example, word)}
                     </EditableText>
@@ -184,14 +186,14 @@ const VocabularyCardComponent = ({
                     highlightWord(example, word)
                   )}
                 </p>
-                <p className="text-gray-600 leading-snug mb-0" style={{ fontSize: '10px' }}>
+                <p className="text-gray-600 leading-snug mb-0" style={{ fontSize: scaledSize(10) }}>
                   {isEditable ? (
                     <EditableText
                       value={translation}
                       onChange={(val) => onUpdate?.(id, 'translation', val)}
                       isEditable={isEditable}
                       className="text-gray-600 leading-snug"
-                      style={{ fontSize: '10px' }}
+                      style={{ fontSize: scaledSize(10) }}
                     >
                       {highlightTranslation(translation, translationHighlight)}
                     </EditableText>
@@ -212,15 +214,15 @@ const VocabularyCardComponent = ({
         </div>
 
         {/* Bottom section - Derivatives on left, Synonyms/Antonyms/Etymology on right */}
-        <div className="grid gap-4 text-xs bg-[rgba(0,0,0,0)]" style={{ gridTemplateColumns: '28% 72%' }}>
+        <div className="grid gap-4 bg-[rgba(0,0,0,0)]" style={{ gridTemplateColumns: '28% 72%', fontSize: scaledSize(12) }}>
           {/* Left: Derivatives */}
           <div>
             <div className="space-y-0.5">
               {derivatives.map((der, idx) => (
                 <div key={idx} className="leading-tight flex items-baseline gap-1.5">
-                  <span className="text-gray-800 print:text-black font-medium" style={{ fontSize: '11px' }}>{der.word}</span>
-                  {der.partOfSpeech && <span className="text-gray-400" style={{ fontSize: '8px' }}>{der.partOfSpeech}</span>}
-                  <span className="text-gray-500" style={{ fontSize: '10px' }}>{der.meaning}</span>
+                  <span className="text-gray-800 print:text-black font-medium" style={{ fontSize: scaledSize(11) }}>{der.word}</span>
+                  {der.partOfSpeech && <span className="text-gray-400" style={{ fontSize: scaledSize(8) }}>{der.partOfSpeech}</span>}
+                  <span className="text-gray-500" style={{ fontSize: scaledSize(10) }}>{der.meaning}</span>
                 </div>
               ))}
             </div>
@@ -231,9 +233,9 @@ const VocabularyCardComponent = ({
             {/* Synonyms - 25% */}
             <div>
               <div className="inline-flex items-center justify-center px-1 py-0.5 backdrop-blur-md rounded-full mb-0.5" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
-                <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>동</p>
+                <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>동</p>
               </div>
-              <div className="text-gray-600 print:text-black" style={{ fontSize: '10px' }}>
+              <div className="text-gray-600 print:text-black" style={{ fontSize: scaledSize(10) }}>
                 {isEditable ? (
                   <EditableText
                     value={synonyms.join(', ')}
@@ -243,7 +245,7 @@ const VocabularyCardComponent = ({
                     }}
                     isEditable={true}
                     className="text-gray-600 print:text-black"
-                    style={{ fontSize: '10px' }}
+                    style={{ fontSize: scaledSize(10) }}
                     multiline
                     inputWidth="100%"
                   />
@@ -256,9 +258,9 @@ const VocabularyCardComponent = ({
             {/* Antonyms - 25% */}
             <div>
               <div className="inline-flex items-center justify-center px-1 py-0.5 backdrop-blur-md rounded-full mb-0.5" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
-                <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>반</p>
+                <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>반</p>
               </div>
-              <div className="text-gray-600 print:text-black" style={{ fontSize: '10px' }}>
+              <div className="text-gray-600 print:text-black" style={{ fontSize: scaledSize(10) }}>
                 {isEditable ? (
                   <EditableText
                     value={antonyms.join(', ')}
@@ -268,7 +270,7 @@ const VocabularyCardComponent = ({
                     }}
                     isEditable={true}
                     className="text-gray-600 print:text-black"
-                    style={{ fontSize: '10px' }}
+                    style={{ fontSize: scaledSize(10) }}
                     multiline
                     inputWidth="100%"
                   />
@@ -281,16 +283,16 @@ const VocabularyCardComponent = ({
             {/* Etymology - 50% */}
             <div className="col-span-2">
               <div className="inline-flex items-center justify-center px-1.5 py-0.5 backdrop-blur-md rounded-full mb-0.5" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
-                <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>Tip</p>
+                <p className="uppercase tracking-tight font-medium text-center" style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>Tip</p>
               </div>
-              <div className="text-gray-600 print:text-black leading-snug" style={{ fontSize: '10px' }}>
+              <div className="text-gray-600 print:text-black leading-snug" style={{ fontSize: scaledSize(10) }}>
                 {isEditable ? (
                   <EditableText
                     value={etymology}
                     onChange={(val) => onUpdate?.(id, 'etymology', val)}
                     isEditable={true}
                     className="text-gray-600 leading-snug"
-                    style={{ fontSize: '10px' }}
+                    style={{ fontSize: scaledSize(10) }}
                     multiline
                   />
                 ) : (

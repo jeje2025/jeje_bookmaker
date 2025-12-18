@@ -160,13 +160,6 @@ export function ColorPaletteSelector({ currentPalette, onPaletteChange }: ColorP
           className="px-4 py-2 rounded-lg transition-all flex items-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200"
           title="뱃지 색상 변경"
         >
-          <div
-            className="w-4 h-4 rounded-full border"
-            style={{
-              backgroundColor: pantoneColors[currentPalette].badgeBg,
-              borderColor: pantoneColors[currentPalette].badgeBorder
-            }}
-          />
           <Palette size={16} />
           <span className="text-sm">컬러</span>
         </button>

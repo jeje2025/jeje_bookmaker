@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from './components/ui/button';
 import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image, Save, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { type PaletteKey, pantoneColors, ColorPaletteSelector, applyPalette } from './components/ColorPaletteSelector';
+import { type FontSizeKey, FontSizeSelector, applyFontSize, fontSizes } from './components/FontSizeSelector';
 import { UnitSplitButton } from './components/UnitSplitButton';
 import { VocabularyCover } from './components/VocabularyCover';
 import { VocabularyInput } from './components/VocabularyInput';
@@ -222,13 +223,15 @@ export default function App() {
   const [unitSize, setUnitSize] = useState<number | null>(null); // 유닛당 단어 수 (null = 분할 안 함)
   const [currentUnit, setCurrentUnit] = useState<number>(1); // 현재 보고 있는 유닛 번호
   const [colorPalette, setColorPalette] = useState<PaletteKey>('default'); // 배경색 팔레트
+  const [fontSize, setFontSize] = useState<FontSizeKey>('small'); // 글씨 크기
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // 사이드바 접기
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
-  // 앱 시작 시 기본 팔레트 적용
+  // 앱 시작 시 기본 팔레트 및 글씨 크기 적용
   useEffect(() => {
     applyPalette(colorPalette);
+    applyFontSize(fontSize);
   }, []);
 
   // 최근 로그 가져오기
@@ -592,7 +595,7 @@ export default function App() {
             // 전체 진행률 계산: (완료 유닛 + 현재 유닛 진행률) / 전체 유닛
             const overallProgress = Math.round(((i + progress / 100) / unitsCount) * 100);
             setPdfProgress({ progress: overallProgress, message: `Unit ${unitNum}/${unitsCount}: ${message}` });
-          }, pantoneColors[colorPalette]);
+          }, pantoneColors[colorPalette], fontSizes[fontSize].scale);
 
           // 다음 파일 전 딜레이
           if (i < unitsCount - 1) {
@@ -605,7 +608,7 @@ export default function App() {
         const filename = `${headerInfo.headerTitle} - ${viewModeName}`;
         await downloadPDF(vocabularyList, headerInfo, viewMode, filename, undefined, (progress, message) => {
           setPdfProgress({ progress, message });
-        }, pantoneColors[colorPalette]);
+        }, pantoneColors[colorPalette], fontSizes[fontSize].scale);
         toast.success('PDF 다운로드 완료!', { duration: 2000 });
       }
     } catch (error) {
@@ -614,7 +617,7 @@ export default function App() {
     } finally {
       setIsPDFLoading(false);
     }
-  }, [headerInfo, viewMode, unitSize, vocabularyList, colorPalette]);
+  }, [headerInfo, viewMode, unitSize, vocabularyList, colorPalette, fontSize]);
 
   // 단어 순서 랜덤 섞기 (ID는 1부터 유지)
   const handleShuffleWords = () => {
@@ -834,14 +837,14 @@ export default function App() {
           {(viewMode === 'table' || viewMode === 'card') && (
             <button
               onClick={() => setIsEditMode(!isEditMode)}
-              className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+              className={`shrink-0 px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
                 isEditMode
-                  ? 'text-blue-600 font-semibold'
-                  : 'text-amber-600 hover:text-amber-700'
+                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              <Edit3 size={14} />
-              {isEditMode ? '편집중' : '편집'}
+              <Edit3 size={16} />
+              <span className="text-sm">{isEditMode ? '편집중' : '편집'}</span>
             </button>
           )}
 
@@ -894,6 +897,14 @@ export default function App() {
             <ColorPaletteSelector
               currentPalette={colorPalette}
               onPaletteChange={setColorPalette}
+            />
+          </div>
+
+          {/* 글씨 크기 */}
+          <div className="shrink-0">
+            <FontSizeSelector
+              currentSize={fontSize}
+              onSizeChange={setFontSize}
             />
           </div>
 

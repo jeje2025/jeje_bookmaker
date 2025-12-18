@@ -1,5 +1,6 @@
 import { HeaderFooter } from './HeaderFooter';
 import { A4PageLayout } from './A4PageLayout';
+import { scaledSize } from '../utils/fontScale';
 
 interface VocabularyItem {
   id: number;
@@ -51,7 +52,7 @@ export function VocabularyTableSimple({ data, headerInfo, unitNumber }: Vocabula
           {/* 왼쪽 - 번호 */}
           <td className="py-2 px-1 align-top" style={{ width: '4%' }}>
             <div className="inline-flex items-center justify-center backdrop-blur-md rounded-full" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)', padding: '2px 6px', minWidth: '26px' }}>
-              <span className="font-medium text-center" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
+              <span className="font-medium text-center" style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>
                 {String(pair.left.id).padStart(3, '0')}
               </span>
             </div>
@@ -59,14 +60,14 @@ export function VocabularyTableSimple({ data, headerInfo, unitNumber }: Vocabula
 
           {/* 왼쪽 - 단어 */}
           <td className="py-2 px-3 align-top" style={{ width: '18%' }}>
-            <div style={{ fontSize: '14px', fontWeight: 'bold' }} className="text-black">
+            <div style={{ fontSize: scaledSize(14), fontWeight: 'bold' }} className="text-black">
               {pair.left.word}
             </div>
           </td>
 
           {/* 왼쪽 - 뜻 */}
           <td className="py-2 px-3 align-top" style={{ width: '28%' }}>
-            <div className="text-black" style={{ fontSize: '10px' }}>
+            <div className="text-black" style={{ fontSize: scaledSize(10) }}>
               {pair.left.meaning}
             </div>
           </td>
@@ -75,7 +76,7 @@ export function VocabularyTableSimple({ data, headerInfo, unitNumber }: Vocabula
           <td className="py-2 px-1 align-top" style={{ width: '4%' }}>
             {pair.right && (
               <div className="inline-flex items-center justify-center backdrop-blur-md rounded-full" style={{ backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)', padding: '2px 6px', minWidth: '26px' }}>
-                <span className="font-medium text-center" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
+                <span className="font-medium text-center" style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>
                   {String(pair.right.id).padStart(3, '0')}
                 </span>
               </div>
@@ -85,7 +86,7 @@ export function VocabularyTableSimple({ data, headerInfo, unitNumber }: Vocabula
           {/* 오른쪽 - 단어 */}
           <td className="py-2 px-3 align-top" style={{ width: '18%' }}>
             {pair.right && (
-              <div style={{ fontSize: '14px', fontWeight: 'bold' }} className="text-black">
+              <div style={{ fontSize: scaledSize(14), fontWeight: 'bold' }} className="text-black">
                 {pair.right.word}
               </div>
             )}
@@ -94,7 +95,7 @@ export function VocabularyTableSimple({ data, headerInfo, unitNumber }: Vocabula
           {/* 오른쪽 - 뜻 */}
           <td className="py-2 px-3 align-top" style={{ width: '28%' }}>
             {pair.right && (
-              <div className="text-black" style={{ fontSize: '10px' }}>
+              <div className="text-black" style={{ fontSize: scaledSize(10) }}>
                 {pair.right.meaning}
               </div>
             )}

@@ -7,15 +7,17 @@ interface A4PageLayoutProps {
   showHeaderOnFirstPageOnly?: boolean;
   showFooterOnLastPageOnly?: boolean;
   tableHeader?: React.ReactNode; // 테이블 헤더 (매 페이지 상단에 표시)
+  fontScale?: number; // 글씨 크기 스케일 (페이지 분할 재계산용)
 }
 
-export function A4PageLayout({ 
-  children, 
-  headerContent, 
+export function A4PageLayout({
+  children,
+  headerContent,
   footerContent,
   showHeaderOnFirstPageOnly = false,
   showFooterOnLastPageOnly = false,
-  tableHeader
+  tableHeader,
+  fontScale = 1
 }: A4PageLayoutProps) {
   const [pages, setPages] = useState<React.ReactNode[][]>([]);
   const measureRef = useRef<HTMLDivElement>(null);
@@ -125,7 +127,7 @@ export function A4PageLayout({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [children, headerContent, footerContent, showHeaderOnFirstPageOnly, showFooterOnLastPageOnly, tableHeader]);
+  }, [children, headerContent, footerContent, showHeaderOnFirstPageOnly, showFooterOnLastPageOnly, tableHeader, fontScale]);
 
   return (
     <>

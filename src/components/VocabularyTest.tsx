@@ -1,6 +1,7 @@
 import { HeaderFooter } from './HeaderFooter';
 import { A4PageLayout } from './A4PageLayout';
 import { useMemo } from 'react';
+import { scaledSize } from '../utils/fontScale';
 
 interface VocabularyItem {
   id: number;
@@ -117,40 +118,40 @@ export function VocabularyTest({ data, headerInfo, unitNumber }: VocabularyTestP
               <div className="flex items-start gap-2 my-[4px] mx-[0px] px-[0px] py-[4px]">
                 {/* 번호 */}
                 <div className="inline-flex items-center justify-center px-1.5 py-0.5 backdrop-blur-md rounded-full min-w-[28px]" style={{ flexShrink: 0, backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
-                  <span className="font-medium text-center" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
+                  <span className="font-medium text-center" style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>
                     {String(pair.left.id).padStart(3, '0')}
                   </span>
                 </div>
-                
+
                 {/* 단어 */}
-                <div style={{ fontSize: '14px', fontWeight: 'bold', flexShrink: 0 }} className="text-black">
+                <div style={{ fontSize: scaledSize(14), fontWeight: 'bold', flexShrink: 0 }} className="text-black">
                   {pair.left.word}
                 </div>
-                
+
                 {/* 뜻: 라벨 */}
-                <div className="text-gray-500 print:text-black" style={{ fontSize: '9px', flexShrink: 0, paddingTop: '4px' }}>
+                <div className="text-gray-500 print:text-black" style={{ fontSize: scaledSize(9), flexShrink: 0, paddingTop: '4px' }}>
                   뜻:
                 </div>
-                
+
                 {/* 뜻 쓰는 칸 */}
-                <div className="flex-1" style={{ 
+                <div className="flex-1" style={{
                   borderBottom: '1px solid #d1d5db',
                   minHeight: '20px'
                 }}>
                 </div>
               </div>
             </div>
-            
+
             {/* 동의어 선택 */}
             <div className="flex flex-wrap gap-x-3 gap-y-1.5 my-[16px] mx-[0px]">
               {pair.left.allChoices.map((choice, idx) => (
-                <div 
+                <div
                   key={idx}
                   className="inline-flex items-center gap-1.5"
-                  style={{ fontSize: '11px' }}
+                  style={{ fontSize: scaledSize(11) }}
                 >
                   <span className="text-gray-400 print:text-black">□</span>
-                  <span className="text-gray-700 print:text-black text-[12px]">{choice.word}</span>
+                  <span className="text-gray-700 print:text-black" style={{ fontSize: scaledSize(12) }}>{choice.word}</span>
                 </div>
               ))}
             </div>
@@ -164,40 +165,40 @@ export function VocabularyTest({ data, headerInfo, unitNumber }: VocabularyTestP
                   <div className="flex items-start gap-2 my-[4px] mx-[0px] px-[0px] py-[4px]">
                     {/* 번호 */}
                     <div className="inline-flex items-center justify-center px-1.5 py-0.5 backdrop-blur-md rounded-full min-w-[28px]" style={{ flexShrink: 0, backgroundColor: 'var(--badge-bg, #f1f5f9)', boxShadow: '0 0 0 0.5px var(--badge-border, #cbd5e1)' }}>
-                      <span className="font-medium text-center" style={{ fontSize: '8px', color: 'var(--badge-text, #475569)' }}>
+                      <span className="font-medium text-center" style={{ fontSize: scaledSize(8), color: 'var(--badge-text, #475569)' }}>
                         {String(pair.right.id).padStart(3, '0')}
                       </span>
                     </div>
-                    
+
                     {/* 단어 */}
-                    <div style={{ fontSize: '14px', fontWeight: 'bold', flexShrink: 0 }} className="text-black">
+                    <div style={{ fontSize: scaledSize(14), fontWeight: 'bold', flexShrink: 0 }} className="text-black">
                       {pair.right.word}
                     </div>
-                    
+
                     {/* 뜻: 라벨 */}
-                    <div className="text-gray-500 print:text-black" style={{ fontSize: '9px', flexShrink: 0, paddingTop: '4px' }}>
+                    <div className="text-gray-500 print:text-black" style={{ fontSize: scaledSize(9), flexShrink: 0, paddingTop: '4px' }}>
                       뜻:
                     </div>
-                    
+
                     {/* 뜻 쓰는 칸 */}
-                    <div className="flex-1" style={{ 
+                    <div className="flex-1" style={{
                       borderBottom: '1px solid #d1d5db',
                       minHeight: '20px'
                     }}>
                     </div>
                   </div>
                 </div>
-                
+
                 {/* 동의어 선택 */}
                 <div className="flex flex-wrap gap-x-3 gap-y-1.5 my-[16px] mx-[0px]">
                   {pair.right.allChoices.map((choice, idx) => (
-                    <div 
+                    <div
                       key={idx}
                       className="inline-flex items-center gap-1.5"
-                      style={{ fontSize: '11px' }}
+                      style={{ fontSize: scaledSize(11) }}
                     >
                       <span className="text-gray-400 print:text-black">□</span>
-                      <span className="text-gray-700 print:text-black text-[12px]">{choice.word}</span>
+                      <span className="text-gray-700 print:text-black" style={{ fontSize: scaledSize(12) }}>{choice.word}</span>
                     </div>
                   ))}
                 </div>

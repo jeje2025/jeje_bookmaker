@@ -43,15 +43,14 @@ export const UnitSplitButton = memo(function UnitSplitButton({
 
   return (
     <>
-      <Button
-        variant="outline"
+      <button
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2"
+        className="px-4 py-2 rounded-lg transition-all flex items-center gap-2 bg-slate-100 text-slate-600 hover:bg-slate-200 disabled:opacity-50"
         disabled={isPending}
       >
         <SplitSquareHorizontal size={16} className={isPending ? 'animate-spin' : ''} />
-        {isPending ? '적용 중...' : currentUnitSize ? `${currentUnitSize}개씩` : '분할'}
-      </Button>
+        <span className="text-sm">{isPending ? '적용 중...' : currentUnitSize ? `${currentUnitSize}개씩` : '분할'}</span>
+      </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

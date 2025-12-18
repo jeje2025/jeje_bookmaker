@@ -22,6 +22,7 @@ Font.register({
 Font.registerHyphenationCallback((word) => [word]);
 
 // A4 사이즈 스타일 - PDF pt 단위 보정 (화면 px의 약 75-80% 크기)
+// 정적 스타일 (fontSize가 없거나 스케일 불필요한 것들)
 const styles = StyleSheet.create({
   page: {
     paddingTop: 35,
@@ -584,6 +585,7 @@ interface VocabularyPDFProps {
   showPageNumber?: boolean;  // 페이지 번호 표시 여부 (청크 병합 시 false)
   allData?: VocabularyItem[];  // 오답 선택지 생성용 전체 데이터 (청크 분할 시 필요)
   paletteColors?: PaletteColors;  // 컬러 팔레트 (뱃지 색상)
+  fontScale?: number;  // 글씨 크기 스케일 (1 = 기본, 1.15 = 보통, 1.3 = 크게)
 }
 
 // seed 기반 랜덤 함수 (웹 미리보기와 동일)
@@ -704,17 +706,17 @@ const VocabularyCardPDF = ({ item, dynamicStyles, textColor }: { item: Vocabular
       <View style={styles.cardRight}>
         <View style={styles.cardRightContent}>
           <View style={styles.meaningContainer}>
-            <Text style={styles.meaning}>
-              <Text style={styles.partOfSpeech}>{item.partOfSpeech} </Text>
+            <Text style={dynamicStyles.meaningDynamic}>
+              <Text style={dynamicStyles.partOfSpeechDynamic}>{item.partOfSpeech} </Text>
               {item.meaning}
             </Text>
             {item.definition && (
-              <Text style={styles.definition}>{item.definition}</Text>
+              <Text style={dynamicStyles.definitionDynamic}>{item.definition}</Text>
             )}
           </View>
           <View style={styles.exampleContainer}>
-            {renderHighlightedExample(item.example, item.word, styles.example, textColor)}
-            {renderHighlightedTranslation(item.translation, item.translationHighlight, styles.translation, textColor)}
+            {renderHighlightedExample(item.example, item.word, dynamicStyles.exampleDynamic, textColor)}
+            {renderHighlightedTranslation(item.translation, item.translationHighlight, dynamicStyles.translationDynamic, textColor)}
           </View>
         </View>
         <View style={styles.checkboxContainer}>
@@ -731,11 +733,11 @@ const VocabularyCardPDF = ({ item, dynamicStyles, textColor }: { item: Vocabular
       <View style={styles.derivativesContainer}>
         {item.derivatives.map((der, idx) => (
           <View key={idx} style={styles.derivative}>
-            <Text style={styles.derivativeWord}>{der.word}</Text>
+            <Text style={dynamicStyles.derivativeWordDynamic}>{der.word}</Text>
             {der.partOfSpeech && (
-              <Text style={styles.derivativePos}>{der.partOfSpeech}</Text>
+              <Text style={dynamicStyles.derivativePosDynamic}>{der.partOfSpeech}</Text>
             )}
-            <Text style={styles.derivativeMeaning}>{der.meaning}</Text>
+            <Text style={dynamicStyles.derivativeMeaningDynamic}>{der.meaning}</Text>
           </View>
         ))}
       </View>
@@ -746,19 +748,19 @@ const VocabularyCardPDF = ({ item, dynamicStyles, textColor }: { item: Vocabular
           <View style={dynamicStyles.infoBadgeContainerDynamic}>
             <Text style={dynamicStyles.infoBadgeDynamic}>동</Text>
           </View>
-          <Text style={styles.infoText}>{item.synonyms.join(', ')}</Text>
+          <Text style={dynamicStyles.infoTextDynamic}>{item.synonyms.join(', ')}</Text>
         </View>
         <View style={styles.infoSection}>
           <View style={dynamicStyles.infoBadgeContainerDynamic}>
             <Text style={dynamicStyles.infoBadgeDynamic}>반</Text>
           </View>
-          <Text style={styles.infoText}>{item.antonyms.join(', ')}</Text>
+          <Text style={dynamicStyles.infoTextDynamic}>{item.antonyms.join(', ')}</Text>
         </View>
         <View style={styles.infoSectionWide}>
           <View style={dynamicStyles.infoBadgeContainerDynamic}>
             <Text style={dynamicStyles.infoBadgeDynamic}>Tip</Text>
           </View>
-          <Text style={styles.infoText}>{item.etymology}</Text>
+          <Text style={dynamicStyles.infoTextDynamic}>{item.etymology}</Text>
         </View>
       </View>
     </View>
@@ -774,36 +776,36 @@ const VocabularyTableRowPDF = ({ item, dynamicStyles, textColor }: { item: Vocab
       </View>
     </View>
     <View style={styles.tableColWord}>
-      <Text style={[styles.tableWord, { color: textColor }]}>{item.word}</Text>
+      <Text style={[dynamicStyles.tableWordDynamic, { color: textColor }]}>{item.word}</Text>
       {item.pronunciation && (
         <Text style={dynamicStyles.pronunciationTableDynamic}>{item.pronunciation}</Text>
       )}
       {item.derivatives.map((der, idx) => (
         <View key={idx} style={styles.tableDerivative}>
-          <Text style={styles.tableDerivativeWord}>{der.word}</Text>
-          <Text style={styles.tableDerivativeMeaning}>
+          <Text style={dynamicStyles.tableDerivativeWordDynamic}>{der.word}</Text>
+          <Text style={dynamicStyles.tableDerivativeMeaningDynamic}>
             {der.partOfSpeech && `${der.partOfSpeech} `}{der.meaning}
           </Text>
         </View>
       ))}
     </View>
     <View style={styles.tableColMeaning}>
-      <Text style={styles.tableMeaning}>{item.meaning}</Text>
-      {item.definition && <Text style={styles.tableDefinition}>{item.definition}</Text>}
-      {renderHighlightedExample(item.example, item.word, styles.tableExample, textColor)}
-      {renderHighlightedTranslation(item.translation, item.translationHighlight, styles.tableTranslation, textColor)}
+      <Text style={dynamicStyles.tableMeaningDynamic}>{item.meaning}</Text>
+      {item.definition && <Text style={dynamicStyles.tableDefinitionDynamic}>{item.definition}</Text>}
+      {renderHighlightedExample(item.example, item.word, dynamicStyles.tableExampleDynamic, textColor)}
+      {renderHighlightedTranslation(item.translation, item.translationHighlight, dynamicStyles.tableTranslationDynamic, textColor)}
     </View>
     <View style={styles.tableColSyn}>
       <View style={dynamicStyles.infoBadgeContainerDynamic}>
         <Text style={dynamicStyles.infoBadgeDynamic}>동</Text>
       </View>
-      <Text style={styles.infoText}>{item.synonyms.join(', ')}</Text>
+      <Text style={dynamicStyles.infoTextDynamic}>{item.synonyms.join(', ')}</Text>
     </View>
     <View style={styles.tableColAnt}>
       <View style={dynamicStyles.infoBadgeContainerDynamic}>
         <Text style={dynamicStyles.infoBadgeDynamic}>반</Text>
       </View>
-      <Text style={styles.infoText}>{item.antonyms.join(', ')}</Text>
+      <Text style={dynamicStyles.infoTextDynamic}>{item.antonyms.join(', ')}</Text>
     </View>
   </View>
 );
@@ -1157,17 +1159,20 @@ const blendWithWhite = (hex: string, opacity: number): string => {
   return `#${toHex(blendedR)}${toHex(blendedG)}${toHex(blendedB)}`;
 };
 
-// 동적 스타일 생성 함수
-const createDynamicStyles = (palette: PaletteColors) => {
+// 동적 스타일 생성 함수 (fontScale 추가)
+const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
   // 흰색 배경에 혼합된 불투명 색상으로 투명도 시뮬레이션
   const bgColor = blendWithWhite(palette.badgeBg, palette.badgeBgOpacity);
   const borderColor = blendWithWhite(palette.badgeBorder, palette.badgeBorderOpacity);
   const textColor = blendWithWhite(palette.badgeText, palette.badgeTextOpacity);
 
+  // fontSize에 스케일 적용하는 헬퍼
+  const scaled = (size: number) => size * fontScale;
+
   return StyleSheet.create({
     // 헤더 타이틀 (동적 팔레트)
     headerTitleDynamic: {
-      fontSize: 10,
+      fontSize: scaled(10),
       fontWeight: 700,
       textTransform: 'uppercase',
       letterSpacing: 1.5,
@@ -1182,6 +1187,12 @@ const createDynamicStyles = (palette: PaletteColors) => {
       borderWidth: 0.5,
       borderColor: borderColor,
       textAlign: 'center',
+    },
+    // 헤더 설명 (스케일 적용)
+    headerDescriptionDynamic: {
+      fontSize: scaled(8),
+      color: '#4b5563',
+      marginTop: 6,
     },
     // ID 배지 컨테이너 (동적 팔레트)
     idBadgeContainerDynamic: {
@@ -1199,7 +1210,7 @@ const createDynamicStyles = (palette: PaletteColors) => {
     },
     // ID 배지 텍스트 (동적 팔레트)
     idBadgeDynamic: {
-      fontSize: 6,
+      fontSize: scaled(6),
       fontWeight: 700,
       color: textColor,
       textAlign: 'center',
@@ -1220,7 +1231,7 @@ const createDynamicStyles = (palette: PaletteColors) => {
     },
     // 정보 배지 텍스트 (동, 반, Tip) (동적 팔레트)
     infoBadgeDynamic: {
-      fontSize: 6,
+      fontSize: scaled(6),
       fontWeight: 700,
       color: textColor,
       textAlign: 'center',
@@ -1230,7 +1241,7 @@ const createDynamicStyles = (palette: PaletteColors) => {
       position: 'absolute',
       top: 0,
       left: 0,
-      fontSize: 8,
+      fontSize: scaled(8),
       color: textColor,
       backgroundColor: bgColor,
       paddingHorizontal: 8,
@@ -1242,7 +1253,7 @@ const createDynamicStyles = (palette: PaletteColors) => {
     },
     // 단어 (동적 팔레트)
     wordDynamic: {
-      fontSize: 16,
+      fontSize: scaled(16),
       fontWeight: 700,
       color: textColor,
       marginBottom: 1.5,
@@ -1250,13 +1261,13 @@ const createDynamicStyles = (palette: PaletteColors) => {
     },
     // 발음기호 (원래 회색)
     pronunciationDynamic: {
-      fontSize: 8,
+      fontSize: scaled(8),
       color: '#9ca3af',
       marginTop: -1,
     },
     // 발음기호 테이블용 (원래 회색)
     pronunciationTableDynamic: {
-      fontSize: 7,
+      fontSize: scaled(7),
       color: '#9ca3af',
       marginTop: -1,
     },
@@ -1279,20 +1290,186 @@ const createDynamicStyles = (palette: PaletteColors) => {
       paddingRight: 14,
       marginBottom: 10,
     },
+    // ===== 카드 텍스트 스타일 (스케일 적용) =====
+    partOfSpeechDynamic: {
+      fontSize: scaled(7),
+      fontWeight: 700,
+      color: '#9ca3af',
+    },
+    meaningDynamic: {
+      fontSize: scaled(10),
+      color: '#000000',
+      lineHeight: 1.4,
+    },
+    definitionDynamic: {
+      fontSize: scaled(8),
+      color: '#6b7280',
+      marginTop: 2,
+      lineHeight: 1.3,
+      fontStyle: 'italic',
+    },
+    exampleDynamic: {
+      fontSize: scaled(9),
+      color: '#000000',
+      marginBottom: 2,
+      lineHeight: 1.4,
+    },
+    translationDynamic: {
+      fontSize: scaled(7.5),
+      color: '#4b5563',
+      lineHeight: 1.3,
+    },
+    derivativeWordDynamic: {
+      fontSize: scaled(8),
+      color: '#1f2937',
+      fontWeight: 700,
+    },
+    derivativePosDynamic: {
+      fontSize: scaled(6),
+      color: '#9ca3af',
+    },
+    derivativeMeaningDynamic: {
+      fontSize: scaled(7),
+      color: '#6b7280',
+    },
+    infoTextDynamic: {
+      fontSize: scaled(8),
+      color: '#4b5563',
+      lineHeight: 1.3,
+    },
+    // ===== 표버전 스타일 (스케일 적용) =====
+    tableWordDynamic: {
+      fontSize: scaled(10),
+      fontWeight: 700,
+      color: '#000000',
+      marginBottom: 3,
+    },
+    tableDerivativeWordDynamic: {
+      fontSize: scaled(8),
+      color: '#1f2937',
+    },
+    tableDerivativeMeaningDynamic: {
+      fontSize: scaled(6),
+      color: '#6b7280',
+    },
+    tableMeaningDynamic: {
+      fontSize: scaled(8.5),
+      color: '#000000',
+      lineHeight: 1.25,
+      marginBottom: 3,
+    },
+    tableDefinitionDynamic: {
+      fontSize: scaled(6.5),
+      color: '#6b7280',
+      fontStyle: 'italic',
+      lineHeight: 1.25,
+      marginBottom: 3,
+    },
+    tableExampleDynamic: {
+      fontSize: scaled(7),
+      color: '#000000',
+      lineHeight: 1.25,
+      marginBottom: 3,
+    },
+    tableTranslationDynamic: {
+      fontSize: scaled(6.5),
+      color: '#4b5563',
+      lineHeight: 1.25,
+    },
+    // ===== 간단버전 스타일 (스케일 적용) =====
+    simpleWordDynamic: {
+      fontSize: scaled(10),
+      fontWeight: 700,
+      color: '#000000',
+    },
+    simpleMeaningDynamic: {
+      fontSize: scaled(7),
+      color: '#000000',
+    },
+    // ===== 테스트지 스타일 (스케일 적용) =====
+    testWordDynamic: {
+      fontSize: scaled(10),
+      fontWeight: 700,
+      color: '#000000',
+    },
+    testMeaningLabelDynamic: {
+      fontSize: scaled(6.5),
+      color: '#6b7280',
+      paddingTop: 3,
+    },
+    testCheckboxDynamic: {
+      fontSize: scaled(8),
+      color: '#9ca3af',
+      marginRight: 4,
+    },
+    testChoiceTextDynamic: {
+      fontSize: scaled(8.5),
+      color: '#374151',
+    },
+    // ===== 영영정의 테스트지 스타일 (스케일 적용) =====
+    defTestDefinitionDynamic: {
+      fontSize: scaled(6.5),
+      color: '#4b5563',
+      fontStyle: 'italic',
+      marginBottom: 3,
+    },
+    // ===== 답지 스타일 (스케일 적용) =====
+    answerCorrectDynamic: {
+      fontSize: scaled(7),
+      color: '#059669',
+      fontWeight: 700,
+    },
+    answerMeaningLabelDynamic: {
+      fontSize: scaled(6.5),
+      color: '#000000',
+      marginBottom: 3,
+    },
+    answerSynonymLabelDynamic: {
+      fontSize: scaled(7),
+      color: '#4b5563',
+    },
+    answerSynonymValueDynamic: {
+      fontSize: scaled(7),
+      color: '#1f2937',
+      fontWeight: 700,
+    },
+    answerWrongXDynamic: {
+      fontSize: scaled(6.5),
+      color: '#dc2626',
+      marginRight: 2,
+    },
+    answerWrongTextDynamic: {
+      fontSize: scaled(6.5),
+      color: '#4b5563',
+    },
+    // ===== 푸터 스타일 (스케일 적용) =====
+    footerTextDynamic: {
+      fontSize: scaled(6),
+      color: '#4b5563',
+    },
+    pageNumberDynamic: {
+      position: 'absolute',
+      bottom: 20,
+      right: 30,
+      fontSize: scaled(6),
+      color: '#9ca3af',
+    },
   });
 };
 
 // 메인 PDF 문서
-export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber, showPageNumber = true, allData, paletteColors }: VocabularyPDFProps) => {
+export const VocabularyPDF = ({ data, headerInfo, viewMode = 'card', unitNumber, showPageNumber = true, allData, paletteColors, fontScale = 1 }: VocabularyPDFProps) => {
   const pairedData = pairData(data);
   // 오답 선택지 생성용 전체 데이터 (allData가 없으면 data 사용)
   const fullData = allData || data;
   // 팔레트 색상 (없으면 기본값 사용)
   const palette = paletteColors || defaultPalette;
-  // 동적 스타일 생성
-  const dynamicStyles = createDynamicStyles(palette);
+  // 동적 스타일 생성 (fontScale 전달)
+  const dynamicStyles = createDynamicStyles(palette, fontScale);
   // 텍스트 색상 (문장 내 단어 하이라이트용)
   const textColor = blendWithWhite(palette.badgeText, palette.badgeTextOpacity);
+  // fontSize 스케일 헬퍼
+  const scaled = (size: number) => size * fontScale;
 
   // 콘텐츠 렌더링 함수
   const renderContent = () => {

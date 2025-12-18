@@ -1,3 +1,5 @@
+import { scaledSize } from '../utils/fontScale';
+
 interface HeaderInfo {
   headerTitle: string;
   headerDescription: string;
@@ -74,11 +76,11 @@ export function HeaderFooter({
                   value={headerInfo.headerDescription || ''}
                   onChange={(e) => onHeaderChange?.({ ...headerInfo, headerDescription: e.target.value })}
                   placeholder="설명 입력"
-                  style={{ fontSize: '11px', fontFamily: 'SUIT' }}
+                  style={{ fontSize: scaledSize(11), fontFamily: 'SUIT' }}
                   className="text-gray-600 print:text-black text-center border-b border-gray-300 focus:border-gray-600 outline-none bg-transparent max-w-md"
                 />
               ) : (
-                <p style={{ fontSize: '11px', fontFamily: 'SUIT' }} className="text-gray-600 print:text-black text-center">
+                <p style={{ fontSize: scaledSize(11), fontFamily: 'SUIT' }} className="text-gray-600 print:text-black text-center">
                   {headerInfo.headerDescription}
                 </p>
               )}
@@ -96,11 +98,11 @@ export function HeaderFooter({
               value={headerInfo.footerLeft || ''}
               onChange={(e) => onFooterChange?.(e.target.value)}
               placeholder="푸터 내용 입력"
-              style={{ fontSize: '11px', fontFamily: 'SUIT' }}
+              style={{ fontSize: scaledSize(11), fontFamily: 'SUIT' }}
               className="text-gray-600 print:text-black border-b border-gray-300 focus:border-gray-600 outline-none bg-transparent w-64"
             />
           ) : (
-            <p style={{ fontSize: '11px', fontFamily: 'SUIT' }} className="text-gray-600 print:text-black">
+            <p style={{ fontSize: scaledSize(11), fontFamily: 'SUIT' }} className="text-gray-600 print:text-black">
               {headerInfo.footerLeft || ''}
             </p>
           )}

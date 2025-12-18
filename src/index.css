@@ -2887,6 +2887,7 @@
 
 :root {
   --font-size: 16px;
+  --font-scale: 1;
   --background: #fff;
   --foreground: oklch(.145 0 0);
   --card: #fff;
