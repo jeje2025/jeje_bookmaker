@@ -1460,31 +1460,31 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
     },
     // ===== 답지 스타일 (스케일 적용) =====
     answerCorrectDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(10),
       color: '#059669',
       fontWeight: 700,
     },
     answerMeaningLabelDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(10),
       color: '#000000',
-      marginBottom: 3,
+      marginBottom: 4,
     },
     answerSynonymLabelDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(10),
       color: '#000000',
     },
     answerSynonymValueDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(10),
       color: '#000000',
       fontWeight: 700,
     },
     answerWrongXDynamic: {
-      fontSize: scaled(8),
+      fontSize: scaled(9),
       color: '#dc2626',
-      marginRight: 2,
+      marginRight: 3,
     },
     answerWrongTextDynamic: {
-      fontSize: scaled(8),
+      fontSize: scaled(9),
       color: '#000000',
     },
     // ===== 푸터 스타일 (스케일 적용) =====
