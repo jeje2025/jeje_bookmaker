@@ -812,17 +812,17 @@ const VocabularyTableRowPDF = ({ item, dynamicStyles, textColor }: { item: Vocab
 
 // ===== 간단버전 컴포넌트 =====
 const VocabularySimpleRowPDF = ({ left, right, dynamicStyles }: { left: VocabularyItem; right: VocabularyItem | null; dynamicStyles: DynamicStyles }) => (
-  <View style={styles.simpleRow} wrap={false}>
+  <View style={dynamicStyles.simpleRowDynamic} wrap={false}>
     <View style={styles.simpleColId}>
       <View style={dynamicStyles.idBadgeContainerDynamic}>
         <Text style={dynamicStyles.idBadgeDynamic}>{String(left.id).padStart(3, '0')}</Text>
       </View>
     </View>
     <View style={styles.simpleColWord}>
-      <Text style={styles.simpleWord}>{left.word}</Text>
+      <Text style={dynamicStyles.simpleWordDynamic}>{left.word}</Text>
     </View>
     <View style={styles.simpleColMeaning}>
-      <Text style={styles.simpleMeaning}>{left.meaning}</Text>
+      <Text style={dynamicStyles.simpleMeaningDynamic}>{left.meaning}</Text>
     </View>
     {right ? (
       <>
@@ -832,10 +832,10 @@ const VocabularySimpleRowPDF = ({ left, right, dynamicStyles }: { left: Vocabula
           </View>
         </View>
         <View style={styles.simpleColWord}>
-          <Text style={styles.simpleWord}>{right.word}</Text>
+          <Text style={dynamicStyles.simpleWordDynamic}>{right.word}</Text>
         </View>
         <View style={styles.simpleColMeaning}>
-          <Text style={styles.simpleMeaning}>{right.meaning}</Text>
+          <Text style={dynamicStyles.simpleMeaningDynamic}>{right.meaning}</Text>
         </View>
       </>
     ) : (
@@ -850,17 +850,17 @@ const VocabularySimpleRowPDF = ({ left, right, dynamicStyles }: { left: Vocabula
 
 // ===== 테스트용 간단버전 컴포넌트 (뜻 숨김) =====
 const VocabularySimpleTestRowPDF = ({ left, right, dynamicStyles }: { left: VocabularyItem; right: VocabularyItem | null; dynamicStyles: DynamicStyles }) => (
-  <View style={styles.simpleRow} wrap={false}>
+  <View style={dynamicStyles.simpleRowDynamic} wrap={false}>
     <View style={styles.simpleColId}>
       <View style={dynamicStyles.idBadgeContainerDynamic}>
         <Text style={dynamicStyles.idBadgeDynamic}>{String(left.id).padStart(3, '0')}</Text>
       </View>
     </View>
     <View style={styles.simpleColWord}>
-      <Text style={styles.simpleWord}>{left.word}</Text>
+      <Text style={dynamicStyles.simpleWordDynamic}>{left.word}</Text>
     </View>
     <View style={styles.simpleColMeaning}>
-      <View style={{ borderBottomWidth: 1, borderBottomColor: '#d1d5db', height: 14, width: '90%' }} />
+      <View style={dynamicStyles.simpleMeaningLineDynamic} />
     </View>
     {right ? (
       <>
@@ -870,10 +870,10 @@ const VocabularySimpleTestRowPDF = ({ left, right, dynamicStyles }: { left: Voca
           </View>
         </View>
         <View style={styles.simpleColWord}>
-          <Text style={styles.simpleWord}>{right.word}</Text>
+          <Text style={dynamicStyles.simpleWordDynamic}>{right.word}</Text>
         </View>
         <View style={styles.simpleColMeaning}>
-          <View style={{ borderBottomWidth: 1, borderBottomColor: '#d1d5db', height: 14, width: '90%' }} />
+          <View style={dynamicStyles.simpleMeaningLineDynamic} />
         </View>
       </>
     ) : (
@@ -899,46 +899,46 @@ const VocabularyTestRowPDF = ({ left, right, allData, unitNumber, dynamicStyles 
   const rightQ = right ? questions.find(q => q.id === right.id) : null;
 
   return (
-    <View style={styles.testRow} wrap={false}>
-      <View style={styles.testCol}>
+    <View style={dynamicStyles.testRowDynamic} wrap={false}>
+      <View style={dynamicStyles.testColDynamic}>
         <View style={styles.testHeader}>
           <View style={dynamicStyles.idBadgeContainerDynamic}>
             <Text style={dynamicStyles.idBadgeDynamic}>{String(left.id).padStart(3, '0')}</Text>
           </View>
-          <Text style={styles.testWord}>{left.word}</Text>
-          <Text style={styles.testMeaningLabel}>뜻:</Text>
-          <View style={styles.testMeaningLine} />
+          <Text style={dynamicStyles.testWordDynamic}>{left.word}</Text>
+          <Text style={dynamicStyles.testMeaningLabelDynamic}>뜻:</Text>
+          <View style={dynamicStyles.testMeaningLineDynamic} />
         </View>
         <View style={styles.testChoices}>
           {leftQ?.allChoices.map((choice, idx) => (
             <View key={idx} style={styles.testChoice}>
-              <Text style={styles.testCheckbox}>□</Text>
-              <Text style={styles.testChoiceText}>{choice.word}</Text>
+              <Text style={dynamicStyles.testCheckboxDynamic}>□</Text>
+              <Text style={dynamicStyles.testChoiceTextDynamic}>{choice.word}</Text>
             </View>
           ))}
         </View>
       </View>
       {rightQ ? (
-        <View style={styles.testColRight}>
+        <View style={dynamicStyles.testColRightDynamic}>
           <View style={styles.testHeader}>
             <View style={dynamicStyles.idBadgeContainerDynamic}>
               <Text style={dynamicStyles.idBadgeDynamic}>{String(right!.id).padStart(3, '0')}</Text>
             </View>
-            <Text style={styles.testWord}>{right!.word}</Text>
-            <Text style={styles.testMeaningLabel}>뜻:</Text>
-            <View style={styles.testMeaningLine} />
+            <Text style={dynamicStyles.testWordDynamic}>{right!.word}</Text>
+            <Text style={dynamicStyles.testMeaningLabelDynamic}>뜻:</Text>
+            <View style={dynamicStyles.testMeaningLineDynamic} />
           </View>
           <View style={styles.testChoices}>
             {rightQ.allChoices.map((choice, idx) => (
               <View key={idx} style={styles.testChoice}>
-                <Text style={styles.testCheckbox}>□</Text>
-                <Text style={styles.testChoiceText}>{choice.word}</Text>
+                <Text style={dynamicStyles.testCheckboxDynamic}>□</Text>
+                <Text style={dynamicStyles.testChoiceTextDynamic}>{choice.word}</Text>
               </View>
             ))}
           </View>
         </View>
       ) : (
-        <View style={styles.testColRight} />
+        <View style={dynamicStyles.testColRightDynamic} />
       )}
     </View>
   );
@@ -956,18 +956,21 @@ const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber, dynamicStyl
   const leftQ = questions.find(q => q.id === left.id);
   const rightQ = right ? questions.find(q => q.id === right.id) : null;
 
+  // borderColor 계산 (dynamicStyles에서 가져오기)
+  const borderColor = dynamicStyles.testRowDynamic.borderBottomColor;
+
   const renderTestContent = (q: typeof leftQ, item: VocabularyItem) => (
     <>
       <View style={styles.testHeader}>
         <View style={dynamicStyles.idBadgeContainerDynamic}>
           <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
         </View>
-        <Text style={styles.testWord}>{item.word}</Text>
+        <Text style={dynamicStyles.testWordDynamic}>{item.word}</Text>
       </View>
       {/* 뜻 쓰는 칸 */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-        <Text style={{ fontSize: 6.5, color: '#6b7280', marginRight: 4 }}>뜻:</Text>
-        <View style={{ flex: 1, borderBottomWidth: 1, borderBottomColor: '#d1d5db', height: 12 }} />
+        <Text style={{ fontSize: 6.5, color: '#000000', marginRight: 4 }}>뜻:</Text>
+        <View style={dynamicStyles.testMeaningLineDynamic} />
       </View>
       {/* 4지선다 */}
       {q?.allChoices.map((choice, idx) => (
@@ -977,31 +980,31 @@ const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber, dynamicStyl
             height: 12,
             borderRadius: 6,
             borderWidth: 1,
-            borderColor: '#d1d5db',
+            borderColor: borderColor,
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: 4,
             marginTop: 1
           }}>
-            <Text style={{ fontSize: 6, color: '#6b7280' }}>{idx + 1}</Text>
+            <Text style={{ fontSize: 6, color: '#000000' }}>{idx + 1}</Text>
           </View>
-          <Text style={{ fontSize: 7, color: '#374151', flex: 1 }}>{choice.definition}</Text>
+          <Text style={{ fontSize: 7, color: '#000000', flex: 1 }}>{choice.definition}</Text>
         </View>
       ))}
     </>
   );
 
   return (
-    <View style={styles.testRow} wrap={false}>
-      <View style={styles.testCol}>
+    <View style={dynamicStyles.testRowDynamic} wrap={false}>
+      <View style={dynamicStyles.testColDynamic}>
         {renderTestContent(leftQ, left)}
       </View>
       {right ? (
-        <View style={styles.testColRight}>
+        <View style={dynamicStyles.testColRightDynamic}>
           {renderTestContent(rightQ, right)}
         </View>
       ) : (
-        <View style={styles.testColRight} />
+        <View style={dynamicStyles.testColRightDynamic} />
       )}
     </View>
   );
@@ -1025,38 +1028,38 @@ const VocabularyAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicStyle
         <View style={dynamicStyles.idBadgeContainerDynamic}>
           <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
         </View>
-        <Text style={styles.testWord}>{item.word}</Text>
+        <Text style={dynamicStyles.testWordDynamic}>{item.word}</Text>
       </View>
       {/* 뜻 */}
-      <Text style={styles.answerMeaningLabel}>뜻: {item.meaning}</Text>
+      <Text style={dynamicStyles.answerMeaningLabelDynamic}>뜻: {item.meaning}</Text>
       {/* 동의어 정답 */}
       <View style={{ flexDirection: 'row', marginBottom: 4 }}>
-        <Text style={styles.answerSynonymLabel}>동의어: </Text>
-        <Text style={styles.answerSynonymValue}>
+        <Text style={dynamicStyles.answerSynonymLabelDynamic}>동의어: </Text>
+        <Text style={dynamicStyles.answerSynonymValueDynamic}>
           {q?.allChoices.filter(c => c.isCorrect).map(c => c.word).join(', ')}
         </Text>
       </View>
       {/* 오답 설명 */}
       {q?.allChoices.filter(c => !c.isCorrect).map((choice, idx) => (
         <View key={idx} style={styles.answerWrongItem}>
-          <Text style={styles.answerWrongX}>✗</Text>
-          <Text style={styles.answerWrongText}>{choice.word}: {choice.meaning}</Text>
+          <Text style={dynamicStyles.answerWrongXDynamic}>✗</Text>
+          <Text style={dynamicStyles.answerWrongTextDynamic}>{choice.word}: {choice.meaning}</Text>
         </View>
       ))}
     </>
   );
 
   return (
-    <View style={styles.testRow} wrap={false}>
-      <View style={styles.testCol}>
+    <View style={dynamicStyles.testRowDynamic} wrap={false}>
+      <View style={dynamicStyles.testColDynamic}>
         {renderAnswerContent(leftQ, left)}
       </View>
       {right && rightQ ? (
-        <View style={styles.testColRight}>
+        <View style={dynamicStyles.testColRightDynamic}>
           {renderAnswerContent(rightQ, right)}
         </View>
       ) : (
-        <View style={styles.testColRight} />
+        <View style={dynamicStyles.testColRightDynamic} />
       )}
     </View>
   );
@@ -1073,6 +1076,8 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicSt
   const questions = generateDefinitionTestQuestions(allData, unitNumber);
   const leftQ = questions.find(q => q.id === left.id);
   const rightQ = right ? questions.find(q => q.id === right.id) : null;
+  // borderColor 계산 (dynamicStyles에서 가져오기)
+  const borderColor = dynamicStyles.testRowDynamic.borderBottomColor;
 
   const renderAnswerContent = (q: typeof leftQ, item: VocabularyItem) => (
     <>
@@ -1080,10 +1085,10 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicSt
         <View style={dynamicStyles.idBadgeContainerDynamic}>
           <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
         </View>
-        <Text style={styles.testWord}>{item.word}</Text>
+        <Text style={dynamicStyles.testWordDynamic}>{item.word}</Text>
       </View>
       {/* 뜻 */}
-      <Text style={styles.answerMeaningLabel}>뜻: {item.meaning}</Text>
+      <Text style={dynamicStyles.answerMeaningLabelDynamic}>뜻: {item.meaning}</Text>
       {/* 4지선다 정답/오답 표시 */}
       {q?.allChoices.map((choice, idx) => (
         <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 }}>
@@ -1092,24 +1097,24 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicSt
             height: 12,
             borderRadius: 6,
             borderWidth: 1,
-            borderColor: choice.isCorrect ? '#3b82f6' : '#d1d5db',
+            borderColor: choice.isCorrect ? '#3b82f6' : borderColor,
             backgroundColor: choice.isCorrect ? '#eff6ff' : '#ffffff',
             alignItems: 'center',
             justifyContent: 'center',
             marginRight: 4,
             marginTop: 1
           }}>
-            <Text style={{ fontSize: 6, color: choice.isCorrect ? '#3b82f6' : '#6b7280', fontWeight: choice.isCorrect ? 700 : 400 }}>{idx + 1}</Text>
+            <Text style={{ fontSize: 6, color: choice.isCorrect ? '#3b82f6' : '#000000', fontWeight: choice.isCorrect ? 700 : 400 }}>{idx + 1}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 7, color: choice.isCorrect ? '#3b82f6' : '#6b7280', fontWeight: choice.isCorrect ? 700 : 400 }}>
+            <Text style={{ fontSize: 7, color: choice.isCorrect ? '#3b82f6' : '#000000', fontWeight: choice.isCorrect ? 700 : 400 }}>
               {choice.definition}
             </Text>
             {choice.isCorrect && choice.sourceMeaning && (
               <Text style={{ fontSize: 6, color: '#3b82f6', fontWeight: 600 }}>({choice.sourceMeaning})</Text>
             )}
             {!choice.isCorrect && choice.sourceMeaning && (
-              <Text style={{ fontSize: 6, color: '#9ca3af' }}>({choice.sourceMeaning})</Text>
+              <Text style={{ fontSize: 6, color: '#000000' }}>({choice.sourceMeaning})</Text>
             )}
           </View>
         </View>
@@ -1118,16 +1123,16 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicSt
   );
 
   return (
-    <View style={styles.testRow} wrap={false}>
-      <View style={styles.testCol}>
+    <View style={dynamicStyles.testRowDynamic} wrap={false}>
+      <View style={dynamicStyles.testColDynamic}>
         {renderAnswerContent(leftQ, left)}
       </View>
       {right ? (
-        <View style={styles.testColRight}>
+        <View style={dynamicStyles.testColRightDynamic}>
           {renderAnswerContent(rightQ, right)}
         </View>
       ) : (
-        <View style={styles.testColRight} />
+        <View style={dynamicStyles.testColRightDynamic} />
       )}
     </View>
   );
@@ -1377,6 +1382,12 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       lineHeight: 1.25,
     },
     // ===== 간단버전 스타일 (스케일 적용) =====
+    simpleRowDynamic: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+      paddingVertical: 6,
+    },
     simpleWordDynamic: {
       fontSize: scaled(10),
       fontWeight: 700,
@@ -1386,6 +1397,12 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       fontSize: scaled(7),
       color: '#000000',
     },
+    simpleMeaningLineDynamic: {
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+      height: 14,
+      width: '90%',
+    },
     // ===== 테스트지 스타일 (스케일 적용) =====
     testWordDynamic: {
       fontSize: scaled(10),
@@ -1394,22 +1411,50 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
     },
     testMeaningLabelDynamic: {
       fontSize: scaled(6.5),
-      color: '#6b7280',
+      color: '#000000',
       paddingTop: 3,
     },
     testCheckboxDynamic: {
       fontSize: scaled(8),
-      color: '#9ca3af',
+      color: '#000000',
       marginRight: 4,
     },
     testChoiceTextDynamic: {
       fontSize: scaled(8.5),
-      color: '#374151',
+      color: '#000000',
+    },
+    // 테스트지 행 스타일 (동적 border 색상)
+    testRowDynamic: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+      paddingVertical: 8,
+    },
+    // 테스트지 왼쪽 열
+    testColDynamic: {
+      width: '50%',
+      paddingHorizontal: 12,
+      paddingBottom: 16,
+    },
+    // 테스트지 오른쪽 열 (세로 구분선)
+    testColRightDynamic: {
+      width: '50%',
+      paddingHorizontal: 12,
+      paddingBottom: 16,
+      borderLeftWidth: 1,
+      borderLeftColor: borderColor,
+    },
+    // 테스트지 뜻 답안란
+    testMeaningLineDynamic: {
+      flex: 1,
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+      minHeight: 14,
     },
     // ===== 영영정의 테스트지 스타일 (스케일 적용) =====
     defTestDefinitionDynamic: {
       fontSize: scaled(6.5),
-      color: '#4b5563',
+      color: '#000000',
       fontStyle: 'italic',
       marginBottom: 3,
     },
