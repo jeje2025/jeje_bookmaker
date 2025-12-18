@@ -116,11 +116,11 @@ export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }:
   const answerRows = pairedQuestions.map((pair, pairIndex) => (
     <table key={pairIndex} className="w-full border-collapse">
       <tbody>
-        <tr 
-          className="border-b border-gray-200"
+        <tr
           style={{
             pageBreakInside: 'avoid',
-            breakInside: 'avoid'
+            breakInside: 'avoid',
+            borderBottom: '1px solid var(--badge-border, #cbd5e1)'
           }}
         >
           {/* 왼쪽 열 */}
@@ -194,7 +194,7 @@ export function VocabularyTestDefinitionAnswer({ data, headerInfo, unitNumber }:
           </td>
 
           {/* 오른쪽 열 */}
-          <td className="py-3 px-4 align-top border-l border-gray-200" style={{ width: '50%', verticalAlign: 'top' }}>
+          <td className="py-3 px-4 align-top" style={{ width: '50%', verticalAlign: 'top', borderLeft: '1px solid var(--badge-border, #cbd5e1)' }}>
             {pair.right && (
               <>
                 <div className="mb-2">

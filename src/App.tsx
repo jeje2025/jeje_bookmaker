@@ -566,12 +566,12 @@ export default function App() {
     const viewModeNames: Record<string, string> = {
       card: '카드형',
       table: '표버전',
-      tableSimple: '간단버전',
+      tableSimple: '간단',
       tableSimpleTest: '테스트용 간단버전',
-      test: '동의어 테스트지',
-      testDefinition: '영영정의 테스트지',
+      test: '동의어 테스트',
+      testDefinition: '영영 테스트',
       testAnswer: '동의어 답지',
-      testDefinitionAnswer: '영영정의 답지',
+      testDefinitionAnswer: '영영 답지',
     };
     const viewModeName = viewModeNames[viewMode] || viewMode;
 
@@ -764,7 +764,7 @@ export default function App() {
             }`}
           >
             <FileSpreadsheet size={14} />
-            간단버전
+            간단
           </button>
           <button
             onClick={() => setViewMode('tableSimpleTest')}
@@ -775,7 +775,7 @@ export default function App() {
             }`}
           >
             <FileSpreadsheet size={14} />
-            간단버전 테스트지
+            간단 테스트
           </button>
           <button
             onClick={() => setViewMode('test')}
@@ -786,7 +786,7 @@ export default function App() {
             }`}
           >
             <FileQuestion size={14} />
-            동의어 테스트지
+            동의어 테스트
           </button>
           <button
             onClick={() => setViewMode('testDefinition')}
@@ -797,7 +797,7 @@ export default function App() {
             }`}
           >
             <BookOpen size={14} />
-            영영정의 테스트지
+            영영 테스트
           </button>
           <button
             onClick={() => setViewMode('testAnswer')}
@@ -819,7 +819,7 @@ export default function App() {
             }`}
           >
             <FileCheck size={14} />
-            영영정의 답지
+            영영 답지
           </button>
           <button
             onClick={() => setViewMode('cover')}

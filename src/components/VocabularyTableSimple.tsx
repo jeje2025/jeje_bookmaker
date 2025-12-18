@@ -42,11 +42,11 @@ export function VocabularyTableSimple({ data, headerInfo, unitNumber }: Vocabula
   const tableRows = pairedData.map((pair, index) => (
     <table key={index} className="w-full border-collapse">
       <tbody>
-        <tr 
-          className="border-b border-gray-200"
+        <tr
           style={{
             pageBreakInside: 'avoid',
-            breakInside: 'avoid'
+            breakInside: 'avoid',
+            borderBottom: '1px solid var(--badge-border, #cbd5e1)'
           }}
         >
           {/* 왼쪽 - 번호 */}
