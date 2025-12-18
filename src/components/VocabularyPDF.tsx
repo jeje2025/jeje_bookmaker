@@ -769,19 +769,19 @@ const VocabularyCardPDF = ({ item, dynamicStyles, textColor }: { item: Vocabular
 
 // ===== 표버전 컴포넌트 =====
 const VocabularyTableRowPDF = ({ item, dynamicStyles, textColor }: { item: VocabularyItem; dynamicStyles: DynamicStyles; textColor: string }) => (
-  <View style={styles.tableRow} wrap={false}>
-    <View style={styles.tableColId}>
+  <View style={dynamicStyles.tableRowDynamic} wrap={false}>
+    <View style={dynamicStyles.tableColIdDynamic}>
       <View style={dynamicStyles.idBadgeContainerDynamic}>
         <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
       </View>
     </View>
-    <View style={styles.tableColWord}>
+    <View style={dynamicStyles.tableColWordDynamic}>
       <Text style={[dynamicStyles.tableWordDynamic, { color: textColor }]}>{item.word}</Text>
       {item.pronunciation && (
         <Text style={dynamicStyles.pronunciationTableDynamic}>{item.pronunciation}</Text>
       )}
       {item.derivatives.map((der, idx) => (
-        <View key={idx} style={styles.tableDerivative}>
+        <View key={idx} style={dynamicStyles.tableDerivativeDynamic}>
           <Text style={dynamicStyles.tableDerivativeWordDynamic}>{der.word}</Text>
           <Text style={dynamicStyles.tableDerivativeMeaningDynamic}>
             {der.partOfSpeech && `${der.partOfSpeech} `}{der.meaning}
@@ -789,19 +789,19 @@ const VocabularyTableRowPDF = ({ item, dynamicStyles, textColor }: { item: Vocab
         </View>
       ))}
     </View>
-    <View style={styles.tableColMeaning}>
+    <View style={dynamicStyles.tableColMeaningDynamic}>
       <Text style={dynamicStyles.tableMeaningDynamic}>{item.meaning}</Text>
       {item.definition && <Text style={dynamicStyles.tableDefinitionDynamic}>{item.definition}</Text>}
       {renderHighlightedExample(item.example, item.word, dynamicStyles.tableExampleDynamic, textColor)}
       {renderHighlightedTranslation(item.translation, item.translationHighlight, dynamicStyles.tableTranslationDynamic, textColor)}
     </View>
-    <View style={styles.tableColSyn}>
+    <View style={dynamicStyles.tableColSynDynamic}>
       <View style={dynamicStyles.infoBadgeContainerDynamic}>
         <Text style={dynamicStyles.infoBadgeDynamic}>동</Text>
       </View>
       <Text style={dynamicStyles.infoTextDynamic}>{item.synonyms.join(', ')}</Text>
     </View>
-    <View style={styles.tableColAnt}>
+    <View style={dynamicStyles.tableColAntDynamic}>
       <View style={dynamicStyles.infoBadgeContainerDynamic}>
         <Text style={dynamicStyles.infoBadgeDynamic}>반</Text>
       </View>
@@ -813,36 +813,36 @@ const VocabularyTableRowPDF = ({ item, dynamicStyles, textColor }: { item: Vocab
 // ===== 간단버전 컴포넌트 =====
 const VocabularySimpleRowPDF = ({ left, right, dynamicStyles }: { left: VocabularyItem; right: VocabularyItem | null; dynamicStyles: DynamicStyles }) => (
   <View style={dynamicStyles.simpleRowDynamic} wrap={false}>
-    <View style={styles.simpleColId}>
+    <View style={dynamicStyles.simpleColIdDynamic}>
       <View style={dynamicStyles.idBadgeContainerDynamic}>
         <Text style={dynamicStyles.idBadgeDynamic}>{String(left.id).padStart(3, '0')}</Text>
       </View>
     </View>
-    <View style={styles.simpleColWord}>
+    <View style={dynamicStyles.simpleColWordDynamic}>
       <Text style={dynamicStyles.simpleWordDynamic}>{left.word}</Text>
     </View>
-    <View style={styles.simpleColMeaning}>
+    <View style={dynamicStyles.simpleColMeaningDynamic}>
       <Text style={dynamicStyles.simpleMeaningDynamic}>{left.meaning}</Text>
     </View>
     {right ? (
       <>
-        <View style={styles.simpleColId}>
+        <View style={dynamicStyles.simpleColIdDynamic}>
           <View style={dynamicStyles.idBadgeContainerDynamic}>
             <Text style={dynamicStyles.idBadgeDynamic}>{String(right.id).padStart(3, '0')}</Text>
           </View>
         </View>
-        <View style={styles.simpleColWord}>
+        <View style={dynamicStyles.simpleColWordDynamic}>
           <Text style={dynamicStyles.simpleWordDynamic}>{right.word}</Text>
         </View>
-        <View style={styles.simpleColMeaning}>
+        <View style={dynamicStyles.simpleColMeaningDynamic}>
           <Text style={dynamicStyles.simpleMeaningDynamic}>{right.meaning}</Text>
         </View>
       </>
     ) : (
       <>
-        <View style={styles.simpleColId} />
-        <View style={styles.simpleColWord} />
-        <View style={styles.simpleColMeaning} />
+        <View style={dynamicStyles.simpleColIdDynamic} />
+        <View style={dynamicStyles.simpleColWordDynamic} />
+        <View style={dynamicStyles.simpleColMeaningDynamic} />
       </>
     )}
   </View>
@@ -851,36 +851,36 @@ const VocabularySimpleRowPDF = ({ left, right, dynamicStyles }: { left: Vocabula
 // ===== 테스트용 간단버전 컴포넌트 (뜻 숨김) =====
 const VocabularySimpleTestRowPDF = ({ left, right, dynamicStyles }: { left: VocabularyItem; right: VocabularyItem | null; dynamicStyles: DynamicStyles }) => (
   <View style={dynamicStyles.simpleRowDynamic} wrap={false}>
-    <View style={styles.simpleColId}>
+    <View style={dynamicStyles.simpleColIdDynamic}>
       <View style={dynamicStyles.idBadgeContainerDynamic}>
         <Text style={dynamicStyles.idBadgeDynamic}>{String(left.id).padStart(3, '0')}</Text>
       </View>
     </View>
-    <View style={styles.simpleColWord}>
+    <View style={dynamicStyles.simpleColWordDynamic}>
       <Text style={dynamicStyles.simpleWordDynamic}>{left.word}</Text>
     </View>
-    <View style={styles.simpleColMeaning}>
+    <View style={dynamicStyles.simpleColMeaningDynamic}>
       <View style={dynamicStyles.simpleMeaningLineDynamic} />
     </View>
     {right ? (
       <>
-        <View style={styles.simpleColId}>
+        <View style={dynamicStyles.simpleColIdDynamic}>
           <View style={dynamicStyles.idBadgeContainerDynamic}>
             <Text style={dynamicStyles.idBadgeDynamic}>{String(right.id).padStart(3, '0')}</Text>
           </View>
         </View>
-        <View style={styles.simpleColWord}>
+        <View style={dynamicStyles.simpleColWordDynamic}>
           <Text style={dynamicStyles.simpleWordDynamic}>{right.word}</Text>
         </View>
-        <View style={styles.simpleColMeaning}>
+        <View style={dynamicStyles.simpleColMeaningDynamic}>
           <View style={dynamicStyles.simpleMeaningLineDynamic} />
         </View>
       </>
     ) : (
       <>
-        <View style={styles.simpleColId} />
-        <View style={styles.simpleColWord} />
-        <View style={styles.simpleColMeaning} />
+        <View style={dynamicStyles.simpleColIdDynamic} />
+        <View style={dynamicStyles.simpleColWordDynamic} />
+        <View style={dynamicStyles.simpleColMeaningDynamic} />
       </>
     )}
   </View>
@@ -1349,11 +1349,42 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       lineHeight: 1.3,
     },
     // ===== 표버전 스타일 (스케일 적용) =====
+    tableRowDynamic: {
+      flexDirection: 'row',
+      borderBottomWidth: 1,
+      borderBottomColor: borderColor,
+      paddingTop: 8,
+      paddingBottom: 12,
+    },
+    tableColIdDynamic: {
+      width: '4%',
+      paddingHorizontal: 4,
+      paddingLeft: 8,
+    },
+    tableColWordDynamic: {
+      width: '18%',
+      paddingHorizontal: 12,
+    },
+    tableColMeaningDynamic: {
+      width: '42%',
+      paddingHorizontal: 12,
+    },
+    tableColSynDynamic: {
+      width: '16%',
+      paddingHorizontal: 12,
+    },
+    tableColAntDynamic: {
+      width: '16%',
+      paddingHorizontal: 12,
+    },
     tableWordDynamic: {
       fontSize: scaled(11),
       fontWeight: 700,
       color: '#000000',
       marginBottom: 3,
+    },
+    tableDerivativeDynamic: {
+      marginTop: 4,
     },
     tableDerivativeWordDynamic: {
       fontSize: scaled(9),
@@ -1393,6 +1424,18 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       borderBottomWidth: 1,
       borderBottomColor: borderColor,
       paddingVertical: 6,
+    },
+    simpleColIdDynamic: {
+      width: '4%',
+      paddingHorizontal: 3,
+    },
+    simpleColWordDynamic: {
+      width: '18%',
+      paddingHorizontal: 8,
+    },
+    simpleColMeaningDynamic: {
+      width: '28%',
+      paddingHorizontal: 8,
     },
     simpleWordDynamic: {
       fontSize: scaled(10),
