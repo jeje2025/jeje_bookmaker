@@ -790,7 +790,10 @@ const VocabularyTableRowPDF = ({ item, dynamicStyles, textColor }: { item: Vocab
       ))}
     </View>
     <View style={dynamicStyles.tableColMeaningDynamic}>
-      <Text style={dynamicStyles.tableMeaningDynamic}>{item.meaning}</Text>
+      <Text style={dynamicStyles.tableMeaningDynamic}>
+        <Text style={dynamicStyles.tablePartOfSpeechDynamic}>{item.partOfSpeech} </Text>
+        {item.meaning}
+      </Text>
       {item.definition && <Text style={dynamicStyles.tableDefinitionDynamic}>{item.definition}</Text>}
       {renderHighlightedExample(item.example, item.word, dynamicStyles.tableExampleDynamic, textColor)}
       {renderHighlightedTranslation(item.translation, item.translationHighlight, dynamicStyles.tableTranslationDynamic, textColor)}
@@ -1343,23 +1346,24 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       fontSize: scaled(7),
       color: '#6b7280',
     },
+    // 웹: 동의어/반의어 10px
     infoTextDynamic: {
-      fontSize: scaled(8),
+      fontSize: scaled(10),
       color: '#4b5563',
-      lineHeight: 1.3,
+      lineHeight: 1.4,
     },
     // ===== 표버전 스타일 (스케일 적용) =====
+    // 웹 뷰모드와 동일 비율: 너비 3%/18%/42%/14%/14%, 패딩 pt-1 pb-2 px-3
     tableRowDynamic: {
       flexDirection: 'row',
       borderBottomWidth: 1,
       borderBottomColor: borderColor,
-      paddingTop: 8,
-      paddingBottom: 12,
+      paddingTop: 4,
+      paddingBottom: 8,
     },
     tableColIdDynamic: {
-      width: '4%',
+      width: '3%',
       paddingHorizontal: 4,
-      paddingLeft: 8,
     },
     tableColWordDynamic: {
       width: '18%',
@@ -1370,51 +1374,59 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       paddingHorizontal: 12,
     },
     tableColSynDynamic: {
-      width: '16%',
+      width: '14%',
       paddingHorizontal: 12,
     },
     tableColAntDynamic: {
-      width: '16%',
+      width: '14%',
       paddingHorizontal: 12,
     },
+    // 웹: 단어 14px, 발음 9px, 파생어 11px/8px
     tableWordDynamic: {
-      fontSize: scaled(11),
+      fontSize: scaled(14),
       fontWeight: 700,
       color: '#000000',
-      marginBottom: 3,
+      marginBottom: 2,
+    },
+    // 웹: 품사 10px bold, 팔레트 색상
+    tablePartOfSpeechDynamic: {
+      fontSize: scaled(10),
+      fontWeight: 700,
+      color: textColor,
     },
     tableDerivativeDynamic: {
       marginTop: 4,
     },
     tableDerivativeWordDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(11),
       color: '#1f2937',
     },
     tableDerivativeMeaningDynamic: {
-      fontSize: scaled(7),
+      fontSize: scaled(8),
       color: '#6b7280',
     },
+    // 웹: 뜻 12px, 정의 9px, 예문 10px, 번역 9px
     tableMeaningDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(12),
       color: '#000000',
       lineHeight: 1.3,
       marginBottom: 4,
     },
     tableDefinitionDynamic: {
-      fontSize: scaled(8),
+      fontSize: scaled(9),
       color: '#6b7280',
       fontStyle: 'italic',
       lineHeight: 1.3,
       marginBottom: 4,
     },
     tableExampleDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(10),
       color: '#000000',
       lineHeight: 1.3,
       marginBottom: 4,
     },
     tableTranslationDynamic: {
-      fontSize: scaled(8),
+      fontSize: scaled(9),
       color: '#4b5563',
       lineHeight: 1.3,
     },
