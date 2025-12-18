@@ -274,29 +274,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    paddingTop: 4,
-    paddingBottom: 8,
+    paddingTop: 6,
+    paddingBottom: 10,
   },
   tableColId: {
-    width: '5%',
-    paddingHorizontal: 2,
-    paddingLeft: 4,
+    width: '4%',
+    paddingHorizontal: 4,
+    paddingLeft: 6,
   },
   tableColWord: {
-    width: '15%',
-    paddingHorizontal: 6,
+    width: '16%',
+    paddingHorizontal: 10,
   },
   tableColMeaning: {
-    width: '45%',
-    paddingHorizontal: 6,
+    width: '44%',
+    paddingHorizontal: 10,
   },
   tableColSyn: {
-    width: '15%',
-    paddingHorizontal: 6,
+    width: '16%',
+    paddingHorizontal: 10,
   },
   tableColAnt: {
-    width: '15%',
-    paddingHorizontal: 6,
+    width: '16%',
+    paddingHorizontal: 10,
   },
   tableWord: {
     fontSize: 10,     // 화면 14px -> PDF 10pt
