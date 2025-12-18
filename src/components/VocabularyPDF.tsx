@@ -959,6 +959,9 @@ const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber, dynamicStyl
   // borderColor 계산 (dynamicStyles에서 가져오기)
   const borderColor = dynamicStyles.testRowDynamic.borderBottomColor;
 
+  // 웹 뷰모드와 동일 비율 스케일 계산
+  const scaled = (size: number) => size * (dynamicStyles.testWordDynamic.fontSize / 10);
+
   const renderTestContent = (q: typeof leftQ, item: VocabularyItem) => (
     <>
       <View style={styles.testHeader}>
@@ -969,16 +972,16 @@ const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber, dynamicStyl
       </View>
       {/* 뜻 쓰는 칸 */}
       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-        <Text style={{ fontSize: 6.5, color: '#000000', marginRight: 4 }}>뜻:</Text>
+        <Text style={{ fontSize: scaled(6.5), color: '#000000', marginRight: 4 }}>뜻:</Text>
         <View style={dynamicStyles.testMeaningLineDynamic} />
       </View>
       {/* 4지선다 */}
       {q?.allChoices.map((choice, idx) => (
         <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 3 }}>
           <View style={{
-            width: 12,
-            height: 12,
-            borderRadius: 6,
+            width: 14,
+            height: 14,
+            borderRadius: 7,
             borderWidth: 1,
             borderColor: borderColor,
             alignItems: 'center',
@@ -986,9 +989,9 @@ const VocabularyDefTestRowPDF = ({ left, right, allData, unitNumber, dynamicStyl
             marginRight: 4,
             marginTop: 1
           }}>
-            <Text style={{ fontSize: 6, color: '#000000' }}>{idx + 1}</Text>
+            <Text style={{ fontSize: scaled(7), color: '#000000' }}>{idx + 1}</Text>
           </View>
-          <Text style={{ fontSize: 7, color: '#000000', flex: 1 }}>{choice.definition}</Text>
+          <Text style={{ fontSize: scaled(8), color: '#000000', flex: 1 }}>{choice.definition}</Text>
         </View>
       ))}
     </>
@@ -1079,6 +1082,9 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicSt
   // borderColor 계산 (dynamicStyles에서 가져오기)
   const borderColor = dynamicStyles.testRowDynamic.borderBottomColor;
 
+  // 웹 뷰모드와 동일 비율: 보기 11px -> 8pt, 한글뜻 10px -> 7.5pt
+  const scaled = (size: number) => size * (dynamicStyles.testWordDynamic.fontSize / 10);
+
   const renderAnswerContent = (q: typeof leftQ, item: VocabularyItem) => (
     <>
       <View style={styles.testHeader}>
@@ -1093,9 +1099,9 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicSt
       {q?.allChoices.map((choice, idx) => (
         <View key={idx} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 2 }}>
           <View style={{
-            width: 12,
-            height: 12,
-            borderRadius: 6,
+            width: 14,
+            height: 14,
+            borderRadius: 7,
             borderWidth: 1,
             borderColor: choice.isCorrect ? '#3b82f6' : borderColor,
             backgroundColor: choice.isCorrect ? '#eff6ff' : '#ffffff',
@@ -1104,17 +1110,17 @@ const VocabularyDefAnswerRowPDF = ({ left, right, allData, unitNumber, dynamicSt
             marginRight: 4,
             marginTop: 1
           }}>
-            <Text style={{ fontSize: 6, color: choice.isCorrect ? '#3b82f6' : '#000000', fontWeight: choice.isCorrect ? 700 : 400 }}>{idx + 1}</Text>
+            <Text style={{ fontSize: scaled(7), color: choice.isCorrect ? '#3b82f6' : '#000000', fontWeight: choice.isCorrect ? 700 : 400 }}>{idx + 1}</Text>
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 7, color: choice.isCorrect ? '#3b82f6' : '#000000', fontWeight: choice.isCorrect ? 700 : 400 }}>
+            <Text style={{ fontSize: scaled(8), color: choice.isCorrect ? '#3b82f6' : '#000000', fontWeight: choice.isCorrect ? 700 : 400 }}>
               {choice.definition}
             </Text>
             {choice.isCorrect && choice.sourceMeaning && (
-              <Text style={{ fontSize: 6, color: '#3b82f6', fontWeight: 600 }}>({choice.sourceMeaning})</Text>
+              <Text style={{ fontSize: scaled(7.5), color: '#3b82f6', fontWeight: 600 }}>({choice.sourceMeaning})</Text>
             )}
             {!choice.isCorrect && choice.sourceMeaning && (
-              <Text style={{ fontSize: 6, color: '#000000' }}>({choice.sourceMeaning})</Text>
+              <Text style={{ fontSize: scaled(7.5), color: '#000000' }}>({choice.sourceMeaning})</Text>
             )}
           </View>
         </View>
@@ -1458,33 +1464,34 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       fontStyle: 'italic',
       marginBottom: 3,
     },
-    // ===== 답지 스타일 (스케일 적용) =====
+    // ===== 답지 스타일 (스케일 적용) - 웹 뷰모드와 동일 비율 =====
+    // 웹: 단어 14px, 뜻 12px, 동의어/오답 11-12px → PDF: 10pt, 9pt, 8pt
     answerCorrectDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(8),
       color: '#059669',
       fontWeight: 700,
     },
     answerMeaningLabelDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(9),      // 12px -> 9pt (뜻)
       color: '#000000',
-      marginBottom: 4,
+      marginBottom: 3,
     },
     answerSynonymLabelDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(9),      // 12px -> 9pt
       color: '#000000',
     },
     answerSynonymValueDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(9),      // 12px -> 9pt
       color: '#000000',
       fontWeight: 700,
     },
     answerWrongXDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(8),      // 11px -> 8pt
       color: '#dc2626',
       marginRight: 3,
     },
     answerWrongTextDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(8),      // 11px -> 8pt
       color: '#000000',
     },
     // ===== 푸터 스타일 (스케일 적용) =====
