@@ -308,23 +308,23 @@ export function AdminDashboard({ onClose, onLoad }: { onClose: () => void; onLoa
 
       // 결과 표시
       if (migratedCount.success > 0) {
-        toast.success(`${migratedCount.success}개 단어장이 제제보카로 업로드되었습니다!`, { duration: 2000 });
+        toast.success(`${migratedCount.success}개 단어장이 제제보카로 업로드되었습니다!`, { duration: 1000 });
         setShowMigrateDialog(false);
         setSelectedLogs(new Set());
       }
 
       if (migratedCount.error > 0) {
-        toast.warning(`${migratedCount.error}개 항목에서 오류가 발생했습니다.`, { duration: 2000 });
+        toast.warning(`${migratedCount.error}개 항목에서 오류가 발생했습니다.`, { duration: 1000 });
         console.error('Migration errors:', errors);
       }
 
       if (migratedCount.success === 0 && migratedCount.error > 0) {
-        toast.error('모든 항목에서 오류가 발생했습니다.', { duration: 2000 });
+        toast.error('모든 항목에서 오류가 발생했습니다.', { duration: 1000 });
       }
 
     } catch (error) {
       console.error('Migration error:', error);
-      toast.error(`마이그레이션 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`, { duration: 2000 });
+      toast.error(`마이그레이션 실패: ${error instanceof Error ? error.message : '알 수 없는 오류'}`, { duration: 1000 });
     } finally {
       setIsMigrating(false);
     }

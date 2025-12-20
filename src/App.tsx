@@ -535,7 +535,7 @@ export default function App() {
   const handleUnitApply = useCallback((size: number) => {
     setUnitSize(size);
     setCurrentUnit(1);
-    toast.success(`${size}개씩 유닛 분할 설정됨`, { duration: 1500 });
+    toast.success(`${size}개씩 유닛 분할 설정됨`, { duration: 1000 });
   }, []);
 
   const handleUnitReset = useCallback(() => {
@@ -602,18 +602,18 @@ export default function App() {
             await new Promise(resolve => setTimeout(resolve, 500));
           }
         }
-        toast.success(`${unitsCount}개 유닛 PDF 다운로드 완료!`, { duration: 2000 });
+        toast.success(`${unitsCount}개 유닛 PDF 다운로드 완료!`, { duration: 1000 });
       } else {
         // 전체 저장
         const filename = `${headerInfo.headerTitle} - ${viewModeName}`;
         await downloadPDF(vocabularyList, headerInfo, viewMode, filename, undefined, (progress, message) => {
           setPdfProgress({ progress, message });
         }, pantoneColors[colorPalette], fontSizes[fontSize].scale);
-        toast.success('PDF 다운로드 완료!', { duration: 2000 });
+        toast.success('PDF 다운로드 완료!', { duration: 1000 });
       }
     } catch (error) {
       console.error('PDF 생성 오류:', error);
-      toast.error('PDF 생성에 실패했습니다.', { duration: 2000 });
+      toast.error('PDF 생성에 실패했습니다.', { duration: 1000 });
     } finally {
       setIsPDFLoading(false);
     }
