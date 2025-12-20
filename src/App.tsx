@@ -223,7 +223,7 @@ export default function App() {
   const [unitSize, setUnitSize] = useState<number | null>(null); // 유닛당 단어 수 (null = 분할 안 함)
   const [currentUnit, setCurrentUnit] = useState<number>(1); // 현재 보고 있는 유닛 번호
   const [colorPalette, setColorPalette] = useState<PaletteKey>('default'); // 배경색 팔레트
-  const [fontSize, setFontSize] = useState<FontSizeKey>('small'); // 글씨 크기
+  const [fontSize, setFontSize] = useState<FontSizeKey>('medium'); // 글씨 크기 (기본: 보통)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // 사이드바 접기
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
