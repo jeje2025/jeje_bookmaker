@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
   page: {
     paddingTop: 35,
     paddingBottom: 40,
-    paddingHorizontal: 40,
+    paddingHorizontal: 50,
     fontFamily: 'Pretendard',
     fontSize: 8,
     backgroundColor: '#ffffff',
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   },
   answerWrongItem: {
     flexDirection: 'row',
-    marginTop: 1,
+    marginTop: 3,
   },
   answerWrongX: {
     fontSize: 6.5,    // PDF 6.5pt
@@ -771,8 +771,8 @@ const VocabularyCardPDF = ({ item, dynamicStyles, textColor }: { item: Vocabular
 const VocabularyTableRowPDF = ({ item, dynamicStyles, textColor }: { item: VocabularyItem; dynamicStyles: DynamicStyles; textColor: string }) => (
   <View style={dynamicStyles.tableRowDynamic} wrap={false}>
     <View style={dynamicStyles.tableColIdDynamic}>
-      <View style={dynamicStyles.idBadgeContainerDynamic}>
-        <Text style={dynamicStyles.idBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
+      <View style={dynamicStyles.tableIdBadgeContainerDynamic}>
+        <Text style={dynamicStyles.tableIdBadgeDynamic}>{String(item.id).padStart(3, '0')}</Text>
       </View>
     </View>
     <View style={dynamicStyles.tableColWordDynamic}>
@@ -1184,7 +1184,7 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
   const scaled = (size: number) => size * fontScale;
 
   return StyleSheet.create({
-    // 헤더 타이틀 (동적 팔레트)
+    // 헤더 타이틀 (동적 팔레트) - 라디우스 증가, 좌하단만 직각
     headerTitleDynamic: {
       fontSize: scaled(10),
       fontWeight: 700,
@@ -1194,10 +1194,10 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       backgroundColor: bgColor,
       paddingHorizontal: 12,
       paddingVertical: 5,
-      borderTopLeftRadius: 8,
-      borderTopRightRadius: 8,
-      borderBottomLeftRadius: 8,
-      borderBottomRightRadius: 0,
+      borderTopLeftRadius: 12,
+      borderTopRightRadius: 12,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 12,
       borderWidth: 0.5,
       borderColor: borderColor,
       textAlign: 'center',
@@ -1346,51 +1346,73 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       fontSize: scaled(7),
       color: '#6b7280',
     },
-    // 웹: 동의어/반의어 10px
+    // 웹: 동의어/반의어 10px -> 8.1px로 축소 (81%)
     infoTextDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(8.1),
       color: '#4b5563',
       lineHeight: 1.4,
     },
-    // ===== 표버전 스타일 (스케일 적용) =====
-    // 웹 뷰모드와 동일 비율: 너비 3%/18%/42%/14%/14%, 패딩 pt-1 pb-2 px-3
+    // ===== 표버전 스타일 (스케일 적용, 글씨 90% 축소) =====
+    // 웹 뷰모드와 동일 비율: 너비 3%/18%/42%/14%/14%, 패딩 증가
     tableRowDynamic: {
       flexDirection: 'row',
       borderBottomWidth: 1,
       borderBottomColor: borderColor,
-      paddingTop: 4,
-      paddingBottom: 8,
+      paddingTop: 10,
+      paddingBottom: 14,
     },
     tableColIdDynamic: {
       width: '3%',
+      paddingHorizontal: 2,
+      paddingTop: 2,
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+    },
+    // 표버전 전용 ID 배지 컨테이너 (크기 증가)
+    tableIdBadgeContainerDynamic: {
+      backgroundColor: bgColor,
       paddingHorizontal: 4,
+      paddingVertical: 2,
+      borderRadius: 10,
+      borderWidth: 0.5,
+      borderColor: borderColor,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: 22,
+    },
+    // 표버전 전용 ID 배지 텍스트 (크기 증가)
+    tableIdBadgeDynamic: {
+      fontSize: scaled(5.5),
+      fontWeight: 700,
+      color: textColor,
+      textAlign: 'center',
     },
     tableColWordDynamic: {
       width: '18%',
-      paddingHorizontal: 12,
+      paddingHorizontal: 16,
     },
     tableColMeaningDynamic: {
-      width: '42%',
-      paddingHorizontal: 12,
+      width: '55%',
+      paddingHorizontal: 16,
     },
     tableColSynDynamic: {
-      width: '14%',
+      width: '12%',
       paddingHorizontal: 12,
     },
     tableColAntDynamic: {
-      width: '14%',
+      width: '12%',
       paddingHorizontal: 12,
     },
-    // 웹: 단어 14px, 발음 9px, 파생어 11px/8px
+    // 글씨 크기 81% 축소 적용 (90% x 90%)
     tableWordDynamic: {
-      fontSize: scaled(14),
+      fontSize: scaled(11.34),
       fontWeight: 700,
       color: '#000000',
       marginBottom: 2,
     },
-    // 웹: 품사 10px bold, 팔레트 색상
+    // 품사 81% 축소
     tablePartOfSpeechDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(8.1),
       fontWeight: 700,
       color: textColor,
     },
@@ -1398,35 +1420,35 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
       marginTop: 4,
     },
     tableDerivativeWordDynamic: {
-      fontSize: scaled(11),
+      fontSize: scaled(8.1),
       color: '#1f2937',
     },
     tableDerivativeMeaningDynamic: {
-      fontSize: scaled(8),
+      fontSize: scaled(5.67),
       color: '#6b7280',
     },
-    // 웹: 뜻 12px, 정의 9px, 예문 10px, 번역 9px
+    // 뜻 81% 축소
     tableMeaningDynamic: {
-      fontSize: scaled(12),
+      fontSize: scaled(8.91),
       color: '#000000',
       lineHeight: 1.3,
       marginBottom: 4,
     },
     tableDefinitionDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(7.29),
       color: '#6b7280',
       fontStyle: 'italic',
       lineHeight: 1.3,
       marginBottom: 4,
     },
     tableExampleDynamic: {
-      fontSize: scaled(10),
+      fontSize: scaled(8.1),
       color: '#000000',
       lineHeight: 1.3,
       marginBottom: 4,
     },
     tableTranslationDynamic: {
-      fontSize: scaled(9),
+      fontSize: scaled(7.29),
       color: '#4b5563',
       lineHeight: 1.3,
     },
@@ -1529,25 +1551,30 @@ const createDynamicStyles = (palette: PaletteColors, fontScale: number = 1) => {
     answerMeaningLabelDynamic: {
       fontSize: scaled(9),      // 12px -> 9pt (뜻)
       color: '#000000',
-      marginBottom: 3,
+      marginBottom: 6,
+      lineHeight: 1.5,
     },
     answerSynonymLabelDynamic: {
       fontSize: scaled(9),      // 12px -> 9pt
       color: '#000000',
+      lineHeight: 1.5,
     },
     answerSynonymValueDynamic: {
       fontSize: scaled(9),      // 12px -> 9pt
       color: '#000000',
       fontWeight: 700,
+      lineHeight: 1.5,
     },
     answerWrongXDynamic: {
       fontSize: scaled(8),      // 11px -> 8pt
       color: '#dc2626',
       marginRight: 3,
+      lineHeight: 1.5,
     },
     answerWrongTextDynamic: {
       fontSize: scaled(8),      // 11px -> 8pt
       color: '#000000',
+      lineHeight: 1.5,
     },
     // ===== 푸터 스타일 (스케일 적용) =====
     footerTextDynamic: {

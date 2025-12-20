@@ -33,9 +33,9 @@ export function A4PageLayout({
       const A4_HEIGHT_MM = 260;
       const MM_TO_PX = 3.7795275591; // 1mm = 3.78px at 96 DPI
       const A4_HEIGHT_PX = A4_HEIGHT_MM * MM_TO_PX;
-      
-      // 하단 여백 확보
-      const BOTTOM_MARGIN_MM = 20;
+
+      // 하단 여백 확보 (카드가 잘리지 않도록 충분히 확보)
+      const BOTTOM_MARGIN_MM = 25;
       const BOTTOM_MARGIN_PX = BOTTOM_MARGIN_MM * MM_TO_PX;
 
       // 헤더/푸터 높이 측정
