@@ -6,7 +6,8 @@ const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/
 const TRANSLATION_INSTRUCTION = `
 번역 규칙:
 1. passageTranslation: 지문 전체를 자연스러운 한국어로 번역
-2. choiceTranslations: 각 보기를 번역. 보기가 짧으면(단어/짧은 구) showEnglish=true, 길면(문장/긴 구절) showEnglish=false
+2. instructionTranslation: 발문(문제 지시문)을 자연스러운 한국어로 번역
+3. choiceTranslations: 각 보기를 번역. 보기가 짧으면(단어/짧은 구) showEnglish=true, 길면(문장/긴 구절) showEnglish=false
    - 짧은 보기 기준: 영어 원문 30자 이하
 `;
 
@@ -34,6 +35,7 @@ ${TRANSLATION_INSTRUCTION}
     {"english": "동의어5", "korean": "한국어 뜻5"}
   ],
   "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역",
   "choiceTranslations": [
     {"english": "보기1 원문", "korean": "보기1 번역", "showEnglish": true},
     {"english": "보기2 원문", "korean": "보기2 번역", "showEnglish": true},
@@ -67,6 +69,7 @@ ${TRANSLATION_INSTRUCTION}
     "E번 보기가 틀린 이유"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역",
   "choiceTranslations": [
     {"english": "보기1 원문", "korean": "보기1 번역", "showEnglish": true/false},
     {"english": "보기2 원문", "korean": "보기2 번역", "showEnglish": true/false},
@@ -103,6 +106,7 @@ ${TRANSLATION_INSTRUCTION}
     "⑤ 보기 판단"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역",
   "choiceTranslations": [
     {"english": "보기1 원문", "korean": "보기1 번역", "showEnglish": true/false},
     {"english": "보기2 원문", "korean": "보기2 번역", "showEnglish": true/false},
@@ -137,6 +141,7 @@ ${TRANSLATION_INSTRUCTION}
     "⑤ 오답인 이유"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역",
   "choiceTranslations": [
     {"english": "보기1 원문", "korean": "보기1 번역", "showEnglish": true/false},
     {"english": "보기2 원문", "korean": "보기2 번역", "showEnglish": true/false},
@@ -166,7 +171,8 @@ ${TRANSLATION_INSTRUCTION}
     "D 위치: 이 위치가 적절/부적절한 이유",
     "E 위치: 이 위치가 적절/부적절한 이유"
   ],
-  "passageTranslation": "지문 전체 한국어 번역"
+  "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역"
 }`,
 
   order: `당신은 영어 독해 전문가입니다. 다음 문장 순서 문제에 대한 해설을 생성해주세요.
@@ -188,6 +194,7 @@ ${TRANSLATION_INSTRUCTION}
   "splitPoint": "각 단락(A, B, C)의 연결 단서 분석 (지시어, 연결어, 논리적 흐름)",
   "conclusion": "따라서 정답은 {{answer}}. 최종 순서와 그 이유 요약",
   "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역",
   "choiceTranslations": [
     {"english": "보기1 원문", "korean": "보기1 번역", "showEnglish": true/false},
     {"english": "보기2 원문", "korean": "보기2 번역", "showEnglish": true/false},
@@ -221,6 +228,7 @@ ${TRANSLATION_INSTRUCTION}
     "E: 해당 어휘가 적절/부적절한 이유"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역",
   "choiceTranslations": [
     {"english": "보기1 원문", "korean": "보기1 번역", "showEnglish": true/false},
     {"english": "보기2 원문", "korean": "보기2 번역", "showEnglish": true/false},
@@ -255,6 +263,7 @@ ${TRANSLATION_INSTRUCTION}
     "⑤ 오답 해설"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역",
   "choiceTranslations": [
     {"english": "보기1 원문", "korean": "보기1 번역", "showEnglish": true/false},
     {"english": "보기2 원문", "korean": "보기2 번역", "showEnglish": true/false},
