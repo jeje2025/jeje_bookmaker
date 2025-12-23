@@ -6,11 +6,13 @@
 
 | 분류 | 기술 |
 |------|------|
-| **프론트엔드** | React 18, TypeScript, Vite 6 |
-| **UI** | Radix UI, Tailwind CSS 4, Lucide Icons |
+| **프론트엔드** | React 18.3, TypeScript (ES2020), Vite 6.3 |
+| **UI** | Radix UI (50+ 컴포넌트), Tailwind CSS 4, Lucide Icons |
+| **상태관리** | react-hook-form 7.55, next-themes 0.4 |
 | **백엔드** | Supabase Edge Functions (Deno), Hono.js |
 | **AI** | Google Gemini API |
-| **PDF** | pdf-lib, html2canvas |
+| **PDF** | @react-pdf/renderer 4.3, pdf-lib 1.17, html2canvas |
+| **차트/UI** | recharts 2.15, embla-carousel, react-resizable-panels |
 | **배포** | Vercel (프론트엔드), Supabase (백엔드) |
 
 ---
@@ -118,63 +120,157 @@ interface VocabularyItem {
 ## 프로젝트 구조
 
 ```
-src/
-├── App.tsx                        # 메인 앱 컴포넌트 (3가지 모드 관리)
-├── main.tsx                       # 엔트리 포인트
-├── index.css                      # Tailwind 진입점
-├── styles/
-│   └── globals.css               # 전역 스타일 (인쇄, 문제집 레이아웃 등)
+jeje_bookmaker/
+├── src/                               # 소스 코드 (661KB)
+│   ├── App.tsx                        # 메인 앱 컴포넌트 (67KB, 3가지 모드 관리)
+│   ├── main.tsx                       # 엔트리 포인트
+│   ├── index.css                      # 글로벌 스타일 (79KB, Tailwind + 커스텀)
+│   │
+│   ├── types/
+│   │   └── question.ts                # 통합 타입 정의 (137줄)
+│   │       ├── QuestionItem           # 문제 기본 정보
+│   │       ├── ExplanationData        # 7가지 유형별 해설 타입
+│   │       ├── ViewMode               # 뷰 모드 타입
+│   │       └── VocaPreviewWord        # 추출 단어장 타입
+│   │
+│   ├── services/
+│   │   └── geminiExplanation.ts       # Gemini API 통합 서비스
+│   │       ├── 유형별 프롬프트 템플릿
+│   │       ├── 번역 규칙 자동 적용
+│   │       └── 배치 처리 지원
+│   │
+│   ├── utils/
+│   │   ├── fontScale.ts               # A4 반응형 폰트 스케일
+│   │   ├── pdfDownload.ts             # PDF 생성/다운로드
+│   │   └── supabase/
+│   │       └── info.tsx               # 프로젝트 ID, API 키
+│   │
+│   ├── styles/
+│   │   └── globals.css                # 인쇄, 문제집 레이아웃 스타일
+│   │
+│   └── components/                    # React 컴포넌트 (79개 파일)
+│       ├── ui/                        # Radix UI 기반 공통 컴포넌트 (50+)
+│       │   ├── button.tsx, dialog.tsx, card.tsx, input.tsx
+│       │   ├── select.tsx, tabs.tsx, accordion.tsx
+│       │   └── ... (접근성 보장 UI)
+│       │
+│       ├── # 레이아웃
+│       ├── A4PageLayout.tsx           # A4 인쇄 레이아웃 (자동 페이지 분할)
+│       ├── HeaderFooter.tsx           # 헤더/푸터 컴포넌트
+│       ├── FloatingMenu.tsx           # 플로팅 메뉴
+│       ├── VirtualizedCardList.tsx    # 가상화 리스트 (대용량)
+│       │
+│       ├── # 문제집 관련
+│       ├── QuestionInput.tsx          # 문제 데이터 입력 (TSV 파싱)
+│       ├── QuestionCard.tsx           # 개별 문제 카드 (Final Pick 스타일)
+│       ├── QuestionView.tsx           # 문제집 뷰 (그룹핑 + 사이드바)
+│       ├── QuestionPDF.tsx            # 문제집 PDF 렌더러
+│       ├── ExplanationView.tsx        # AI 해설 뷰
+│       │
+│       ├── # 단어장 관련
+│       ├── VocabularyInput.tsx        # 단어 입력 (AI 생성 지원)
+│       ├── VocabularyView.tsx         # 단어장 뷰 라우터
+│       ├── VocabularyCard.tsx         # 단어 카드 뷰
+│       ├── VocabularyTable.tsx        # 단어 표 뷰
+│       ├── VocabularyTableSimple.tsx  # 간단 표 뷰
+│       ├── VocabularyTableSimpleTest.tsx # 간단 테스트 뷰
+│       ├── VocabularyTest.tsx         # 동의어 테스트지
+│       ├── VocabularyTestAnswer.tsx   # 동의어 답지
+│       ├── VocabularyTestDefinition.tsx    # 영영 테스트지
+│       ├── VocabularyTestDefinitionAnswer.tsx # 영영 답지
+│       ├── VocabularyCover.tsx        # 학습 가이드 표지
+│       ├── VocabularyPDF.tsx          # 단어장 PDF 렌더러
+│       │
+│       ├── # 구문교재 관련
+│       ├── GrammarSelector.tsx        # 문법 요소 선택기
+│       ├── GrammarTable.tsx           # 구문 분석 표
+│       │
+│       ├── # 설정/유틸
+│       ├── ColorPaletteSelector.tsx   # 컬러 팔레트 (Pantone 색상)
+│       ├── FontSizeSelector.tsx       # 글씨 크기 선택기
+│       ├── UnitSplitButton.tsx        # 유닛 분할 설정
+│       ├── UnitSplitDialog.tsx        # 유닛 분할 다이얼로그
+│       ├── AdminDashboard.tsx         # 관리자 대시보드
+│       └── PDFSaveModal.tsx           # PDF 저장 모달
 │
-├── types/
-│   └── question.ts               # 문제집 타입 정의
+├── public/                            # 정적 파일 (2.8MB)
+│   └── fonts/                         # Pretendard 한글 폰트
 │
-├── utils/
-│   ├── fontScale.ts              # 글씨 크기 스케일 헬퍼
-│   ├── pdfDownload.ts            # PDF 다운로드 유틸
-│   └── supabase/
-│       └── info.tsx              # Supabase 연결 정보
+├── supabase/                          # Supabase Edge Functions (백엔드)
+│   └── functions/
+│       └── make-server-7e289e1b/
+│           ├── index.ts               # Hono 기반 REST API 서버
+│           │   ├── GET /health
+│           │   ├── POST /gemini/vocabulary-batch
+│           │   ├── POST /gemini/grammar-batch
+│           │   ├── POST /gemini/vocabulary-preview
+│           │   ├── POST /logs
+│           │   └── GET /load-log/:logId
+│           └── kv_store.ts            # Key-Value 저장소 연동
 │
-└── components/
-    ├── ui/                       # Radix UI 기반 공통 컴포넌트
-    │
-    ├── A4PageLayout.tsx          # A4 인쇄 레이아웃 (자동 페이지 분할)
-    ├── HeaderFooter.tsx          # 헤더/푸터 컴포넌트
-    │
-    │ # 문제집 관련
-    ├── QuestionInput.tsx         # 문제 데이터 입력 (TSV 파싱, 엑셀 그리드)
-    ├── QuestionCard.tsx          # 개별 문제 카드 (Final Pick 스타일)
-    ├── QuestionView.tsx          # 문제집 뷰 (그룹핑 + 사이드바)
-    │
-    │ # 단어장 관련
-    ├── VocabularyInput.tsx       # 단어 입력 (AI 생성 지원)
-    ├── VocabularyView.tsx        # 단어장 뷰 라우터
-    ├── VocabularyCard.tsx        # 단어 카드 뷰
-    ├── VocabularyTable.tsx       # 단어 표 뷰
-    ├── VocabularyTableSimple.tsx # 간단 표 뷰
-    ├── VocabularyTableSimpleTest.tsx # 간단 테스트 뷰
-    ├── VocabularyTest.tsx        # 동의어 테스트지
-    ├── VocabularyTestAnswer.tsx  # 동의어 답지
-    ├── VocabularyTestDefinition.tsx   # 영영 테스트지
-    ├── VocabularyTestDefinitionAnswer.tsx # 영영 답지
-    ├── VocabularyCover.tsx       # 학습 가이드 표지
-    │
-    │ # 구문교재 관련
-    ├── GrammarSelector.tsx       # 문법 요소 선택기
-    ├── GrammarTable.tsx          # 구문 분석 표
-    │
-    │ # 설정/유틸
-    ├── ColorPaletteSelector.tsx  # 컬러 팔레트 선택기 (Pantone 색상)
-    ├── FontSizeSelector.tsx      # 글씨 크기 선택기
-    ├── UnitSplitButton.tsx       # 유닛 분할 설정
-    ├── AdminDashboard.tsx        # 관리자 대시보드
-    └── PDFSaveModal.tsx          # PDF 저장 모달
-
-supabase/
-└── functions/
-    └── make-server-7e289e1b/     # Edge Function
-        ├── index.ts              # API 핸들러 (Gemini 연동)
-        └── kv_store.ts           # KV 스토어 유틸
+├── vite.config.ts                     # Vite 설정
+├── tsconfig.json                      # TypeScript 설정
+├── tailwind.config.js                 # Tailwind 설정
+├── vercel.json                        # Vercel 배포 설정
+└── package.json                       # 프로젝트 메타데이터
 ```
+
+---
+
+## 아키텍처
+
+### 데이터 흐름
+
+```
+사용자 입력 (TSV/JSON)
+       ↓
+   Parse (parseQuestionTSV)
+       ↓
+   Store State (questionList, vocabularyList)
+       ↓
+   Gemini API 호출 (geminiExplanation.ts)
+       ↓
+   해설/단어 생성
+       ↓
+   Supabase 저장 (Edge Function)
+       ↓
+   PDF 렌더링 (A4PageLayout, QuestionPDF, VocabularyPDF)
+       ↓
+   다운로드 (pdfDownload.ts)
+```
+
+### 상태 관리 구조 (App.tsx)
+
+**공통 상태:**
+- `headerInfo` - 제목, 설명, 페이지 번호
+- `colorPalette` - Pantone 색상 테마
+- `fontSize` - 글씨 크기 (small/medium/large)
+- `viewMode` - 현재 뷰 모드
+- `isEditMode` - 수정 모드 여부
+
+**문제집 모드 상태:**
+- `questionList` - QuestionItem[]
+- `questionExplanations` - Map<id, ExplanationData>
+- `isGeneratingExplanations` - AI 해설 생성 중
+- `vocaPreviewWords` - 추출된 단어장
+
+**단어장 모드 상태:**
+- `vocabularyList` - 단어 배열
+- `unitSize` - 유닛당 단어 수
+- `currentUnit` - 현재 유닛
+- `coverVariant` - 표지 스타일 (photo/gradient/minimal)
+
+### AI 해설 유형 (ExplanationData)
+
+| 유형 | 설명 |
+|------|------|
+| VocabularyExplanation | 어휘(동의어) 문제 |
+| GrammarExplanation | 문법 문제 |
+| LogicExplanation | 빈칸/논리 문제 |
+| MainIdeaExplanation | 제목/요지 문제 |
+| InsertionExplanation | 삽입 문제 |
+| OrderExplanation | 순서 문제 |
+| WordAppropriatenessExplanation | 어휘 적절성/밑줄 추론 |
 
 ---
 
@@ -269,15 +365,16 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ---
 
-## API 엔드포인트
+## API 엔드포인트 (Supabase Edge Functions)
 
-| 엔드포인트 | 설명 |
-|-----------|------|
-| `/generate-word-info` | AI 단어 정보 생성 (Gemini) |
-| `/log` | 단어 세션 저장 |
-| `/logs` | 최근 세션 목록 조회 |
-| `/load-log/{id}` | 특정 세션 불러오기 |
-| `/migrate` | 데이터 마이그레이션 |
+| 엔드포인트 | 메서드 | 설명 |
+|-----------|--------|------|
+| `/health` | GET | 서버 상태 체크 |
+| `/gemini/vocabulary-batch` | POST | AI 단어장 배치 생성 (Gemini) |
+| `/gemini/grammar-batch` | POST | AI 구문 해설 배치 생성 |
+| `/gemini/vocabulary-preview` | POST | 문제에서 단어장 추출 |
+| `/logs` | POST | 세션 로그 저장 |
+| `/load-log/:logId` | GET | 특정 세션 불러오기 |
 
 ---
 

@@ -261,6 +261,7 @@ export default function App() {
     scale: 2.0,
   });
   const [editedFields, setEditedFields] = useState<Map<string, EditedFieldMap>>(new Map()); // 편집된 필드 상태
+  const [sessionRefreshTrigger, setSessionRefreshTrigger] = useState(0); // 세션 목록 갱신 트리거
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -736,6 +737,7 @@ export default function App() {
       if (success) {
         console.log('📦 세션 저장 완료 (최근 2개 유지)');
         toast.success('세션이 저장되었습니다.', { duration: 1000 });
+        setSessionRefreshTrigger((prev: number) => prev + 1); // 세션 목록 갱신
       } else {
         console.error('세션 저장 실패');
         toast.error('저장소 용량이 부족합니다.', { duration: 2000 });
@@ -1141,6 +1143,7 @@ export default function App() {
                 {/* 저장된 세션 관리 */}
                 <div className="border-t border-gray-200 p-4">
                   <SessionManager
+                    refreshTrigger={sessionRefreshTrigger}
                     onLoadSession={(questions, explanations, headerTitle, vocaWords) => {
                       setQuestionList(questions);
                       setQuestionExplanations(explanations);

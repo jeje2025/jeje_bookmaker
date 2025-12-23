@@ -15,6 +15,7 @@ import {
 } from './ui/alert-dialog';
 
 interface SessionManagerProps {
+  refreshTrigger?: number;
   onLoadSession: (
     questions: QuestionItem[],
     explanations: Map<string, ExplanationData>,
@@ -23,7 +24,7 @@ interface SessionManagerProps {
   ) => void;
 }
 
-export function SessionManager({ onLoadSession }: SessionManagerProps) {
+export function SessionManager({ refreshTrigger, onLoadSession }: SessionManagerProps) {
   const [sessions, setSessions] = useState<SavedSession[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
@@ -37,7 +38,7 @@ export function SessionManager({ onLoadSession }: SessionManagerProps) {
 
   useEffect(() => {
     loadSessions();
-  }, []);
+  }, [refreshTrigger]);
 
   // 세션 불러오기
   const handleLoadSession = (session: SavedSession) => {

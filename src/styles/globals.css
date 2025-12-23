@@ -762,6 +762,30 @@ body {
   font-size: 12px;
 }
 
+/* 어휘 문제 정답 강조 표시 (T023, T025) */
+.vocab-answer-highlight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--badge-bg, #fdf2f8);
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin: 8px 0;
+  border: 1px solid var(--badge-border, #fbcfe8);
+}
+
+.vocab-answer-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--badge-text, #be185d);
+}
+
+.vocab-answer-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--badge-text, #be185d);
+}
+
 /* 문법 정답 헤더 */
 .grammar-header {
   flex-wrap: wrap;
