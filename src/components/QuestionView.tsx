@@ -95,6 +95,9 @@ const VocabularyTestRow = ({
   </table>
 );
 
+// 해설 편집 콜백 타입
+type ExplanationEditCallback = (questionId: string, field: string, value: string | { english: string; korean: string }[]) => void;
+
 interface QuestionViewProps {
   viewMode: ViewMode;
   data: QuestionItem[];
@@ -106,6 +109,7 @@ interface QuestionViewProps {
   onVocaPreviewWordsChange?: (words: VocaPreviewWord[]) => void;
   choiceDisplayMode?: 'both' | 'korean' | 'english'; // 보기 표시 설정
   onPassageTranslationEdit?: (questionId: string, newPassage: string) => void; // 지문 번역 편집 콜백
+  onExplanationEdit?: ExplanationEditCallback; // 해설 필드 편집 콜백
 }
 
 // 같은 발문을 가진 연속 문제들을 그룹핑
@@ -362,6 +366,7 @@ export const QuestionView = memo(function QuestionView({
   onVocaPreviewWordsChange,
   choiceDisplayMode = 'both',
   onPassageTranslationEdit,
+  onExplanationEdit,
 }: QuestionViewProps) {
   const groupedQuestions = useMemo(() => groupByInstruction(data), [data]);
 
@@ -439,6 +444,7 @@ export const QuestionView = memo(function QuestionView({
         onHeaderChange={onHeaderChange}
         choiceDisplayMode={choiceDisplayMode}
         onPassageTranslationEdit={onPassageTranslationEdit}
+        onExplanationEdit={onExplanationEdit}
       />
     );
   }

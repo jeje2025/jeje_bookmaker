@@ -12,8 +12,10 @@ import { GrammarTable } from './components/GrammarTable';
 import { QuestionInput } from './components/QuestionInput';
 import { QuestionView } from './components/QuestionView';
 import { VocaPreviewInput } from './components/VocaPreviewInput';
-import type { QuestionItem, HeaderInfo as QuestionHeaderInfo, ViewMode as QuestionViewMode, ExplanationData, VocaPreviewWord } from './types/question';
+import { SessionManager } from './components/SessionManager';
+import type { QuestionItem, HeaderInfo as QuestionHeaderInfo, ViewMode as QuestionViewMode, ExplanationData, VocaPreviewWord, SavedSession, PdfPreviewState, EditedFieldMap, EditedField } from './types/question';
 import { generateExplanations, generateVocaPreview } from './services/geminiExplanation';
+import { saveSession } from './services/sessionStorage';
 // import { PDFSaveModal } from './components/PDFSaveModal'; // 모달 없이 바로 저장으로 변경
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog';
 import { Input } from './components/ui/input';
@@ -248,6 +250,17 @@ export default function App() {
   const [vocaPreviewStatus, setVocaPreviewStatus] = useState<string>(''); // 단어장 생성 상태 메시지
   const [showChoiceEnglish, setShowChoiceEnglish] = useState<'both' | 'korean' | 'english'>('both'); // 보기 표시 설정: both(영어+한글), korean(한글만), english(영어만)
   const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || ''; // Gemini API 키 (환경 변수)
+  // PDF 미리보기 상태 (T019-T021)
+  const [usePdfPreview, setUsePdfPreview] = useState(false); // PDF 미리보기 모드 토글 (기본: 기존 뷰 사용)
+  const [pdfPreviewState, setPdfPreviewState] = useState<PdfPreviewState>({
+    status: 'idle',
+    totalPages: 0,
+    currentPage: 1,
+    pageImages: new Map(),
+    editableRegions: [],
+    scale: 2.0,
+  });
+  const [editedFields, setEditedFields] = useState<Map<string, EditedFieldMap>>(new Map()); // 편집된 필드 상태
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -704,35 +717,32 @@ export default function App() {
     }
   }, [appMode, headerInfo, viewMode, unitSize, vocabularyList, colorPalette, fontSize, questionHeaderInfo, questionViewMode, questionList, questionExplanations, showChoiceEnglish, vocaPreviewWords]);
 
-  // AI 해설 데이터 localStorage에 저장 (최근 2개만 유지)
+  // AI 해설 데이터 localStorage에 저장 (최근 2개만 유지) - sessionStorage 서비스 사용
   const saveExplanationsToLocalStorage = (explanations: Map<string, ExplanationData>, questions: QuestionItem[], vocaWords?: VocaPreviewWord[]) => {
     try {
       const timestamp = new Date().toISOString();
-      const record = {
+      const session: SavedSession = {
         id: timestamp,
-        timestamp,
-        headerTitle: questionHeaderInfo.headerTitle,
+        createdAt: timestamp,
+        headerTitle: questionHeaderInfo.headerTitle || undefined, // 교재 제목 저장
         questionCount: questions.length,
-        explanations: Object.fromEntries(explanations), // Map -> Object
         questions: questions,
-        vocaPreviewWords: vocaWords || [] // 단어장 데이터도 저장
+        explanations: Array.from(explanations.entries()), // Map -> Array of tuples
+        vocabularyList: vocaWords // 단어장 데이터도 저장
       };
 
-      // 기존 기록 불러오기
-      const existingData = localStorage.getItem('question-explanations-history');
-      let history: any[] = existingData ? JSON.parse(existingData) : [];
-
-      // 새 기록 추가
-      history.unshift(record);
-
-      // 최근 2개만 유지
-      history = history.slice(0, 2);
-
-      // 저장
-      localStorage.setItem('question-explanations-history', JSON.stringify(history));
-      console.log('📦 해설+단어장 데이터 저장 완료 (최근 2개 유지):', history.length);
+      // sessionStorage 서비스를 통해 저장 (FIFO, 최대 2개)
+      const success = saveSession(session);
+      if (success) {
+        console.log('📦 세션 저장 완료 (최근 2개 유지)');
+        toast.success('세션이 저장되었습니다.', { duration: 1000 });
+      } else {
+        console.error('세션 저장 실패');
+        toast.error('저장소 용량이 부족합니다.', { duration: 2000 });
+      }
     } catch (error) {
-      console.error('해설 데이터 저장 실패:', error);
+      console.error('세션 저장 실패:', error);
+      toast.error('세션 저장에 실패했습니다.', { duration: 2000 });
     }
   };
 
@@ -813,6 +823,165 @@ export default function App() {
       return newMap;
     });
   }, []);
+
+  // 해설 필드 편집 핸들러 (동의어 해설, 동의어 목록 등)
+  const handleExplanationEdit = useCallback((questionId: string, field: string, value: string | { english: string; korean: string }[]) => {
+    setQuestionExplanations(prev => {
+      const newMap = new Map(prev);
+      const existingExplanation = newMap.get(questionId);
+      if (existingExplanation) {
+        newMap.set(questionId, {
+          ...existingExplanation,
+          [field]: value,
+        });
+      }
+      return newMap;
+    });
+  }, []);
+
+  // T038: 필드 편집 핸들러 (PDF 오버레이 편집용)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleFieldEdit = useCallback((questionId: string, fieldType: string, newValue: string, index?: number) => {
+    // 1. editedFields 상태 업데이트
+    setEditedFields((prev: Map<string, EditedFieldMap>) => {
+      const newMap = new Map(prev);
+      let fieldMap = newMap.get(questionId);
+      if (!fieldMap) {
+        fieldMap = new Map<string, EditedField>();
+      } else {
+        fieldMap = new Map(fieldMap);
+      }
+
+      const fieldKey = index !== undefined ? `${fieldType}_${index}` : fieldType;
+      const existingField = fieldMap.get(fieldKey);
+
+      // 원본 값 보존 (첫 편집 시에만)
+      const originalValue = existingField?.originalValue ?? newValue;
+
+      // 빈 값이면 원본 복원 (FR-011)
+      const finalValue = newValue.trim() === '' ? originalValue : newValue;
+
+      fieldMap.set(fieldKey, {
+        fieldType: fieldType as EditedField['fieldType'],
+        index,
+        originalValue,
+        currentValue: finalValue,
+        lastEditedAt: new Date().toISOString(),
+      });
+
+      newMap.set(questionId, fieldMap);
+      return newMap;
+    });
+
+    // 2. ExplanationData도 업데이트 (실제 PDF에 반영되도록)
+    setQuestionExplanations((prev: Map<string, ExplanationData>) => {
+      const newMap = new Map(prev);
+      const explanation = newMap.get(questionId);
+      if (!explanation) return prev;
+
+      // 빈 값이면 원본 값을 찾아서 복원
+      const existingFieldMap = editedFields.get(questionId);
+      const fieldKey = index !== undefined ? `${fieldType}_${index}` : fieldType;
+      const existingField = existingFieldMap?.get(fieldKey);
+      const originalValue = existingField?.originalValue;
+      const finalValue = newValue.trim() === '' && originalValue ? originalValue : newValue;
+
+      // 필드 타입에 따라 해당 필드 업데이트
+      const updatedExplanation: ExplanationData = { ...explanation };
+
+      switch (fieldType) {
+        case 'passageTranslation':
+          updatedExplanation.passageTranslation = finalValue;
+          break;
+        case 'wordExplanation':
+          if (updatedExplanation.type === 'vocabulary') {
+            updatedExplanation.wordExplanation = finalValue;
+          }
+          break;
+        case 'answerChange':
+          if (updatedExplanation.type === 'grammar') {
+            updatedExplanation.answerChange = finalValue;
+          }
+          break;
+        case 'testPoint':
+          if (updatedExplanation.type === 'grammar') {
+            updatedExplanation.testPoint = finalValue;
+          }
+          break;
+        case 'correctExplanation':
+          if (updatedExplanation.type === 'grammar' || updatedExplanation.type === 'mainIdea' || updatedExplanation.type === 'insertion') {
+            updatedExplanation.correctExplanation = finalValue;
+          }
+          break;
+        case 'wrongExplanation':
+          if ((updatedExplanation.type === 'grammar' || updatedExplanation.type === 'mainIdea') && index !== undefined) {
+            const arr = [...updatedExplanation.wrongExplanations];
+            arr[index] = finalValue;
+            updatedExplanation.wrongExplanations = arr;
+          }
+          break;
+        case 'step1Targeting':
+          if (updatedExplanation.type === 'logic') {
+            updatedExplanation.step1Targeting = finalValue;
+          }
+          break;
+        case 'step2Evidence':
+          if (updatedExplanation.type === 'logic') {
+            updatedExplanation.step2Evidence = finalValue;
+          }
+          break;
+        case 'step3Choice':
+          if (updatedExplanation.type === 'logic' && index !== undefined) {
+            const arr = [...updatedExplanation.step3Choices];
+            arr[index] = finalValue;
+            updatedExplanation.step3Choices = arr;
+          }
+          break;
+        case 'passageAnalysis':
+          if (updatedExplanation.type === 'mainIdea') {
+            updatedExplanation.passageAnalysis = finalValue;
+          }
+          break;
+        case 'positionExplanation':
+          if (updatedExplanation.type === 'insertion' && index !== undefined) {
+            const arr = [...updatedExplanation.positionExplanations];
+            arr[index] = finalValue;
+            updatedExplanation.positionExplanations = arr;
+          }
+          break;
+        case 'firstParagraph':
+          if (updatedExplanation.type === 'order') {
+            updatedExplanation.firstParagraph = finalValue;
+          }
+          break;
+        case 'splitPoint':
+          if (updatedExplanation.type === 'order') {
+            updatedExplanation.splitPoint = finalValue;
+          }
+          break;
+        case 'conclusion':
+          if (updatedExplanation.type === 'order') {
+            updatedExplanation.conclusion = finalValue;
+          }
+          break;
+        case 'mainTopic':
+          if (updatedExplanation.type === 'wordAppropriateness') {
+            updatedExplanation.mainTopic = finalValue;
+          }
+          break;
+        case 'choiceExplanation':
+          if (updatedExplanation.type === 'wordAppropriateness' && index !== undefined) {
+            const arr = [...updatedExplanation.choiceExplanations];
+            arr[index] = finalValue;
+            updatedExplanation.choiceExplanations = arr;
+          }
+          break;
+      }
+
+      newMap.set(questionId, updatedExplanation);
+      return newMap;
+    });
+  }, [editedFields]);
 
   // 단어 순서 랜덤 섞기 (ID는 1부터 유지)
   const handleShuffleWords = () => {
@@ -956,26 +1125,34 @@ export default function App() {
               </div>
             ) : (
               /* 문제집 모드 - 문제 데이터 입력 UI */
-              <div className="p-4">
-                <QuestionInput
-                  onSave={setQuestionList}
-                  data={questionList}
-                  headerInfo={questionHeaderInfo}
-                  onHeaderChange={setQuestionHeaderInfo}
-                  onGenerateExplanations={handleGenerateExplanations}
-                  isGenerating={isGeneratingExplanations}
-                  explanations={questionExplanations}
-                  generationProgress={generationProgress ?? undefined}
-                  onLoadExplanationHistory={(questions, explanations, headerTitle, vocaWords) => {
-                    setQuestionList(questions);
-                    setQuestionExplanations(explanations);
-                    setQuestionHeaderInfo(prev => ({ ...prev, headerTitle }));
-                    if (vocaWords && vocaWords.length > 0) {
-                      setVocaPreviewWords(vocaWords);
-                    }
-                  }}
-                />
-              </div>
+              <>
+                <div className="p-4">
+                  <QuestionInput
+                    onSave={setQuestionList}
+                    data={questionList}
+                    headerInfo={questionHeaderInfo}
+                    onHeaderChange={setQuestionHeaderInfo}
+                    onGenerateExplanations={handleGenerateExplanations}
+                    isGenerating={isGeneratingExplanations}
+                    explanations={questionExplanations}
+                    generationProgress={generationProgress ?? undefined}
+                  />
+                </div>
+                {/* 저장된 세션 관리 */}
+                <div className="border-t border-gray-200 p-4">
+                  <SessionManager
+                    onLoadSession={(questions, explanations, headerTitle, vocaWords) => {
+                      setQuestionList(questions);
+                      setQuestionExplanations(explanations);
+                      setQuestionHeaderInfo((prev: QuestionHeaderInfo) => ({ ...prev, headerTitle }));
+                      if (vocaWords && vocaWords.length > 0) {
+                        setVocaPreviewWords(vocaWords);
+                      }
+                      toast.success('세션을 불러왔습니다!', { duration: 1000 });
+                    }}
+                  />
+                </div>
+              </>
             )
           ) : (
             /* 구문교재 모드 - 문법 요소 선택 UI */
@@ -1376,6 +1553,7 @@ export default function App() {
                     onVocaPreviewWordsChange={setVocaPreviewWords}
                     choiceDisplayMode={showChoiceEnglish}
                     onPassageTranslationEdit={handlePassageTranslationEdit}
+                    onExplanationEdit={handleExplanationEdit}
                   />
                 ) : questionViewMode === 'vocaPreview' ? (
                   <div className="flex items-center justify-center h-64 text-slate-400">

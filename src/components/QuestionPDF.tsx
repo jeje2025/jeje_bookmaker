@@ -558,6 +558,27 @@ const createStyles = (palette: PaletteColors, fontScale: number = 1) => {
       color: '#333',
       flex: 1,
     },
+    // 어휘 문제 정답 강조 (T022, T024)
+    vocabAnswerHighlight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      backgroundColor: bgColor,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 4,
+      marginBottom: 6,
+    },
+    vocabAnswerLabel: {
+      fontSize: scaled(8),
+      fontWeight: 700,
+      color: textColor,
+    },
+    vocabAnswerText: {
+      fontSize: scaled(8),
+      fontWeight: 700,
+      color: textColor,
+    },
     // 보기 해설
     choiceExplanations: {
       flexDirection: 'column',
@@ -991,8 +1012,9 @@ const ExplanationCardPDF = ({
   const passageTranslation = explanation?.passageTranslation;
   const choiceTranslations = explanation?.choiceTranslations;
 
-  // 정답 인덱스
-  const answerIdx = choiceLabels.indexOf(item.answer);
+  // 정답 인덱스 (answer는 1~5 숫자)
+  const answerNum = Number(item.answer);
+  const answerIdx = answerNum >= 1 && answerNum <= 5 ? answerNum - 1 : -1;
   const answerWord = answerIdx >= 0 ? item.choices[answerIdx] : '';
 
   // 밑줄 단어 추출
@@ -1000,7 +1022,7 @@ const ExplanationCardPDF = ({
   const underlinedWord = underlinedMatch ? underlinedMatch[1] : '';
 
   return (
-    <View style={isLast ? styles.explanationCardLast : styles.explanationCard}>
+    <View style={isLast ? styles.explanationCardLast : styles.explanationCard} wrap={false}>
       {/* 좌측: 문제 */}
       <View style={styles.explanationQuestion}>
         <Text style={styles.explanationQuestionNumber}>{item.questionNumber}</Text>
@@ -1020,7 +1042,7 @@ const ExplanationCardPDF = ({
           <View style={{ marginTop: 8 }}>
             {item.choices.map((choice, idx) => {
               if (!choice) return null;
-              const isCorrect = item.answer === choiceLabels[idx];
+              const isCorrect = answerIdx === idx;
               const translation = choiceTranslations?.[idx];
 
               // 번역이 있고 both 또는 korean 모드인 경우
@@ -1057,7 +1079,7 @@ const ExplanationCardPDF = ({
         {/* 정답 헤더 */}
         <View style={styles.answerHeader}>
           <View style={styles.answerBadge}>
-            <Text style={styles.answerBadgeText}>{item.answer}</Text>
+            <Text style={styles.answerBadgeText}>{answerNum}</Text>
           </View>
           <Text style={styles.answerWord}>{answerWord}</Text>
         </View>
@@ -1136,7 +1158,7 @@ const ExplanationCardPDF = ({
                 <View style={styles.choiceExplanations}>
                   {(explanation as any)?.step3Choices && (explanation as any).step3Choices.length > 0 ? (
                     (explanation as any).step3Choices.map((exp: string, idx: number) => (
-                      <View key={idx} style={item.answer === choiceLabels[idx] ? styles.choiceItemCorrect : styles.choiceItem}>
+                      <View key={idx} style={answerIdx === idx ? styles.choiceItemCorrect : styles.choiceItem}>
                         <Text style={styles.wrongLabel}>{choiceLabels[idx]}</Text>
                         <Text style={styles.wrongText}>{exp}</Text>
                       </View>
@@ -1176,7 +1198,7 @@ const ExplanationCardPDF = ({
                   {(explanation as any)?.wrongExplanations && (explanation as any).wrongExplanations.length > 0 ? (
                     (explanation as any).wrongExplanations.map((exp: string, idx: number) => {
                       // 정답은 스킵
-                      if (item.answer === choiceLabels[idx]) return null;
+                      if (answerIdx === idx) return null;
                       return (
                         <View key={idx} style={styles.choiceItem}>
                           <Text style={styles.wrongLabel}>{choiceLabels[idx]}</Text>
@@ -1221,7 +1243,7 @@ const GroupedExplanationCardPDF = ({
     : String(questionNumbers[0]);
 
   return (
-    <View style={styles.explanationCard}>
+    <View style={styles.explanationCard} wrap={false}>
       {/* 좌측: 지문 + 모든 문제의 보기 */}
       <View style={styles.explanationQuestion}>
         <Text style={styles.explanationQuestionNumber}>{numberRange}</Text>
@@ -1241,6 +1263,8 @@ const GroupedExplanationCardPDF = ({
           {group.items.map((item) => {
             const itemExplanation = explanations?.get(item.id);
             const choiceTranslations = itemExplanation?.choiceTranslations;
+            const itemAnswerNum = Number(item.answer);
+            const itemAnswerIdx = itemAnswerNum >= 1 && itemAnswerNum <= 5 ? itemAnswerNum - 1 : -1;
 
             return (
               <View key={item.id} style={styles.groupedQuestionChoices}>
@@ -1251,7 +1275,7 @@ const GroupedExplanationCardPDF = ({
                 <View style={{ marginTop: 4 }}>
                   {item.choices.map((choice, idx) => {
                     if (!choice) return null;
-                    const isCorrect = item.answer === choiceLabels[idx];
+                    const isCorrect = itemAnswerIdx === idx;
                     const translation = choiceTranslations?.[idx];
 
                     if (translation && (choiceDisplayMode === 'both' || choiceDisplayMode === 'korean')) {
@@ -1288,7 +1312,8 @@ const GroupedExplanationCardPDF = ({
       <View style={styles.explanationContent}>
         {group.items.map((item, idx) => {
           const explanation = explanations?.get(item.id);
-          const answerIdx = choiceLabels.indexOf(item.answer);
+          const answerNum = Number(item.answer);
+          const answerIdx = answerNum >= 1 && answerNum <= 5 ? answerNum - 1 : -1;
           const answerWord = answerIdx >= 0 ? item.choices[answerIdx] : '';
           const underlinedMatch = item.passage.match(/_([^_]+)_/);
           const underlinedWord = underlinedMatch ? underlinedMatch[1] : '';
@@ -1301,7 +1326,7 @@ const GroupedExplanationCardPDF = ({
                   <Text style={styles.questionNumBadgeText}>{item.questionNumber}</Text>
                 </View>
                 <View style={styles.answerBadge}>
-                  <Text style={styles.answerBadgeText}>{item.answer}</Text>
+                  <Text style={styles.answerBadgeText}>{answerNum}</Text>
                 </View>
                 <Text style={styles.answerWord}>{answerWord}</Text>
               </View>
@@ -1354,7 +1379,7 @@ const GroupedExplanationCardPDF = ({
                       <View style={styles.choiceExplanations}>
                         {(explanation as any)?.step3Choices && (explanation as any).step3Choices.length > 0 ? (
                           (explanation as any).step3Choices.map((exp: string, expIdx: number) => (
-                            <View key={expIdx} style={item.answer === choiceLabels[expIdx] ? styles.choiceItemCorrect : styles.choiceItem}>
+                            <View key={expIdx} style={answerIdx === expIdx ? styles.choiceItemCorrect : styles.choiceItem}>
                               <Text style={styles.wrongLabel}>{choiceLabels[expIdx]}</Text>
                               <Text style={styles.wrongText}>{exp}</Text>
                             </View>
@@ -1387,7 +1412,7 @@ const GroupedExplanationCardPDF = ({
                       <View style={styles.choiceExplanations}>
                         {(explanation as any)?.wrongExplanations && (explanation as any).wrongExplanations.length > 0 ? (
                           (explanation as any).wrongExplanations.map((exp: string, expIdx: number) => {
-                            if (item.answer === choiceLabels[expIdx]) return null;
+                            if (answerIdx === expIdx) return null;
                             return (
                               <View key={expIdx} style={styles.choiceItem}>
                                 <Text style={styles.wrongLabel}>{choiceLabels[expIdx]}</Text>

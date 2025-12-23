@@ -107,6 +107,121 @@ export type ExplanationData =
   | OrderExplanation
   | WordAppropriatenessExplanation;
 
+// ===== PDF 미리보기 및 편집 타입 =====
+
+/**
+ * 인라인 편집 가능한 필드 유형
+ */
+export type EditableFieldType =
+  | 'passageTranslation'      // 지문 번역
+  | 'wordExplanation'         // 어휘 해설 (VocabularyExplanation)
+  | 'answerChange'            // 정답 변환 (GrammarExplanation)
+  | 'testPoint'               // 출제 포인트 (GrammarExplanation)
+  | 'correctExplanation'      // 정답 해설 (여러 타입 공통)
+  | 'wrongExplanation'        // 오답 해설 (index 필요)
+  | 'step1Targeting'          // Step 1 (LogicExplanation)
+  | 'step2Evidence'           // Step 2 (LogicExplanation)
+  | 'step3Choice'             // Step 3 보기 판단 (index 필요)
+  | 'passageAnalysis'         // 지문 분석 (MainIdeaExplanation)
+  | 'positionExplanation'     // 위치 설명 (InsertionExplanation, index 필요)
+  | 'firstParagraph'          // 1열 (OrderExplanation)
+  | 'splitPoint'              // 쪼개기 포인트 (OrderExplanation)
+  | 'conclusion'              // 결론 (OrderExplanation)
+  | 'mainTopic'               // 핵심 주제 (WordAppropriatenessExplanation)
+  | 'choiceExplanation';      // 보기 해설 (index 필요)
+
+/**
+ * 편집된 필드 정보
+ */
+export interface EditedField {
+  fieldType: EditableFieldType;
+  index?: number;              // 배열 필드의 경우 인덱스
+  originalValue: string;       // 원본 값 (빈값 복원용)
+  currentValue: string;        // 현재 값
+  lastEditedAt: string;        // 마지막 편집 시간 (ISO 8601)
+}
+
+/**
+ * 문제 ID별 편집된 필드 맵
+ * key: `${fieldType}` 또는 `${fieldType}_${index}`
+ */
+export type EditedFieldMap = Map<string, EditedField>;
+
+/**
+ * PDF 페이지 내 편집 가능 영역
+ */
+export interface EditableRegion {
+  id: string;                  // 고유 ID: `${questionId}_${fieldType}_${index?}`
+  questionId: string;          // 연결된 문제 ID
+  fieldType: EditableFieldType;
+  index?: number;              // 배열 필드의 인덱스
+
+  pageIndex: number;           // PDF 페이지 번호 (0-based)
+
+  /** PDF 좌표계 (포인트 단위, 좌하단 원점) */
+  pdfRect: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+
+  /** 현재 텍스트 */
+  text: string;
+
+  /** 원본 텍스트 (빈값 복원용) */
+  originalText: string;
+}
+
+/**
+ * PDF 미리보기 상태
+ */
+export interface PdfPreviewState {
+  /** 렌더링 상태 */
+  status: 'idle' | 'rendering' | 'ready' | 'error';
+
+  /** 에러 메시지 (status가 'error'일 때) */
+  errorMessage?: string;
+
+  /** 총 페이지 수 */
+  totalPages: number;
+
+  /** 현재 표시 중인 페이지 (1-based) */
+  currentPage: number;
+
+  /** 페이지별 이미지 캐시 (data URL) */
+  pageImages: Map<number, string>;
+
+  /** 모든 편집 가능 영역 */
+  editableRegions: EditableRegion[];
+
+  /** PDF 렌더링 스케일 (기본값: 2.0 for 고해상도) */
+  scale: number;
+
+  /** 마지막 렌더링 시간 */
+  lastRenderedAt?: string;
+}
+
+// ===== 세션 저장 타입 (localStorage용) =====
+
+// 저장된 세션 데이터
+export interface SavedSession {
+  id: string;                              // 세션 ID (ISO 8601 타임스탬프)
+  createdAt: string;                       // 생성 일시 (ISO 8601)
+  headerTitle?: string;                    // 교재 제목
+  questionCount: number;                   // 문제 수
+  questions: QuestionItem[];               // 문제 목록
+  explanations: [string, ExplanationData][]; // Map을 배열로 변환
+  vocabularyList?: VocaPreviewWord[];      // 단어장 (선택)
+  editedFields?: [string, [string, EditedField][]][];  // Map<questionId, EditedFieldMap> 직렬화
+}
+
+// localStorage 루트 데이터 구조
+export interface StorageData {
+  version: string;           // 데이터 스키마 버전 ("1.0")
+  sessions: SavedSession[];  // 저장된 세션 배열 (최대 2개)
+}
+
 // TSV 파싱 함수
 export function parseQuestionTSV(tsv: string): QuestionItem[] {
   const lines = tsv.trim().split('\n');

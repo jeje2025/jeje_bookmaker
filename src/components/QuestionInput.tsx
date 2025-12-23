@@ -3,20 +3,9 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronUp, RotateCcw, Clock } from 'lucide-react';
-import type { QuestionItem, HeaderInfo, ExplanationData, VocaPreviewWord } from '../types/question';
+import { ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import type { QuestionItem, HeaderInfo, ExplanationData } from '../types/question';
 import { DEFAULT_PROMPTS, PROMPT_LABELS, setCustomPrompts } from '../services/geminiExplanation';
-
-// 해설 기록 타입
-interface ExplanationHistoryRecord {
-  id: string;
-  timestamp: string;
-  headerTitle: string;
-  questionCount: number;
-  explanations: Record<string, ExplanationData>;
-  questions: QuestionItem[];
-  vocaPreviewWords?: VocaPreviewWord[]; // 단어장 데이터
-}
 
 interface QuestionInputProps {
   onSave: (data: QuestionItem[]) => void;
@@ -27,7 +16,6 @@ interface QuestionInputProps {
   isGenerating?: boolean;
   explanations?: Map<string, ExplanationData>;
   generationProgress?: { current: number; total: number };
-  onLoadExplanationHistory?: (questions: QuestionItem[], explanations: Map<string, ExplanationData>, headerTitle: string, vocaWords?: VocaPreviewWord[]) => void;
 }
 
 // 셀 데이터 인터페이스 (그리드용)
@@ -61,11 +49,11 @@ const columnLabels: { [key in keyof CellData]: string } = {
   categorySub: '소분류',
   instruction: '발문',
   passage: '지문',
-  choice1: '①',
-  choice2: '②',
-  choice3: '③',
-  choice4: '④',
-  choice5: '⑤',
+  choice1: '1',
+  choice2: '2',
+  choice3: '3',
+  choice4: '4',
+  choice5: '5',
   answer: '정답'
 };
 
@@ -138,7 +126,7 @@ const convertToQuestionItem = (cells: CellData[]): QuestionItem[] => {
     }));
 };
 
-export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGenerateExplanations, isGenerating, explanations, generationProgress, onLoadExplanationHistory }: QuestionInputProps) {
+export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGenerateExplanations, isGenerating, explanations, generationProgress }: QuestionInputProps) {
   const [rows, setRows] = useState<CellData[]>(() => {
     if (data && data.length > 0) {
       return convertToCellData(data);
@@ -147,9 +135,6 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
   });
 
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number } | null>(null);
-
-  // 해설 기록 상태
-  const [explanationHistory, setExplanationHistory] = useState<ExplanationHistoryRecord[]>([]);
 
   // 프롬프트 편집 상태
   const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
@@ -173,22 +158,6 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
 
   // 내부 변경인지 외부 변경인지 구분하기 위한 ref
   const isInternalChange = useRef(false);
-
-  // 해설 기록 불러오기
-  useEffect(() => {
-    const loadHistory = () => {
-      try {
-        const historyData = localStorage.getItem('question-explanations-history');
-        if (historyData) {
-          const parsed = JSON.parse(historyData);
-          setExplanationHistory(parsed);
-        }
-      } catch (error) {
-        console.error('해설 기록 불러오기 실패:', error);
-      }
-    };
-    loadHistory();
-  }, [explanations]); // explanations가 변경되면 기록 새로고침
 
   // data prop 변경 시 rows 업데이트 (외부에서 변경된 경우만)
   useEffect(() => {
@@ -221,10 +190,18 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
     }
   };
 
+  // 정답 번호 변환 (①→1, ②→2, ...)
+  const convertAnswerToNumber = (value: string): string => {
+    const circleToNum: Record<string, string> = { '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5' };
+    const trimmed = value.trim();
+    return circleToNum[trimmed] || trimmed;
+  };
+
   // 셀 값 변경
   const updateCell = (rowIndex: number, column: keyof CellData, value: string) => {
     const newRows = [...rows];
-    newRows[rowIndex][column] = value;
+    // 정답 컬럼이면 동그라미를 숫자로 변환
+    newRows[rowIndex][column] = column === 'answer' ? convertAnswerToNumber(value) : value;
     setRows(newRows);
     saveToParent(newRows);
   };
@@ -344,7 +321,9 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
       cells.forEach((cell, colOffset) => {
         const targetCol = startCol + colOffset;
         if (targetCol < columns.length) {
-          newRows[targetRow][columns[targetCol]] = cell.trim();
+          const colName = columns[targetCol];
+          // 정답 컬럼이면 동그라미를 숫자로 변환
+          newRows[targetRow][colName] = colName === 'answer' ? convertAnswerToNumber(cell.trim()) : cell.trim();
         }
       });
     });
@@ -643,47 +622,6 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
             </div>
           )}
 
-          {/* 최근 해설 기록 */}
-          {explanationHistory.length > 0 && onLoadExplanationHistory && (
-            <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex items-center gap-2 mb-2">
-                <Clock size={14} className="text-slate-600" />
-                <h4 className="text-sm font-medium text-gray-700">최근 해설 기록</h4>
-                <span className="text-xs text-slate-400">(최근 2개 유지)</span>
-              </div>
-              <div className="space-y-2">
-                {explanationHistory.map((record) => (
-                  <button
-                    key={record.id}
-                    onClick={() => {
-                      // Record<string, ExplanationData>를 Map으로 변환
-                      const explanationsMap = new Map(Object.entries(record.explanations));
-                      onLoadExplanationHistory(record.questions, explanationsMap, record.headerTitle, record.vocaPreviewWords);
-                      toast.success('해설 기록을 불러왔습니다!', { duration: 1000 });
-                    }}
-                    className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
-                  >
-                    <p className="text-xs text-slate-900 font-medium truncate">
-                      {record.headerTitle || '제목 없음'}
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs text-slate-500">
-                        {new Date(record.timestamp).toLocaleDateString('ko-KR', {
-                          month: 'numeric',
-                          day: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
-                      <p className="text-xs text-slate-600 font-medium">
-                        {record.questionCount}문제 · {Object.keys(record.explanations).length}해설
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

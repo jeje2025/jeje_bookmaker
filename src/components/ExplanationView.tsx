@@ -18,9 +18,12 @@ import type {
 
 // ===== QUICK VER. 답안표 컴포넌트 =====
 const QuickAnswerTable = ({ questions }: { questions: QuestionItem[] }) => {
-  // 7열 5행 (35문제) 그리드
-  const rows = 5;
+  // 7열, 행은 문제 수에 따라 자동 확장
   const cols = 7;
+  const maxQuestionNumber = questions.length > 0
+    ? Math.max(...questions.map(q => q.questionNumber))
+    : 0;
+  const rows = Math.max(1, Math.ceil(maxQuestionNumber / cols));
 
   // 정답 번호 추출 (①→1, ②→2, ...)
   const getAnswerNumber = (answer: string): string => {
@@ -38,6 +41,15 @@ const QuickAnswerTable = ({ questions }: { questions: QuestionItem[] }) => {
               {Array.from({ length: cols }, (_, colIdx) => {
                 const qNum = rowIdx * cols + colIdx + 1;
                 const question = questions.find(q => q.questionNumber === qNum);
+                // 문제 번호가 최대 문제 번호를 초과하면 빈 셀 표시
+                if (qNum > maxQuestionNumber) {
+                  return (
+                    <td key={colIdx} className="quick-answer-cell" style={{ opacity: 0.3 }}>
+                      <span className="quick-answer-num">{String(qNum).padStart(2, '0')}</span>
+                      <span className="quick-answer-circle"></span>
+                    </td>
+                  );
+                }
                 return (
                   <td key={colIdx} className="quick-answer-cell">
                     <span className="quick-answer-num">{String(qNum).padStart(2, '0')}</span>
@@ -55,6 +67,115 @@ const QuickAnswerTable = ({ questions }: { questions: QuestionItem[] }) => {
   );
 };
 
+// ===== 범용 편집 가능한 텍스트 컴포넌트 =====
+const EditableText = ({
+  text,
+  onSave,
+  className,
+  style,
+  placeholder,
+  multiline = false,
+  formatText = false, // true면 마크다운 포맷팅 적용
+}: {
+  text: string;
+  onSave?: (newText: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+  placeholder?: string;
+  multiline?: boolean;
+  formatText?: boolean;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(text);
+
+  // onSave가 없으면 편집 불가
+  if (!onSave) {
+    return (
+      <span className={className} style={style}>
+        {text || <span className="placeholder-text">{placeholder}</span>}
+      </span>
+    );
+  }
+
+  const handleDoubleClick = () => {
+    setEditValue(text);
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    onSave(editValue);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+    }
+    if (e.key === 'Enter' && !multiline) {
+      e.preventDefault();
+      handleSave();
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="edit-container print:hidden">
+        {multiline ? (
+          <textarea
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full p-2 text-xs border rounded resize-none"
+            style={{ minHeight: '60px', fontSize: scaledSize(9), lineHeight: 1.5 }}
+            autoFocus
+          />
+        ) : (
+          <input
+            type="text"
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="w-full p-1 text-xs border rounded"
+            style={{ fontSize: scaledSize(9) }}
+            autoFocus
+          />
+        )}
+        <div className="flex gap-1 mt-1">
+          <button
+            onClick={handleSave}
+            className="px-2 py-0.5 text-xs bg-slate-800 text-white rounded hover:bg-slate-700"
+          >
+            저장
+          </button>
+          <button
+            onClick={() => setIsEditing(false)}
+            className="px-2 py-0.5 text-xs bg-gray-200 rounded hover:bg-gray-300"
+          >
+            취소
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const displayContent = text ? (
+    formatText ? formatPassageWithUnderline(text) : text
+  ) : (
+    <span className="placeholder-text">{placeholder}</span>
+  );
+
+  return (
+    <span
+      className={`${className || ''} cursor-pointer hover:bg-yellow-50 transition-colors`}
+      style={style}
+      onDoubleClick={handleDoubleClick}
+      title="더블클릭하여 편집"
+    >
+      {displayContent}
+    </span>
+  );
+};
+
 // ===== 편집 가능한 지문 컴포넌트 =====
 const EditablePassage = ({
   text,
@@ -63,12 +184,21 @@ const EditablePassage = ({
   style,
 }: {
   text: string;
-  onSave: (newText: string) => void;
+  onSave?: (newText: string) => void;
   className?: string;
   style?: React.CSSProperties;
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(text);
+
+  // onSave가 없으면 편집 불가
+  if (!onSave) {
+    return (
+      <p className={className} style={style}>
+        {formatPassageWithUnderline(text)}
+      </p>
+    );
+  }
 
   const handleDoubleClick = () => {
     setEditValue(text);
@@ -229,19 +359,24 @@ const groupByPassage = (items: QuestionItem[]): PassageGroup[] => {
 
 // ===== 유형별 해설 섹션 컴포넌트 =====
 
+// 해설 편집 콜백 타입
+type ExplanationEditCallback = (questionId: string, field: string, value: string | { english: string; korean: string }[]) => void;
+
 // 어휘(동의어) 해설
 const VocabularySection = ({
   item,
   explanation,
-  showNumber = true
+  showNumber = true,
+  onEdit,
 }: {
   item: QuestionItem;
   explanation?: VocabularyExplanation;
   showNumber?: boolean;
+  onEdit?: ExplanationEditCallback;
 }) => {
-  // 정답 단어 추출
-  const answerIdx = ['①', '②', '③', '④', '⑤'].indexOf(item.answer);
-  const answerWord = answerIdx >= 0 ? item.choices[answerIdx] : '';
+  // 정답 단어 추출 (answer는 1~5 숫자)
+  const answerNum = Number(item.answer);
+  const answerWord = answerNum >= 1 && answerNum <= 5 ? item.choices[answerNum - 1] : '';
 
   // 밑줄 단어 추출
   const underlinedMatch = item.passage.match(/_([^_]+)_/);
@@ -252,7 +387,7 @@ const VocabularySection = ({
       {/* 정답 헤더 */}
       <div className="explanation-answer-header">
         {showNumber && <span className="question-num-badge">{item.questionNumber}</span>}
-        <span className="answer-badge">{item.answer}</span>
+        <span className="answer-badge">{answerNum}</span>
         <span className="answer-word">{answerWord}</span>
       </div>
 
@@ -263,9 +398,12 @@ const VocabularySection = ({
           동의어 해설 - {underlinedWord}
         </div>
         <div className="explanation-block-content">
-          {explanation?.wordExplanation || (
-            <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
-          )}
+          <EditableText
+            text={explanation?.wordExplanation || ''}
+            placeholder="AI 해설이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'wordExplanation', newText) : undefined}
+          />
         </div>
       </div>
 
@@ -280,8 +418,26 @@ const VocabularySection = ({
             <tbody>
               {explanation.synonyms.map((syn, idx) => (
                 <tr key={idx}>
-                  <td className="synonym-english">{syn.english}</td>
-                  <td className="synonym-korean">{syn.korean}</td>
+                  <td className="synonym-english">
+                    <EditableText
+                      text={syn.english}
+                      onSave={onEdit ? (newText) => {
+                        const newSynonyms = [...(explanation.synonyms || [])];
+                        newSynonyms[idx] = { ...newSynonyms[idx], english: newText };
+                        onEdit(item.id, 'synonyms', newSynonyms);
+                      } : undefined}
+                    />
+                  </td>
+                  <td className="synonym-korean">
+                    <EditableText
+                      text={syn.korean}
+                      onSave={onEdit ? (newText) => {
+                        const newSynonyms = [...(explanation.synonyms || [])];
+                        newSynonyms[idx] = { ...newSynonyms[idx], korean: newText };
+                        onEdit(item.id, 'synonyms', newSynonyms);
+                      } : undefined}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -659,17 +815,19 @@ const WordAppropriatenessSection = ({
 const ExplanationSectionByType = ({
   item,
   explanation,
-  showNumber = true
+  showNumber = true,
+  onEdit,
 }: {
   item: QuestionItem;
   explanation?: ExplanationData;
   showNumber?: boolean;
+  onEdit?: ExplanationEditCallback;
 }) => {
   const { categoryMain, categorySub } = item;
 
   // 어휘 유형
   if (categoryMain === '어휘') {
-    return <VocabularySection item={item} explanation={explanation as VocabularyExplanation} showNumber={showNumber} />;
+    return <VocabularySection item={item} explanation={explanation as VocabularyExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
 
   // 문법 유형
@@ -768,11 +926,13 @@ const SingleExplanationCard = ({
   explanation,
   choiceDisplayMode = 'both',
   onPassageEdit,
+  onExplanationEdit,
 }: {
   item: QuestionItem;
   explanation?: ExplanationData;
   choiceDisplayMode?: 'both' | 'korean' | 'english';
   onPassageEdit?: (questionId: string, newPassage: string) => void;
+  onExplanationEdit?: ExplanationEditCallback;
 }) => {
   // ExplanationData에서 번역 정보 추출
   const passageTranslation = explanation?.passageTranslation;
@@ -817,7 +977,7 @@ const SingleExplanationCard = ({
 
       {/* 우측: 해설 */}
       <div className="explanation-content">
-        <ExplanationSectionByType item={item} explanation={explanation} showNumber={false} />
+        <ExplanationSectionByType item={item} explanation={explanation} showNumber={false} onEdit={onExplanationEdit} />
       </div>
     </div>
   );
@@ -829,11 +989,13 @@ const GroupedExplanationCard = ({
   explanations,
   choiceDisplayMode = 'both',
   onPassageEdit,
+  onExplanationEdit,
 }: {
   group: PassageGroup;
   explanations?: Map<string, ExplanationData>;
   choiceDisplayMode?: 'both' | 'korean' | 'english';
   onPassageEdit?: (questionId: string, newPassage: string) => void;
+  onExplanationEdit?: ExplanationEditCallback;
 }) => {
   const firstItem = group.items[0];
   // 첫 번째 문제의 해설에서 지문 번역 가져오기
@@ -905,6 +1067,7 @@ const GroupedExplanationCard = ({
               item={item}
               explanation={explanations?.get(item.id)}
               showNumber={true}
+              onEdit={onExplanationEdit}
             />
           </div>
         ))}
@@ -922,6 +1085,7 @@ interface ExplanationViewProps {
   onHeaderChange: (updated: Partial<HeaderInfo>) => void;
   choiceDisplayMode?: 'both' | 'korean' | 'english'; // 보기 표시 설정
   onPassageTranslationEdit?: (questionId: string, newPassage: string) => void; // 지문 번역 편집 콜백
+  onExplanationEdit?: ExplanationEditCallback; // 해설 필드 편집 콜백
 }
 
 export const ExplanationView = memo(function ExplanationView({
@@ -932,6 +1096,7 @@ export const ExplanationView = memo(function ExplanationView({
   onHeaderChange,
   choiceDisplayMode = 'both',
   onPassageTranslationEdit,
+  onExplanationEdit,
 }: ExplanationViewProps) {
   // 같은 지문을 공유하는 문제들 그룹핑
   const groupedQuestions = useMemo(() => groupByPassage(data), [data]);
@@ -948,6 +1113,7 @@ export const ExplanationView = memo(function ExplanationView({
             explanation={explanations?.get(group.items[0].id)}
             choiceDisplayMode={choiceDisplayMode}
             onPassageEdit={onPassageTranslationEdit}
+            onExplanationEdit={onExplanationEdit}
           />
         );
       }
@@ -959,10 +1125,11 @@ export const ExplanationView = memo(function ExplanationView({
           explanations={explanations}
           choiceDisplayMode={choiceDisplayMode}
           onPassageEdit={onPassageTranslationEdit}
+          onExplanationEdit={onExplanationEdit}
         />
       );
     });
-  }, [groupedQuestions, explanations, choiceDisplayMode, onPassageTranslationEdit]);
+  }, [groupedQuestions, explanations, choiceDisplayMode, onPassageTranslationEdit, onExplanationEdit]);
 
   return (
     <A4PageLayout
