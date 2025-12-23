@@ -29,6 +29,15 @@ const isAnswerMatch = (answer: string, choiceLabel: string): boolean => {
   return normalizeAnswer(answer) === normalizeAnswer(choiceLabel);
 };
 
+// 정답 보기 텍스트 추출 (answer 번호에 해당하는 choice)
+const getAnswerChoiceText = (answer: string, choices: string[]): string => {
+  const answerNum = parseInt(normalizeAnswer(answer));
+  if (answerNum >= 1 && answerNum <= 5 && choices[answerNum - 1]) {
+    return choices[answerNum - 1];
+  }
+  return '';
+};
+
 // AI 해설에서 앞에 붙은 번호 제거 (① 사회적... → 사회적...)
 const stripLeadingNumber = (text: string): string => {
   // ①, ②, ③, ④, ⑤ 또는 (A), (B) 등으로 시작하는 경우 제거
@@ -389,16 +398,39 @@ type ExplanationEditCallback = (questionId: string, field: string, value: string
 const AnswerHeader = ({
   questionNumber,
   answer,
-  showNumber = true
+  answerText,
+  answerChange,
+  showNumber = true,
+  categoryMain,
+  categorySub
 }: {
   questionNumber: number;
   answer: string;
+  answerText?: string;
+  answerChange?: string;
   showNumber?: boolean;
+  categoryMain?: string;
+  categorySub?: string;
 }) => (
   <div className="explanation-answer-header">
-    {showNumber && <span className="question-num-badge">{questionNumber}</span>}
-    <span className="answer-label">정답 |</span>
-    <span className="answer-badge">{normalizeAnswer(answer)}</span>
+    <div className="answer-left">
+      {showNumber && <span className="question-num-badge">{questionNumber}</span>}
+      <span className="answer-label">정답</span>
+      <span className="answer-badge">{normalizeAnswer(answer)}</span>
+      {/* 문법: answerChange (원래 → 수정) 표시 */}
+      {answerChange && (
+        <span className="answer-change">{answerChange}</span>
+      )}
+      {/* 일반: 정답 보기 텍스트 표시 */}
+      {!answerChange && answerText && (
+        <span className="answer-text">{answerText}</span>
+      )}
+    </div>
+    {categoryMain && (
+      <div className="answer-category">
+        {categoryMain}{categorySub ? ` | ${categorySub}` : ''}
+      </div>
+    )}
   </div>
 );
 
@@ -425,7 +457,14 @@ const VocabularySection = ({
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <AnswerHeader questionNumber={item.questionNumber} answer={item.answer} showNumber={showNumber} />
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 동의어 해설 */}
       <div className="explanation-block">
@@ -498,13 +537,19 @@ const GrammarSection = ({
   explanation?: GrammarExplanation;
   showNumber?: boolean;
 }) => {
-  const answerIdx = ['①', '②', '③', '④', '⑤'].indexOf(item.answer);
   const labels = ['(A)', '(B)', '(C)', '(D)', '(E)'];
 
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <AnswerHeader questionNumber={item.questionNumber} answer={item.answer} showNumber={showNumber} />
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerChange={explanation?.answerChange}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 정답 해설 */}
       <div className="explanation-block">
@@ -551,7 +596,14 @@ const LogicSection = ({
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <AnswerHeader questionNumber={item.questionNumber} answer={item.answer} showNumber={showNumber} />
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 빈칸 타게팅 | */}
       <div className="explanation-block">
@@ -617,7 +669,14 @@ const MainIdeaSection = ({
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <AnswerHeader questionNumber={item.questionNumber} answer={item.answer} showNumber={showNumber} />
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 지문 분석 */}
       <div className="explanation-block">
@@ -687,7 +746,14 @@ const InsertionSection = ({
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <AnswerHeader questionNumber={item.questionNumber} answer={item.answer} showNumber={showNumber} />
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 정답 해설 */}
       <div className="explanation-block">
@@ -732,7 +798,14 @@ const OrderSection = ({
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <AnswerHeader questionNumber={item.questionNumber} answer={item.answer} showNumber={showNumber} />
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 보기의 1열 */}
       <div className="explanation-block">
@@ -783,7 +856,14 @@ const WordAppropriatenessSection = ({
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <AnswerHeader questionNumber={item.questionNumber} answer={item.answer} showNumber={showNumber} />
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 핵심 주제 */}
       <div className="explanation-block">

@@ -772,9 +772,15 @@ body {
 .explanation-answer-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
   padding-bottom: 8px;
   border-bottom: 1px solid #eee;
+}
+
+.answer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .answer-label {
@@ -794,6 +800,28 @@ body {
   color: white;
   font-size: 11px;
   font-weight: 600;
+}
+
+/* 정답 보기 텍스트 (정답 번호 옆에 표시) */
+.answer-text {
+  font-size: calc(11px * var(--font-scale, 1));
+  color: #000;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+/* 문법 정답 변환 (원래 → 수정) */
+.answer-change {
+  font-size: calc(11px * var(--font-scale, 1));
+  color: #000;
+  font-weight: 600;
+  margin-left: 6px;
+}
+
+.answer-category {
+  font-size: 9px;
+  color: #999;
+  font-weight: 500;
 }
 
 .answer-word {
