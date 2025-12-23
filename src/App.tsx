@@ -24,7 +24,7 @@ import { projectId, publicAnonKey } from './utils/supabase/info';
 import { Toaster } from './components/ui/sonner';
 import { toast } from 'sonner@2.0.3';
 import { AdminDashboard } from './components/AdminDashboard';
-import { downloadPDF } from './utils/pdfDownload';
+import { downloadPDF, downloadQuestionPDF } from './utils/pdfDownload';
 
 const vocabularyData = [
   {
@@ -573,6 +573,68 @@ export default function App() {
 
   // PDF 저장 핸들러
   const handleSavePDFClick = useCallback(async () => {
+    // 문제집 모드일 경우 별도 처리
+    if (appMode === 'question') {
+      // 제목 필수 체크
+      if (!questionHeaderInfo.headerTitle.trim()) {
+        toast.error('제목을 입력해주세요.', { duration: 1000 });
+        return;
+      }
+
+      // 단어장 프리뷰 모드 체크
+      if (questionViewMode === 'vocaPreview') {
+        if (!vocaPreviewWords || vocaPreviewWords.length === 0) {
+          toast.error('단어 데이터가 없습니다.', { duration: 1000 });
+          return;
+        }
+      } else {
+        // 문제 데이터 체크
+        if (questionList.length === 0) {
+          toast.error('문제 데이터가 없습니다.', { duration: 1000 });
+          return;
+        }
+      }
+
+      // viewMode별 한글 이름 매핑
+      const viewModeNames: Record<string, string> = {
+        question: '문제지',
+        answer: '해설지',
+        vocabulary: '어휘문제지',
+        vocaPreview: '단어장',
+      };
+      const viewModeName = viewModeNames[questionViewMode] || questionViewMode;
+
+      setIsPDFLoading(true);
+      setPdfProgress({ progress: 0, message: '' });
+
+      try {
+        const filename = `${questionHeaderInfo.headerTitle} - ${viewModeName}`;
+        await downloadQuestionPDF(
+          questionList,
+          questionHeaderInfo,
+          questionViewMode,
+          filename,
+          undefined,
+          (progress, message) => {
+            setPdfProgress({ progress, message });
+          },
+          pantoneColors[colorPalette],
+          fontSizes[fontSize].scale,
+          questionExplanations,
+          showChoiceEnglish,
+          vocaPreviewWords
+        );
+        toast.success('PDF 다운로드 완료!', { duration: 1000 });
+      } catch (error) {
+        console.error('PDF 생성 오류:', error);
+        toast.error('PDF 생성에 실패했습니다.', { duration: 1000 });
+      } finally {
+        setIsPDFLoading(false);
+      }
+      return;
+    }
+
+    // 단어장 모드
     // 제목 필수 체크
     if (!headerInfo.headerTitle.trim()) {
       toast.error('제목을 입력해주세요.', { duration: 1000 });
@@ -640,7 +702,7 @@ export default function App() {
     } finally {
       setIsPDFLoading(false);
     }
-  }, [headerInfo, viewMode, unitSize, vocabularyList, colorPalette, fontSize]);
+  }, [appMode, headerInfo, viewMode, unitSize, vocabularyList, colorPalette, fontSize, questionHeaderInfo, questionViewMode, questionList, questionExplanations, showChoiceEnglish, vocaPreviewWords]);
 
   // AI 해설 데이터 localStorage에 저장 (최근 2개만 유지)
   const saveExplanationsToLocalStorage = (explanations: Map<string, ExplanationData>, questions: QuestionItem[], vocaWords?: VocaPreviewWord[]) => {

@@ -178,14 +178,42 @@ interface PassageGroup {
   items: QuestionItem[];
 }
 
+// 지문 정규화 (공백, 줄바꿈 등 차이 무시)
+const normalizePassage = (passage: string): string => {
+  return passage
+    .replace(/\s+/g, ' ')  // 모든 공백을 단일 공백으로
+    .trim()
+    .toLowerCase();
+};
+
+// 두 지문이 같은지 비교 (정규화 후 비교)
+const isSamePassage = (passage1: string, passage2: string): boolean => {
+  return normalizePassage(passage1) === normalizePassage(passage2);
+};
+
 const groupByPassage = (items: QuestionItem[]): PassageGroup[] => {
   const groups: PassageGroup[] = [];
 
-  items.forEach((item) => {
+  // 세트 문제 처리: passage가 없으면 이전 문제의 passage 상속
+  let lastPassage = '';
+  const processedItems = items.map(item => {
+    if (item.passage && item.passage.trim()) {
+      lastPassage = item.passage;
+      return item;
+    } else if (lastPassage) {
+      return { ...item, passage: lastPassage };
+    }
+    return item;
+  });
+
+  // 최대 그룹 크기 (2개까지만 묶음)
+  const MAX_GROUP_SIZE = 2;
+
+  processedItems.forEach((item) => {
     const lastGroup = groups[groups.length - 1];
 
-    // 같은 지문이면 그룹에 추가 (연속된 문제만)
-    if (lastGroup && lastGroup.passage === item.passage) {
+    // 같은 지문이면 그룹에 추가 (연속된 문제만, 정규화 비교) + 최대 그룹 크기 제한
+    if (lastGroup && isSamePassage(lastGroup.passage, item.passage) && lastGroup.items.length < MAX_GROUP_SIZE) {
       lastGroup.items.push(item);
     } else {
       // 새 그룹 생성

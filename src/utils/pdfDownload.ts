@@ -1,7 +1,9 @@
 import { pdf } from '@react-pdf/renderer';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { VocabularyPDF, type PaletteColors } from '../components/VocabularyPDF';
+import { QuestionPDF, type QuestionPDFViewMode } from '../components/QuestionPDF';
 import { createElement } from 'react';
+import type { QuestionItem, HeaderInfo, ExplanationData, VocaPreviewWord } from '../types/question';
 
 interface VocabularyItem {
   id: number;
@@ -189,7 +191,7 @@ export async function downloadPDF(
 }
 
 // Blob 다운로드 헬퍼
-function downloadBlob(blob: Blob, filename?: string, headerInfo?: HeaderInfo): void {
+function downloadBlob(blob: Blob, filename?: string, headerInfo?: HeaderInfo | QuestionHeaderInfo): void {
   const name = filename || headerInfo?.headerTitle || 'vocabulary';
   const sanitizedName = name.replace(/[^a-zA-Z0-9가-힣\s\-]/g, '').trim();
   const finalFilename = `${sanitizedName}.pdf`;
@@ -202,4 +204,62 @@ function downloadBlob(blob: Blob, filename?: string, headerInfo?: HeaderInfo): v
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// ===== 문제지/해설지 PDF 다운로드 =====
+
+interface QuestionHeaderInfo {
+  headerTitle: string;
+  headerDescription: string;
+  footerLeft: string;
+}
+
+// 문제지 PDF 다운로드 함수
+export async function downloadQuestionPDF(
+  data: QuestionItem[],
+  headerInfo: QuestionHeaderInfo,
+  viewMode: QuestionPDFViewMode = 'question',
+  filename?: string,
+  unitNumber?: number,
+  onProgress?: ProgressCallback,
+  paletteColors?: PaletteColors,
+  fontScale?: number,
+  explanations?: Map<string, ExplanationData>,
+  choiceDisplayMode?: 'both' | 'korean' | 'english',
+  vocaPreviewWords?: VocaPreviewWord[]
+): Promise<void> {
+  onProgress?.(10, 'PDF 생성 중...');
+  await yieldToMain();
+
+  const doc = createElement(QuestionPDF, {
+    data,
+    headerInfo,
+    viewMode,
+    unitNumber,
+    showPageNumber: true,
+    explanations,
+    paletteColors,
+    fontScale,
+    choiceDisplayMode,
+    vocaPreviewWords,
+  });
+
+  await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
+
+  onProgress?.(50, 'PDF 렌더링 중...');
+
+  const blob = await pdf(doc).toBlob();
+
+  onProgress?.(90, '다운로드 준비 중...');
+
+  // 파일명 결정
+  let finalFilename = filename;
+  if (!finalFilename) {
+    const suffix = viewMode === 'answer' ? '_해설지' : viewMode === 'vocabulary' ? '_어휘문제지' : viewMode === 'vocaPreview' ? '_단어장' : '_문제지';
+    finalFilename = headerInfo.headerTitle + suffix;
+  }
+
+  downloadBlob(blob, finalFilename, headerInfo);
+
+  onProgress?.(100, '완료!');
 }

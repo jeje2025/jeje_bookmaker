@@ -433,7 +433,48 @@ async function generateSingleExplanation(
   return null;
 }
 
+// 같은 지문을 공유하는 문제들 그룹핑 (연속된 문제만)
+interface PassageGroup {
+  passage: string;
+  items: QuestionItem[];
+}
+
+// 지문 정규화 (공백, 줄바꿈 등 차이 무시)
+function normalizePassage(passage: string): string {
+  return passage
+    .replace(/\s+/g, ' ')  // 모든 공백을 단일 공백으로
+    .trim()
+    .toLowerCase();
+}
+
+// 두 지문이 같은지 비교 (정규화 후 비교)
+function isSamePassage(passage1: string, passage2: string): boolean {
+  return normalizePassage(passage1) === normalizePassage(passage2);
+}
+
+function groupByPassage(items: QuestionItem[]): PassageGroup[] {
+  const groups: PassageGroup[] = [];
+
+  items.forEach((item) => {
+    const lastGroup = groups[groups.length - 1];
+
+    // 같은 지문이면 그룹에 추가 (연속된 문제만, 정규화 비교)
+    if (lastGroup && isSamePassage(lastGroup.passage, item.passage)) {
+      lastGroup.items.push(item);
+    } else {
+      // 새 그룹 생성
+      groups.push({
+        passage: item.passage,
+        items: [item]
+      });
+    }
+  });
+
+  return groups;
+}
+
 // 병렬로 여러 문제 해설 생성 (동시 5개씩)
+// 같은 지문을 공유하는 문제들은 첫 번째 문제만 passageTranslation을 생성하고 나머지에 공유
 export async function generateExplanations(
   questions: QuestionItem[],
   apiKey: string,
@@ -456,38 +497,66 @@ export async function generateExplanations(
 
   // 유효한 문제만 필터링 (passage가 있거나 상속받은 경우)
   const validQuestions = processedQuestions.filter(q => q.passage && q.passage.trim());
+
+  // 같은 지문을 공유하는 문제들 그룹핑
+  const passageGroups = groupByPassage(validQuestions);
+
   const total = validQuestions.length;
   let completed = 0;
 
   // 동시 처리 개수 (Gemini API rate limit 고려)
   const CONCURRENT_LIMIT = 5;
 
-  // 청크로 나누어 병렬 처리
-  for (let i = 0; i < validQuestions.length; i += CONCURRENT_LIMIT) {
-    const chunk = validQuestions.slice(i, i + CONCURRENT_LIMIT);
+  // 그룹별로 처리 - 첫 번째 문제의 passageTranslation을 나머지에 공유
+  for (let i = 0; i < passageGroups.length; i += CONCURRENT_LIMIT) {
+    const groupChunk = passageGroups.slice(i, i + CONCURRENT_LIMIT);
 
-    // 청크 내 문제들을 병렬로 처리
-    const promises = chunk.map(async (question) => {
-      const explanation = await generateSingleExplanation(question, apiKey);
-      completed++;
-      if (onProgress) {
-        onProgress(completed, total);
+    // 청크 내 그룹들을 병렬로 처리
+    const promises = groupChunk.map(async (group) => {
+      const groupResults: { id: string; explanation: ExplanationData | null }[] = [];
+      let sharedPassageTranslation: string | undefined;
+
+      // 그룹 내 문제들을 순차 처리 (첫 번째 문제의 번역을 공유하기 위해)
+      for (let j = 0; j < group.items.length; j++) {
+        const question = group.items[j];
+        const explanation = await generateSingleExplanation(question, apiKey);
+
+        completed++;
+        if (onProgress) {
+          onProgress(completed, total);
+        }
+
+        if (explanation) {
+          // 첫 번째 문제의 passageTranslation 저장
+          if (j === 0 && explanation.passageTranslation) {
+            sharedPassageTranslation = explanation.passageTranslation;
+          }
+          // 두 번째 문제부터는 첫 번째 문제의 passageTranslation으로 덮어쓰기
+          else if (j > 0 && sharedPassageTranslation) {
+            explanation.passageTranslation = sharedPassageTranslation;
+          }
+        }
+
+        groupResults.push({ id: question.id, explanation });
       }
-      return { id: question.id, explanation };
+
+      return groupResults;
     });
 
     // 청크 완료 대기
     const chunkResults = await Promise.all(promises);
 
     // 결과 저장
-    for (const { id, explanation } of chunkResults) {
-      if (explanation) {
-        results.set(id, explanation);
+    for (const groupResults of chunkResults) {
+      for (const { id, explanation } of groupResults) {
+        if (explanation) {
+          results.set(id, explanation);
+        }
       }
     }
 
     // 다음 청크 전 딜레이 (rate limit 방지)
-    if (i + CONCURRENT_LIMIT < validQuestions.length) {
+    if (i + CONCURRENT_LIMIT < passageGroups.length) {
       await new Promise(resolve => setTimeout(resolve, 300));
     }
   }

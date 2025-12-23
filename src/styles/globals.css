@@ -126,7 +126,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'SUIT', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   }
 }
 
@@ -331,7 +331,7 @@ body {
     bottom: 10mm;
     left: 20mm;
     font-size: 11px;
-    font-family: 'SUIT';
+    font-family: 'Pretendard';
     color: #666;
   }
 
@@ -341,7 +341,7 @@ body {
     bottom: 10mm;
     right: 20mm;
     font-size: 11px;
-    font-family: 'SUIT';
+    font-family: 'Pretendard';
     color: #666;
   }
 }
