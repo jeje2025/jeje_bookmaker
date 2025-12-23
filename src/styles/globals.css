@@ -408,6 +408,8 @@ body {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e5e5e5;
 }
 
 /* 좌측: 문제들 컬럼 (60%) */
@@ -429,33 +431,43 @@ body {
   margin-bottom: 12px;
 }
 
-/* 발문 라인 */
-.instruction-line {
-  border-bottom: 1px solid #333;
-  padding-bottom: 4px;
-  margin-bottom: 10px;
-}
-
-.instruction-line p {
+/* 발문 (문제 번호 위) - 기본 (개별 발문) */
+.q-instruction {
   color: #333;
   font-weight: 400;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* 공통 발문 (2개 이상 문제가 공유) - 굵게, 여백 크게, 구분선 */
+.q-instruction.q-instruction-common {
+  font-weight: 600;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ddd;
 }
 
 /* 문제 행 (번호 + 내용) */
 .question-row {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   margin-bottom: 8px;
   width: 100%;
+  align-items: flex-start;
 }
 
-/* 문제 번호 */
+/* 문제 번호 - 해설지 스타일과 동일 */
 .q-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  background: var(--badge-bg, #f3e8ff);
+  color: var(--badge-text, #9b59b6);
   font-weight: 700;
-  color: #333;
   flex-shrink: 0;
-  width: 28px;
-  text-align: right;
 }
 
 /* 문제 내용 */

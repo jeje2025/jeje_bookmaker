@@ -383,6 +383,7 @@ export const QuestionView = memo(function QuestionView({
         const isFirst = itemIdx === 0;
         const isLast = itemIdx === group.items.length - 1;
         const isVocab = item.categoryMain === '어휘';
+        const isCommonInstruction = group.items.length > 1; // 2개 이상이면 공통 발문
 
         children.push(
           <div
@@ -396,6 +397,7 @@ export const QuestionView = memo(function QuestionView({
                 item={item}
                 showAnswer={viewMode === 'answer'}
                 showInstruction={isFirst}
+                isCommonInstruction={isCommonInstruction}
               />
             </div>
             {/* 사이드바 영역 (40%) - 어휘는 그룹 첫 문제에만, 나머지는 매 문제마다 */}

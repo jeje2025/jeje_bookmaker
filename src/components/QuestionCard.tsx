@@ -6,6 +6,7 @@ interface QuestionCardProps {
   item: QuestionItem;
   showAnswer?: boolean;
   showInstruction?: boolean;
+  isCommonInstruction?: boolean; // 공통 발문 여부 (2개 이상 문제가 같은 발문 공유)
 }
 
 // 지문에서 마크다운 스타일 강조 처리
@@ -68,36 +69,31 @@ const formatPassageWithUnderline = (text: string) => {
 const choiceLabels = ['①', '②', '③', '④', '⑤'];
 
 // 단일 문제 컴포넌트 (Final Pick 스타일)
-const QuestionCardComponent = ({ item, showAnswer = false, showInstruction = true }: QuestionCardProps) => {
+const QuestionCardComponent = ({ item, showAnswer = false, showInstruction = true, isCommonInstruction = false }: QuestionCardProps) => {
   const { questionNumber, passage, choices, answer, instruction } = item;
 
   return (
     <div className="question-compact">
-      {/* 발문 (그룹 첫 문제만 표시) */}
+      {/* 발문 (그룹 첫 문제만 표시) - 문제 번호 위에 */}
       {showInstruction && instruction && (
-        <div className="instruction-line">
-          <p style={{ fontSize: scaledSize(10) }}>{instruction}</p>
-        </div>
+        <p
+          className={isCommonInstruction ? "q-instruction q-instruction-common" : "q-instruction"}
+          style={{ fontSize: scaledSize(9.5) }}
+        >
+          {instruction}
+        </p>
       )}
 
       {/* 문제 번호 + 지문 + 보기 */}
       <div className="question-row">
-        {/* 큰 보라색 문제 번호 */}
-        <div
-          className="q-number"
-          style={{
-            fontSize: scaledSize(18),
-            color: 'var(--badge-text, #9b59b6)',
-            fontWeight: 700,
-            minWidth: '32px'
-          }}
-        >
+        {/* 문제 번호 배지 - 해설지 스타일과 동일 */}
+        <div className="q-number" style={{ fontSize: scaledSize(14) }}>
           {questionNumber}
         </div>
         <div className="q-content">
           {/* 지문 */}
           {passage && (
-            <p className="q-passage" style={{ fontSize: scaledSize(10), lineHeight: 1.6 }}>
+            <p className="q-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
               {formatPassageWithUnderline(passage)}
             </p>
           )}
@@ -109,7 +105,7 @@ const QuestionCardComponent = ({ item, showAnswer = false, showInstruction = tru
                 <span
                   key={idx}
                   className={`q-choice ${showAnswer && answer === choiceLabels[idx] ? 'correct' : ''}`}
-                  style={{ fontSize: scaledSize(10) }}
+                  style={{ fontSize: scaledSize(9.5) }}
                 >
                   {choiceLabels[idx]} {choice}
                 </span>
