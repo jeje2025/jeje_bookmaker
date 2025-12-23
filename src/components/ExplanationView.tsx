@@ -1,4 +1,4 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useState, useCallback } from 'react';
 import { A4PageLayout } from './A4PageLayout';
 import { HeaderFooter } from './HeaderFooter';
 import { scaledSize } from '../utils/fontScale';
@@ -55,11 +55,93 @@ const QuickAnswerTable = ({ questions }: { questions: QuestionItem[] }) => {
   );
 };
 
-// ===== 지문 포맷팅 함수 =====
+// ===== 편집 가능한 지문 컴포넌트 =====
+const EditablePassage = ({
+  text,
+  onSave,
+  className,
+  style,
+}: {
+  text: string;
+  onSave: (newText: string) => void;
+  className?: string;
+  style?: React.CSSProperties;
+}) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editValue, setEditValue] = useState(text);
+
+  const handleDoubleClick = () => {
+    setEditValue(text);
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    onSave(editValue);
+    setIsEditing(false);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setIsEditing(false);
+    }
+  };
+
+  if (isEditing) {
+    return (
+      <div className="passage-edit-container print:hidden">
+        <textarea
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className="w-full p-2 text-xs border rounded resize-none"
+          style={{ minHeight: '100px', fontSize: scaledSize(9), lineHeight: 1.6 }}
+          autoFocus
+        />
+        <div className="flex gap-1 mt-1">
+          <button
+            onClick={handleSave}
+            className="px-2 py-1 text-xs bg-slate-800 text-white rounded hover:bg-slate-700"
+          >
+            저장
+          </button>
+          <button
+            onClick={() => setIsEditing(false)}
+            className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300"
+          >
+            취소
+          </button>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          **굵게** / _밑줄_ / ***굵게+밑줄***
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <p
+      className={`${className} cursor-pointer hover:bg-yellow-50 transition-colors`}
+      style={style}
+      onDoubleClick={handleDoubleClick}
+      title="더블클릭하여 편집"
+    >
+      {formatPassageWithUnderline(text)}
+    </p>
+  );
+};
+
+// ===== 지문 포맷팅 함수 (마크다운 스타일 강조) =====
+// - ***text*** : 굵게 + 밑줄
+// - **text** : 굵게 (bold)
+// - _text_ : 밑줄 (underline)
+// - __________ : 빈칸
 const formatPassageWithUnderline = (text: string) => {
   if (!text) return null;
-  const parts = text.split(/(_[^_]+_|_{5,})/g);
+  // 패턴: ***굵게+밑줄***, **굵게**, _밑줄_, 빈칸(5개 이상 언더스코어)
+  const pattern = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|_[^_]+_|_{5,})/g;
+  const parts = text.split(pattern);
   return parts.map((part, idx) => {
+    // 빈칸 (5개 이상의 언더스코어)
     if (/^_{5,}$/.test(part)) {
       return (
         <span key={idx} className="inline-block mx-1" style={{
@@ -71,6 +153,17 @@ const formatPassageWithUnderline = (text: string) => {
         </span>
       );
     }
+    // 굵게 + 밑줄 (***text***)
+    if (part.startsWith('***') && part.endsWith('***')) {
+      const word = part.slice(3, -3);
+      return <span key={idx} className="font-bold underline underline-offset-2">{word}</span>;
+    }
+    // 굵게 (**text**)
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const word = part.slice(2, -2);
+      return <span key={idx} className="font-bold">{word}</span>;
+    }
+    // 밑줄 (_text_)
     if (part.startsWith('_') && part.endsWith('_')) {
       const word = part.slice(1, -1);
       return <span key={idx} className="underline underline-offset-2">{word}</span>;
@@ -593,7 +686,8 @@ const renderChoiceWithTranslation = (
   choice: string,
   idx: number,
   answer: string,
-  choiceTranslation?: ChoiceTranslation
+  choiceTranslation?: ChoiceTranslation,
+  displayMode: 'both' | 'korean' | 'english' = 'both'
 ) => {
   const choiceLabels = ['①', '②', '③', '④', '⑤'];
   const isCorrect = answer === choiceLabels[idx];
@@ -607,14 +701,19 @@ const renderChoiceWithTranslation = (
         style={{ fontSize: scaledSize(9) }}
       >
         <span className="choice-label">{choiceLabels[idx]}</span>
-        {choiceTranslation.showEnglish ? (
-          // 짧은 보기: 영어 + 한글
+        {displayMode === 'both' ? (
+          // 영어 + 한글 둘 다
           <span className="choice-text">
             <span className="choice-english">{choice}</span>
             <span className="choice-korean">{choiceTranslation.korean}</span>
           </span>
+        ) : displayMode === 'english' ? (
+          // 영어만
+          <span className="choice-text">
+            <span className="choice-english">{choice}</span>
+          </span>
         ) : (
-          // 긴 보기: 한글만
+          // 한글만
           <span className="choice-text">
             <span className="choice-korean-only">{choiceTranslation.korean}</span>
           </span>
@@ -639,15 +738,23 @@ const renderChoiceWithTranslation = (
 const SingleExplanationCard = ({
   item,
   explanation,
+  choiceDisplayMode = 'both',
+  onPassageEdit,
 }: {
   item: QuestionItem;
   explanation?: ExplanationData;
+  choiceDisplayMode?: 'both' | 'korean' | 'english';
+  onPassageEdit?: (questionId: string, newPassage: string) => void;
 }) => {
-  const choiceLabels = ['①', '②', '③', '④', '⑤'];
-
   // ExplanationData에서 번역 정보 추출
   const passageTranslation = explanation?.passageTranslation;
   const choiceTranslations = explanation?.choiceTranslations;
+
+  const handlePassageSave = (newText: string) => {
+    if (onPassageEdit) {
+      onPassageEdit(item.id, newText);
+    }
+  };
 
   return (
     <div className="explanation-card">
@@ -657,20 +764,24 @@ const SingleExplanationCard = ({
           {item.questionNumber}
         </div>
         <div className="question-content">
-          {/* 영어 지문 */}
-          <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
-            {formatPassageWithUnderline(item.passage)}
-          </p>
-          {/* 한글 번역 */}
-          {passageTranslation && (
-            <p className="question-passage-translation" style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#4b5563', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #e5e7eb' }}>
-              {passageTranslation}
+          {/* 한글 번역만 표시 (영어 지문 없이) */}
+          {passageTranslation ? (
+            <EditablePassage
+              text={passageTranslation}
+              onSave={handlePassageSave}
+              className="question-passage-translation"
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333' }}
+            />
+          ) : (
+            /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
+            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
+              {formatPassageWithUnderline(item.passage)}
             </p>
           )}
           {/* 보기 */}
           <div className="question-choices" style={{ marginTop: choiceTranslations ? '12px' : undefined }}>
             {item.choices.map((choice, idx) => (
-              choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx])
+              choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx], choiceDisplayMode)
             ))}
           </div>
         </div>
@@ -688,9 +799,13 @@ const SingleExplanationCard = ({
 const GroupedExplanationCard = ({
   group,
   explanations,
+  choiceDisplayMode = 'both',
+  onPassageEdit,
 }: {
   group: PassageGroup;
   explanations?: Map<string, ExplanationData>;
+  choiceDisplayMode?: 'both' | 'korean' | 'english';
+  onPassageEdit?: (questionId: string, newPassage: string) => void;
 }) => {
   const firstItem = group.items[0];
   // 첫 번째 문제의 해설에서 지문 번역 가져오기
@@ -703,6 +818,12 @@ const GroupedExplanationCard = ({
     ? `${Math.min(...questionNumbers)}~${Math.max(...questionNumbers)}`
     : String(questionNumbers[0]);
 
+  const handlePassageSave = (newText: string) => {
+    if (onPassageEdit) {
+      onPassageEdit(firstItem.id, newText);
+    }
+  };
+
   return (
     <div className="explanation-card grouped">
       {/* 좌측: 지문 + 모든 문제의 보기 */}
@@ -711,14 +832,18 @@ const GroupedExplanationCard = ({
           {numberRange}
         </div>
         <div className="question-content">
-          {/* 공통 지문 */}
-          <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
-            {formatPassageWithUnderline(firstItem.passage)}
-          </p>
-          {/* 공통 지문 한글 번역 */}
-          {passageTranslation && (
-            <p className="question-passage-translation" style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#4b5563', marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #e5e7eb' }}>
-              {passageTranslation}
+          {/* 한글 번역만 표시 (영어 지문 없이) */}
+          {passageTranslation ? (
+            <EditablePassage
+              text={passageTranslation}
+              onSave={handlePassageSave}
+              className="question-passage-translation"
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333' }}
+            />
+          ) : (
+            /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
+            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
+              {formatPassageWithUnderline(firstItem.passage)}
             </p>
           )}
 
@@ -735,7 +860,7 @@ const GroupedExplanationCard = ({
                 </div>
                 <div className="question-choices">
                   {item.choices.map((choice, idx) => (
-                    choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx])
+                    choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx], choiceDisplayMode)
                   ))}
                 </div>
               </div>
@@ -767,6 +892,8 @@ interface ExplanationViewProps {
   unitNumber?: number;
   explanations?: Map<string, ExplanationData>;  // questionId -> ExplanationData
   onHeaderChange: (updated: Partial<HeaderInfo>) => void;
+  choiceDisplayMode?: 'both' | 'korean' | 'english'; // 보기 표시 설정
+  onPassageTranslationEdit?: (questionId: string, newPassage: string) => void; // 지문 번역 편집 콜백
 }
 
 export const ExplanationView = memo(function ExplanationView({
@@ -775,6 +902,8 @@ export const ExplanationView = memo(function ExplanationView({
   unitNumber,
   explanations,
   onHeaderChange,
+  choiceDisplayMode = 'both',
+  onPassageTranslationEdit,
 }: ExplanationViewProps) {
   // 같은 지문을 공유하는 문제들 그룹핑
   const groupedQuestions = useMemo(() => groupByPassage(data), [data]);
@@ -789,6 +918,8 @@ export const ExplanationView = memo(function ExplanationView({
             key={group.items[0].id}
             item={group.items[0]}
             explanation={explanations?.get(group.items[0].id)}
+            choiceDisplayMode={choiceDisplayMode}
+            onPassageEdit={onPassageTranslationEdit}
           />
         );
       }
@@ -798,10 +929,12 @@ export const ExplanationView = memo(function ExplanationView({
           key={`group-${idx}`}
           group={group}
           explanations={explanations}
+          choiceDisplayMode={choiceDisplayMode}
+          onPassageEdit={onPassageTranslationEdit}
         />
       );
     });
-  }, [groupedQuestions, explanations]);
+  }, [groupedQuestions, explanations, choiceDisplayMode, onPassageTranslationEdit]);
 
   return (
     <A4PageLayout

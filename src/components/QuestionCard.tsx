@@ -8,12 +8,17 @@ interface QuestionCardProps {
   showInstruction?: boolean;
 }
 
-// 지문에서 밑줄 표시할 단어 처리 + 빈칸 __________ 처리
+// 지문에서 마크다운 스타일 강조 처리
+// - ***text*** : 굵게 + 밑줄
+// - **text** : 굵게 (bold)
+// - _text_ : 밑줄 (underline)
+// - __________ : 빈칸
 const formatPassageWithUnderline = (text: string) => {
   if (!text) return null;
 
-  // 밑줄 패턴: _word_ 형식 또는 __________ (빈칸)
-  const parts = text.split(/(_[^_]+_|_{5,})/g);
+  // 패턴: ***굵게+밑줄***, **굵게**, _밑줄_, 빈칸(5개 이상 언더스코어)
+  const pattern = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|_[^_]+_|_{5,})/g;
+  const parts = text.split(pattern);
 
   return parts.map((part, idx) => {
     // 빈칸 (5개 이상의 언더스코어)
@@ -28,7 +33,25 @@ const formatPassageWithUnderline = (text: string) => {
         </span>
       );
     }
-    // 밑줄 단어
+    // 굵게 + 밑줄 (***text***)
+    if (part.startsWith('***') && part.endsWith('***')) {
+      const word = part.slice(3, -3);
+      return (
+        <span key={idx} className="font-bold underline underline-offset-2">
+          {word}
+        </span>
+      );
+    }
+    // 굵게 (**text**)
+    if (part.startsWith('**') && part.endsWith('**')) {
+      const word = part.slice(2, -2);
+      return (
+        <span key={idx} className="font-bold">
+          {word}
+        </span>
+      );
+    }
+    // 밑줄 (_text_)
     if (part.startsWith('_') && part.endsWith('_')) {
       const word = part.slice(1, -1);
       return (

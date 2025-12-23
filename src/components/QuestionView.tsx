@@ -104,6 +104,8 @@ interface QuestionViewProps {
   onHeaderChange: (updated: Partial<HeaderInfo>) => void;
   vocaPreviewWords?: VocaPreviewWord[];
   onVocaPreviewWordsChange?: (words: VocaPreviewWord[]) => void;
+  choiceDisplayMode?: 'both' | 'korean' | 'english'; // 보기 표시 설정
+  onPassageTranslationEdit?: (questionId: string, newPassage: string) => void; // 지문 번역 편집 콜백
 }
 
 // 같은 발문을 가진 연속 문제들을 그룹핑
@@ -358,6 +360,8 @@ export const QuestionView = memo(function QuestionView({
   onHeaderChange,
   vocaPreviewWords,
   onVocaPreviewWordsChange,
+  choiceDisplayMode = 'both',
+  onPassageTranslationEdit,
 }: QuestionViewProps) {
   const groupedQuestions = useMemo(() => groupByInstruction(data), [data]);
 
@@ -433,6 +437,8 @@ export const QuestionView = memo(function QuestionView({
         unitNumber={unitNumber}
         explanations={explanations}
         onHeaderChange={onHeaderChange}
+        choiceDisplayMode={choiceDisplayMode}
+        onPassageTranslationEdit={onPassageTranslationEdit}
       />
     );
   }

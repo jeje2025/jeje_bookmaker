@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
-import { Trash2, Sparkles } from 'lucide-react';
+import { Trash2 } from 'lucide-react';
 import type { VocaPreviewWord, HeaderInfo } from '../types/question';
 
 interface VocaPreviewInputProps {
@@ -11,12 +11,9 @@ interface VocaPreviewInputProps {
   onSave: (data: VocaPreviewWord[]) => void;
   headerInfo: HeaderInfo;
   onHeaderChange: (info: HeaderInfo) => void;
-  onGenerateVocaPreview?: () => void;
-  isGenerating?: boolean;
-  generatingStatus?: string;
 }
 
-export function VocaPreviewInput({ data, onSave, headerInfo, onHeaderChange, onGenerateVocaPreview, isGenerating, generatingStatus }: VocaPreviewInputProps) {
+export function VocaPreviewInput({ data, onSave, headerInfo, onHeaderChange }: VocaPreviewInputProps) {
   const [rows, setRows] = useState<VocaPreviewWord[]>(() => {
     if (data && data.length > 0) {
       return data;
@@ -151,32 +148,6 @@ export function VocaPreviewInput({ data, onSave, headerInfo, onHeaderChange, onG
           />
         </div>
       </div>
-
-      {/* AI 단어장 생성 버튼 */}
-      {onGenerateVocaPreview && (
-        <div className="mb-4 flex-shrink-0">
-          <Button
-            onClick={onGenerateVocaPreview}
-            disabled={isGenerating}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-white"
-          >
-            {isGenerating ? (
-              <>
-                <span className="animate-spin mr-2">⏳</span>
-                {generatingStatus || '생성 중...'}
-              </>
-            ) : (
-              <>
-                <Sparkles size={14} className="mr-2" />
-                AI 단어장 생성 (CEFR B2+ 추출)
-              </>
-            )}
-          </Button>
-          <p className="text-xs text-slate-400 mt-1">
-            문제 데이터에서 고급 어휘를 자동 추출합니다
-          </p>
-        </div>
-      )}
 
       {/* 입력 안내 */}
       <div className="text-xs text-slate-500 mb-2 flex-shrink-0">

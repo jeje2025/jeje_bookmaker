@@ -246,6 +246,7 @@ export default function App() {
   const [vocaPreviewWords, setVocaPreviewWords] = useState<VocaPreviewWord[]>([]); // 단어장 데이터
   const [isGeneratingVocaPreview, setIsGeneratingVocaPreview] = useState(false); // 단어장 생성 중
   const [vocaPreviewStatus, setVocaPreviewStatus] = useState<string>(''); // 단어장 생성 상태 메시지
+  const [showChoiceEnglish, setShowChoiceEnglish] = useState<'both' | 'korean' | 'english'>('both'); // 보기 표시 설정: both(영어+한글), korean(한글만), english(영어만)
   const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || ''; // Gemini API 키 (환경 변수)
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -736,37 +737,20 @@ export default function App() {
     doGenerateExplanations(questions, geminiApiKey);
   }, [geminiApiKey]);
 
-  // 단어장 생성 핸들러
-  const handleGenerateVocaPreview = useCallback(async () => {
-    if (!geminiApiKey) {
-      toast.error('.env 파일에 VITE_GEMINI_API_KEY를 설정해주세요.', { duration: 2000 });
-      return;
-    }
-    if (questionList.length === 0) {
-      toast.error('문제 데이터가 없습니다.', { duration: 1000 });
-      return;
-    }
-
-    setIsGeneratingVocaPreview(true);
-    setVocaPreviewStatus('시작...');
-    toast.info('단어장 생성 시작...', { duration: 2000 });
-
-    try {
-      const words = await generateVocaPreview(
-        questionList,
-        geminiApiKey,
-        (status) => setVocaPreviewStatus(status)
-      );
-      setVocaPreviewWords(words);
-      toast.success(`${words.length}개 단어 추출 완료!`, { duration: 1000 });
-    } catch (error) {
-      console.error('단어장 생성 실패:', error);
-      toast.error('단어장 생성에 실패했습니다.', { duration: 1000 });
-    } finally {
-      setIsGeneratingVocaPreview(false);
-      setVocaPreviewStatus('');
-    }
-  }, [geminiApiKey, questionList]);
+  // 해설지 지문 번역 편집 핸들러
+  const handlePassageTranslationEdit = useCallback((questionId: string, newPassage: string) => {
+    setQuestionExplanations(prev => {
+      const newMap = new Map(prev);
+      const existingExplanation = newMap.get(questionId);
+      if (existingExplanation) {
+        newMap.set(questionId, {
+          ...existingExplanation,
+          passageTranslation: newPassage,
+        });
+      }
+      return newMap;
+    });
+  }, []);
 
   // 단어 순서 랜덤 섞기 (ID는 1부터 유지)
   const handleShuffleWords = () => {
@@ -906,9 +890,6 @@ export default function App() {
                   onSave={setVocaPreviewWords}
                   headerInfo={questionHeaderInfo}
                   onHeaderChange={setQuestionHeaderInfo}
-                  onGenerateVocaPreview={handleGenerateVocaPreview}
-                  isGenerating={isGeneratingVocaPreview}
-                  generatingStatus={vocaPreviewStatus}
                 />
               </div>
             ) : (
@@ -1167,6 +1148,22 @@ export default function App() {
               <div className="shrink-0 px-3 py-1.5 text-sm text-slate-600">
                 <span className="font-medium">{questionList.length}</span>개 문제
               </div>
+              {/* 해설지 보기 표시 설정 */}
+              {questionViewMode === 'answer' && (
+                <Select
+                  value={showChoiceEnglish}
+                  onValueChange={(value: 'both' | 'korean' | 'english') => setShowChoiceEnglish(value)}
+                >
+                  <SelectTrigger className="shrink-0 w-28 h-8 text-xs border-0 shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="both">영어+한글</SelectItem>
+                    <SelectItem value="english">영어만</SelectItem>
+                    <SelectItem value="korean">한글만</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </>
           )}
 
@@ -1315,6 +1312,8 @@ export default function App() {
                     onHeaderChange={setQuestionHeaderInfo}
                     vocaPreviewWords={vocaPreviewWords}
                     onVocaPreviewWordsChange={setVocaPreviewWords}
+                    choiceDisplayMode={showChoiceEnglish}
+                    onPassageTranslationEdit={handlePassageTranslationEdit}
                   />
                 ) : questionViewMode === 'vocaPreview' ? (
                   <div className="flex items-center justify-center h-64 text-slate-400">
