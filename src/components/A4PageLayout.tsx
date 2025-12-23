@@ -9,6 +9,7 @@ interface A4PageLayoutProps {
   tableHeader?: React.ReactNode; // 테이블 헤더 (매 페이지 상단에 표시)
   fontScale?: number; // 글씨 크기 스케일 (페이지 분할 재계산용)
   unitInfo?: string; // 유닛 정보 (예: "Unit1 | 명사절") - 좌하단에 표시
+  fullPageIndices?: number[]; // 전체 페이지를 사용할 아이템 인덱스 배열
 }
 
 export function A4PageLayout({
@@ -19,7 +20,8 @@ export function A4PageLayout({
   showFooterOnLastPageOnly = false,
   tableHeader,
   fontScale = 1,
-  unitInfo
+  unitInfo,
+  fullPageIndices = []
 }: A4PageLayoutProps) {
   const [pages, setPages] = useState<React.ReactNode[][]>([]);
   const measureRef = useRef<HTMLDivElement>(null);
@@ -57,7 +59,7 @@ export function A4PageLayout({
       // 각 아이템의 높이 측정
       const items = measureRef.current.querySelectorAll('[data-item]');
       const itemHeights: number[] = [];
-      
+
       items.forEach((item) => {
         itemHeights.push((item as HTMLElement).offsetHeight);
       });
@@ -97,8 +99,22 @@ export function A4PageLayout({
 
       children.forEach((child, index) => {
         const itemHeight = itemHeights[index] || 0;
+        const isFullPage = fullPageIndices.includes(index);
         const availableHeight = getAvailableHeight(newPages.length);
-        
+
+        // full-page 아이템은 무조건 새 페이지에서 시작하고 한 페이지를 차지
+        if (isFullPage) {
+          // 현재 페이지에 내용이 있으면 먼저 저장
+          if (currentPage.length > 0) {
+            newPages.push([...currentPage]);
+            currentPage = [];
+            currentHeight = 0;
+          }
+          // full-page 아이템은 단독 페이지로
+          newPages.push([child]);
+          return;
+        }
+
         // 현재 페이지에 아이템이 있으면 gap도 추가
         const gapHeight = currentPage.length > 0 ? CARD_GAP : 0;
         const requiredHeight = currentHeight + itemHeight + gapHeight;
@@ -129,7 +145,7 @@ export function A4PageLayout({
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [children, headerContent, footerContent, showHeaderOnFirstPageOnly, showFooterOnLastPageOnly, tableHeader, fontScale]);
+  }, [children, headerContent, footerContent, showHeaderOnFirstPageOnly, showFooterOnLastPageOnly, tableHeader, fontScale, fullPageIndices]);
 
   return (
     <>

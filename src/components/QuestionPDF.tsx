@@ -464,7 +464,8 @@ const createStyles = (palette: PaletteColors, fontScale: number = 1) => {
     // 정답 헤더
     answerHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-start',
+      flexWrap: 'wrap',
       gap: 5,
       paddingBottom: 5,
       borderBottomWidth: 1,
@@ -487,6 +488,8 @@ const createStyles = (palette: PaletteColors, fontScale: number = 1) => {
       fontSize: scaled(10),
       fontWeight: 700,
       color: '#333',
+      flex: 1,
+      flexWrap: 'wrap',
     },
     // 해설 블록
     explanationBlock: {
@@ -1086,7 +1089,7 @@ const ExplanationCardPDF = ({
 
         <View style={styles.explanationSection}>
           {/* 어휘 해설 */}
-          {item.categoryMain === '어휘' && (
+          {(explanation?.type === 'vocabulary' || (!explanation?.type && item.categoryMain === '어휘')) && (
             <>
               <View style={styles.explanationBlock}>
                 <Text style={styles.explanationBlockTitle}>
@@ -1116,7 +1119,7 @@ const ExplanationCardPDF = ({
           )}
 
           {/* 문법 해설 */}
-          {item.categoryMain === '문법' && (
+          {(explanation?.type === 'grammar' || (!explanation?.type && item.categoryMain === '문법')) && (
             <>
               <View style={styles.explanationBlock}>
                 <Text style={styles.explanationBlockContent}>
@@ -1133,7 +1136,7 @@ const ExplanationCardPDF = ({
           )}
 
           {/* 논리/빈칸 해설 */}
-          {(item.categoryMain === '논리' || item.categoryMain === '빈칸') && (
+          {(explanation?.type === 'logic' || (!explanation?.type && (item.categoryMain === '논리' || item.categoryMain === '빈칸'))) && (
             <>
               <View style={styles.explanationBlock}>
                 <Text style={styles.explanationBlockTitle}>
@@ -1172,7 +1175,7 @@ const ExplanationCardPDF = ({
           )}
 
           {/* 대의파악/정보파악 해설 */}
-          {(item.categoryMain === '대의 파악' || item.categoryMain === '정보 파악') && (
+          {(explanation?.type === 'mainIdea' || (!explanation?.type && (item.categoryMain === '대의 파악' || item.categoryMain === '정보 파악'))) && (
             <>
               <View style={styles.explanationBlock}>
                 <Text style={styles.explanationBlockTitle}>
@@ -1243,7 +1246,7 @@ const GroupedExplanationCardPDF = ({
     : String(questionNumbers[0]);
 
   return (
-    <View style={styles.explanationCard} wrap={false}>
+    <View style={styles.explanationCard} break>
       {/* 좌측: 지문 + 모든 문제의 보기 */}
       <View style={styles.explanationQuestion}>
         <Text style={styles.explanationQuestionNumber}>{numberRange}</Text>
@@ -1333,7 +1336,7 @@ const GroupedExplanationCardPDF = ({
 
               <View style={styles.explanationSection}>
                 {/* 어휘 해설 */}
-                {item.categoryMain === '어휘' && (
+                {(explanation?.type === 'vocabulary' || (!explanation?.type && item.categoryMain === '어휘')) && (
                   <>
                     <View style={styles.explanationBlock}>
                       <Text style={styles.explanationBlockTitle}>
@@ -1360,7 +1363,7 @@ const GroupedExplanationCardPDF = ({
                 )}
 
                 {/* 논리/빈칸 해설 */}
-                {(item.categoryMain === '논리' || item.categoryMain === '빈칸') && (
+                {(explanation?.type === 'logic' || (!explanation?.type && (item.categoryMain === '논리' || item.categoryMain === '빈칸'))) && (
                   <>
                     <View style={styles.explanationBlock}>
                       <Text style={styles.explanationBlockTitle}>Step 1) 빈칸 타게팅</Text>
@@ -1393,7 +1396,7 @@ const GroupedExplanationCardPDF = ({
                 )}
 
                 {/* 대의파악/정보파악 해설 */}
-                {(item.categoryMain === '대의 파악' || item.categoryMain === '정보 파악') && (
+                {(explanation?.type === 'mainIdea' || (!explanation?.type && (item.categoryMain === '대의 파악' || item.categoryMain === '정보 파악'))) && (
                   <>
                     <View style={styles.explanationBlock}>
                       <Text style={styles.explanationBlockTitle}>지문 분석 |</Text>

@@ -18,15 +18,15 @@ interface FontSizeInfo {
 const fontSizes: Record<FontSizeKey, FontSizeInfo> = {
   small: {
     name: '작게',
-    scale: 1,
+    scale: 0.9,
   },
   medium: {
     name: '보통',
-    scale: 1.15,
+    scale: 1,
   },
   large: {
     name: '크게',
-    scale: 1.3,
+    scale: 1.15,
   },
 };
 

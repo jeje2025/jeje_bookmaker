@@ -923,6 +923,35 @@ body {
   text-align: justify;
 }
 
+/* 편집 모드 스타일 */
+.editable-content {
+  cursor: text;
+  outline: none;
+  border: 1px dashed #3b82f6;
+  background-color: rgba(59, 130, 246, 0.05);
+  border-radius: 4px;
+  padding: 4px 6px;
+  min-height: 20px;
+}
+
+.editable-content:focus {
+  border-color: #2563eb;
+  background-color: rgba(59, 130, 246, 0.1);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.editable-content:hover {
+  background-color: rgba(59, 130, 246, 0.08);
+}
+
+@media print {
+  .editable-content {
+    border: none;
+    background-color: transparent;
+    padding: 0;
+  }
+}
+
 .placeholder-text {
   color: #999;
   font-style: italic;

@@ -985,6 +985,32 @@ export default function App() {
     });
   }, [editedFields]);
 
+  // 영어 지문 편집 핸들러
+  const handleEnglishPassageEdit = useCallback((questionId: string, newPassage: string) => {
+    setQuestionList((prev: QuestionItem[]) =>
+      prev.map((q: QuestionItem) => q.id === questionId ? { ...q, passage: newPassage } : q)
+    );
+  }, []);
+
+  // 보기 편집 핸들러
+  const handleChoiceEdit = useCallback((questionId: string, choiceIndex: number, newChoice: string) => {
+    setQuestionList((prev: QuestionItem[]) =>
+      prev.map((q: QuestionItem) => {
+        if (q.id !== questionId) return q;
+        const newChoices = [...q.choices];
+        newChoices[choiceIndex] = newChoice;
+        return { ...q, choices: newChoices };
+      })
+    );
+  }, []);
+
+  // 발문 편집 핸들러
+  const handleInstructionEdit = useCallback((questionId: string, newInstruction: string) => {
+    setQuestionList((prev: QuestionItem[]) =>
+      prev.map((q: QuestionItem) => q.id === questionId ? { ...q, instruction: newInstruction } : q)
+    );
+  }, []);
+
   // 단어 순서 랜덤 섞기 (ID는 1부터 유지)
   const handleShuffleWords = () => {
     const shuffled = [...vocabularyList];
@@ -1289,20 +1315,6 @@ export default function App() {
                 표지
               </button>
 
-              {/* 편집 모드 토글 버튼 - 표버전, 카드형에서만 표시 */}
-              {(viewMode === 'table' || viewMode === 'card') && (
-                <button
-                  onClick={() => setIsEditMode(!isEditMode)}
-                  className={`shrink-0 px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                    isEditMode
-                      ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  <Edit3 size={16} />
-                  <span className="text-sm">{isEditMode ? '편집중' : '편집'}</span>
-                </button>
-              )}
 
               {/* 단어 섞기 버튼 - 테스트에서만 표시 */}
               {viewMode === 'test' && (
@@ -1392,19 +1404,32 @@ export default function App() {
               </div>
               {/* 해설지 보기 표시 설정 */}
               {questionViewMode === 'answer' && (
-                <Select
-                  value={showChoiceEnglish}
-                  onValueChange={(value: 'both' | 'korean' | 'english') => setShowChoiceEnglish(value)}
-                >
-                  <SelectTrigger className="shrink-0 w-28 h-8 text-xs border-0 shadow-none">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="both">영어+한글</SelectItem>
-                    <SelectItem value="english">영어만</SelectItem>
-                    <SelectItem value="korean">한글만</SelectItem>
-                  </SelectContent>
-                </Select>
+                <>
+                  <Select
+                    value={showChoiceEnglish}
+                    onValueChange={(value: 'both' | 'korean' | 'english') => setShowChoiceEnglish(value)}
+                  >
+                    <SelectTrigger className="shrink-0 w-28 h-8 text-xs border-0 shadow-none">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="both">영어+한글</SelectItem>
+                      <SelectItem value="english">영어만</SelectItem>
+                      <SelectItem value="korean">한글만</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <button
+                    onClick={() => setIsEditMode(!isEditMode)}
+                    className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                      isEditMode
+                        ? 'text-blue-600 font-semibold'
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <Edit3 size={14} />
+                    {isEditMode ? '편집중' : '편집'}
+                  </button>
+                </>
               )}
             </>
           )}
@@ -1557,6 +1582,10 @@ export default function App() {
                     choiceDisplayMode={showChoiceEnglish}
                     onPassageTranslationEdit={handlePassageTranslationEdit}
                     onExplanationEdit={handleExplanationEdit}
+                    onEnglishPassageEdit={handleEnglishPassageEdit}
+                    onChoiceEdit={handleChoiceEdit}
+                    onInstructionEdit={handleInstructionEdit}
+                    isEditMode={isEditMode}
                   />
                 ) : questionViewMode === 'vocaPreview' ? (
                   <div className="flex items-center justify-center h-64 text-slate-400">

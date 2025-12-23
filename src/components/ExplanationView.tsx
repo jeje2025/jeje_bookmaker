@@ -440,11 +440,13 @@ const VocabularySection = ({
   explanation,
   showNumber = true,
   onEdit,
+  isEditMode = false,
 }: {
   item: QuestionItem;
   explanation?: VocabularyExplanation;
   showNumber?: boolean;
   onEdit?: ExplanationEditCallback;
+  isEditMode?: boolean;
 }) => {
   // 정답 단어 추출 (answer는 1~5 숫자)
   const answerNum = Number(item.answer);
@@ -531,11 +533,13 @@ const VocabularySection = ({
 const GrammarSection = ({
   item,
   explanation,
-  showNumber = true
+  showNumber = true,
+  isEditMode = false
 }: {
   item: QuestionItem;
   explanation?: GrammarExplanation;
   showNumber?: boolean;
+  isEditMode?: boolean;
 }) => {
   const labels = ['(A)', '(B)', '(C)', '(D)', '(E)'];
 
@@ -554,7 +558,11 @@ const GrammarSection = ({
       {/* 정답 해설 */}
       <div className="explanation-block">
         <div className="explanation-block-title">정답 해설 |</div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.correctExplanation || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
@@ -564,7 +572,11 @@ const GrammarSection = ({
       {/* 오답 해설 */}
       <div className="explanation-block">
         <div className="explanation-block-title">오답 해설 |</div>
-        <div className="explanation-block-content wrong-explanations">
+        <div
+          className={`explanation-block-content wrong-explanations ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.wrongExplanations && explanation.wrongExplanations.length > 0 ? (
             explanation.wrongExplanations.map((exp, idx) => (
               <div key={idx} className="wrong-item">
@@ -585,11 +597,13 @@ const GrammarSection = ({
 const LogicSection = ({
   item,
   explanation,
-  showNumber = true
+  showNumber = true,
+  isEditMode = false
 }: {
   item: QuestionItem;
   explanation?: LogicExplanation;
   showNumber?: boolean;
+  isEditMode?: boolean;
 }) => {
   const choiceLabels = ['①', '②', '③', '④', '⑤'];
 
@@ -611,7 +625,11 @@ const LogicSection = ({
           <span className="block-icon">📖</span>
           빈칸 타게팅 |
         </div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.step1Targeting || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
@@ -624,7 +642,11 @@ const LogicSection = ({
           <span className="block-icon">📝</span>
           근거 확인 |
         </div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.step2Evidence || (
             <span className="placeholder-text">근거 분석이 생성되면 여기에 표시됩니다.</span>
           )}
@@ -637,7 +659,11 @@ const LogicSection = ({
           <span className="block-icon">📝</span>
           보기 판단 |
         </div>
-        <div className="explanation-block-content choice-explanations">
+        <div
+          className={`explanation-block-content choice-explanations ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.step3Choices && explanation.step3Choices.length > 0 ? (
             explanation.step3Choices.map((exp, idx) => (
               <div key={idx} className={`choice-item ${isAnswerMatch(item.answer, choiceLabels[idx]) ? 'correct' : ''}`}>
@@ -658,11 +684,13 @@ const LogicSection = ({
 const MainIdeaSection = ({
   item,
   explanation,
-  showNumber = true
+  showNumber = true,
+  isEditMode = false
 }: {
   item: QuestionItem;
   explanation?: MainIdeaExplanation;
   showNumber?: boolean;
+  isEditMode?: boolean;
 }) => {
   const choiceLabels = ['①', '②', '③', '④', '⑤'];
 
@@ -684,7 +712,11 @@ const MainIdeaSection = ({
           <span className="block-icon">📖</span>
           지문 분석 |
         </div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.passageAnalysis || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
@@ -697,7 +729,11 @@ const MainIdeaSection = ({
           <span className="block-icon">📝</span>
           정답 해설 |
         </div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.correctExplanation || (
             <span className="placeholder-text">정답 해설이 생성되면 여기에 표시됩니다.</span>
           )}
@@ -710,7 +746,11 @@ const MainIdeaSection = ({
           <span className="block-icon">📝</span>
           오답 소거 |
         </div>
-        <div className="explanation-block-content choice-explanations">
+        <div
+          className={`explanation-block-content choice-explanations ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.wrongExplanations && explanation.wrongExplanations.length > 0 ? (
             explanation.wrongExplanations.map((exp, idx) => {
               // 정답은 스킵
@@ -735,11 +775,13 @@ const MainIdeaSection = ({
 const InsertionSection = ({
   item,
   explanation,
-  showNumber = true
+  showNumber = true,
+  isEditMode = false
 }: {
   item: QuestionItem;
   explanation?: InsertionExplanation;
   showNumber?: boolean;
+  isEditMode?: boolean;
 }) => {
   const labels = ['(A)', '(B)', '(C)', '(D)', '(E)'];
 
@@ -761,7 +803,11 @@ const InsertionSection = ({
           <span className="block-icon">📖</span>
           정답 해설 |
         </div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.correctExplanation || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
@@ -771,7 +817,11 @@ const InsertionSection = ({
       {/* 각 위치별 설명 */}
       {explanation?.positionExplanations && explanation.positionExplanations.length > 0 && (
         <div className="explanation-block">
-          <div className="explanation-block-content position-explanations">
+          <div
+            className={`explanation-block-content position-explanations ${isEditMode ? 'editable-content' : ''}`}
+            contentEditable={isEditMode}
+            suppressContentEditableWarning={true}
+          >
             {explanation.positionExplanations.map((exp, idx) => (
               <div key={idx} className="position-item">
                 <span className="position-label">{labels[idx]}</span>
@@ -789,11 +839,13 @@ const InsertionSection = ({
 const OrderSection = ({
   item,
   explanation,
-  showNumber = true
+  showNumber = true,
+  isEditMode = false
 }: {
   item: QuestionItem;
   explanation?: OrderExplanation;
   showNumber?: boolean;
+  isEditMode?: boolean;
 }) => {
   return (
     <div className="explanation-section">
@@ -810,7 +862,11 @@ const OrderSection = ({
       {/* 보기의 1열 */}
       <div className="explanation-block">
         <div className="explanation-block-title highlight">보기의 1열 |</div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.firstParagraph || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
@@ -820,7 +876,11 @@ const OrderSection = ({
       {/* 쪼개는 포인트 */}
       <div className="explanation-block">
         <div className="explanation-block-title highlight">쪼개는 포인트 |</div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.splitPoint || (
             <span className="placeholder-text">쪼개는 포인트가 생성되면 여기에 표시됩니다.</span>
           )}
@@ -829,7 +889,11 @@ const OrderSection = ({
 
       {/* 결론 */}
       <div className="explanation-block">
-        <div className="explanation-block-content conclusion">
+        <div
+          className={`explanation-block-content conclusion ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.conclusion || (
             <span className="placeholder-text">
               따라서 정답은 <strong>{item.answer}</strong>번입니다.
@@ -845,11 +909,13 @@ const OrderSection = ({
 const WordAppropriatenessSection = ({
   item,
   explanation,
-  showNumber = true
+  showNumber = true,
+  isEditMode = false
 }: {
   item: QuestionItem;
   explanation?: WordAppropriatenessExplanation;
   showNumber?: boolean;
+  isEditMode?: boolean;
 }) => {
   const labels = ['(A)', '(B)', '(C)', '(D)', '(E)'];
 
@@ -871,7 +937,11 @@ const WordAppropriatenessSection = ({
           <span className="block-icon">📖</span>
           핵심 주제 |
         </div>
-        <div className="explanation-block-content">
+        <div
+          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.mainTopic || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
@@ -884,7 +954,11 @@ const WordAppropriatenessSection = ({
           <span className="block-icon">📝</span>
           정답 해설 |
         </div>
-        <div className="explanation-block-content choice-explanations">
+        <div
+          className={`explanation-block-content choice-explanations ${isEditMode ? 'editable-content' : ''}`}
+          contentEditable={isEditMode}
+          suppressContentEditableWarning={true}
+        >
           {explanation?.choiceExplanations && explanation.choiceExplanations.length > 0 ? (
             explanation.choiceExplanations.map((exp, idx) => (
               <div key={idx} className="choice-item">
@@ -907,54 +981,69 @@ const ExplanationSectionByType = ({
   explanation,
   showNumber = true,
   onEdit,
+  isEditMode = false,
 }: {
   item: QuestionItem;
   explanation?: ExplanationData;
   showNumber?: boolean;
   onEdit?: ExplanationEditCallback;
+  isEditMode?: boolean;
 }) => {
+  // explanation.type을 우선 사용 (AI 해설 유형), 없으면 categoryMain fallback
+  const explType = explanation?.type;
+
+  if (explType === 'vocabulary') {
+    return <VocabularySection item={item} explanation={explanation as VocabularyExplanation} showNumber={showNumber} onEdit={onEdit} isEditMode={isEditMode} />;
+  }
+  if (explType === 'grammar') {
+    return <GrammarSection item={item} explanation={explanation as GrammarExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+  }
+  if (explType === 'logic') {
+    return <LogicSection item={item} explanation={explanation as LogicExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+  }
+  if (explType === 'mainIdea') {
+    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+  }
+  if (explType === 'insertion') {
+    return <InsertionSection item={item} explanation={explanation as InsertionExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+  }
+  if (explType === 'order') {
+    return <OrderSection item={item} explanation={explanation as OrderExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+  }
+  if (explType === 'wordAppropriateness') {
+    return <WordAppropriatenessSection item={item} explanation={explanation as WordAppropriatenessExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+  }
+
+  // fallback: categoryMain 기반 분기
   const { categoryMain, categorySub } = item;
 
-  // 어휘 유형
   if (categoryMain === '어휘') {
-    return <VocabularySection item={item} explanation={explanation as VocabularyExplanation} showNumber={showNumber} onEdit={onEdit} />;
+    return <VocabularySection item={item} explanation={explanation as VocabularyExplanation} showNumber={showNumber} onEdit={onEdit} isEditMode={isEditMode} />;
   }
-
-  // 문법 유형
   if (categoryMain === '문법') {
-    return <GrammarSection item={item} explanation={explanation as GrammarExplanation} showNumber={showNumber} />;
+    return <GrammarSection item={item} explanation={explanation as GrammarExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
   }
-
-  // 논리/빈칸 유형
   if (categoryMain === '논리' || categoryMain === '빈칸') {
-    return <LogicSection item={item} explanation={explanation as LogicExplanation} showNumber={showNumber} />;
+    return <LogicSection item={item} explanation={explanation as LogicExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
   }
-
-  // 대의파악 (제목, 요지, 주제, 요약 등)
   if (categoryMain === '대의 파악') {
-    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} />;
+    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
   }
-
-  // 정보파악
   if (categoryMain === '정보 파악') {
-    // 순서
     if (categorySub === '순서') {
-      return <OrderSection item={item} explanation={explanation as OrderExplanation} showNumber={showNumber} />;
+      return <OrderSection item={item} explanation={explanation as OrderExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
     }
-    // 삽입
     if (categorySub === '삽입') {
-      return <InsertionSection item={item} explanation={explanation as InsertionExplanation} showNumber={showNumber} />;
+      return <InsertionSection item={item} explanation={explanation as InsertionExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
     }
-    // 어휘 적절성/밑줄 추론
     if (categorySub === '어휘 적절성' || categorySub === '밑줄 추론') {
-      return <WordAppropriatenessSection item={item} explanation={explanation as WordAppropriatenessExplanation} showNumber={showNumber} />;
+      return <WordAppropriatenessSection item={item} explanation={explanation as WordAppropriatenessExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
     }
-    // 기타 정보파악 (세부정보 등)
-    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} />;
+    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
   }
 
   // 기본 (알 수 없는 유형)
-  return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} />;
+  return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
 };
 
 // ===== 보기 렌더링 헬퍼 (번역 포함) =====
@@ -1010,6 +1099,41 @@ const renderChoiceWithTranslation = (
   );
 };
 
+// ===== 편집 가능한 보기 렌더링 헬퍼 =====
+const renderEditableChoice = (
+  choice: string,
+  idx: number,
+  answer: string,
+  choiceTranslation?: ChoiceTranslation,
+  displayMode: 'both' | 'korean' | 'english' = 'both',
+  onSave?: (newChoice: string) => void
+) => {
+  const choiceLabels = ['①', '②', '③', '④', '⑤'];
+  const isCorrect = isAnswerMatch(answer, choiceLabels[idx]);
+
+  return (
+    <div
+      key={idx}
+      className={`question-choice-translated ${isCorrect ? 'correct' : ''}`}
+      style={{ fontSize: scaledSize(9.5) }}
+    >
+      <span className="choice-label">{choiceLabels[idx]}</span>
+      <span className="choice-text">
+        {displayMode !== 'korean' && (
+          <EditableText
+            text={stripLeadingNumber(choice)}
+            onSave={onSave}
+            className="choice-english"
+          />
+        )}
+        {choiceTranslation && displayMode !== 'english' && (
+          <span className="choice-korean">{stripLeadingNumber(choiceTranslation.korean)}</span>
+        )}
+      </span>
+    </div>
+  );
+};
+
 // ===== 단일 문제 해설 카드 (지문 1개 + 문제 1개) =====
 const SingleExplanationCard = ({
   item,
@@ -1017,12 +1141,20 @@ const SingleExplanationCard = ({
   choiceDisplayMode = 'both',
   onPassageEdit,
   onExplanationEdit,
+  onEnglishPassageEdit,
+  onChoiceEdit,
+  onInstructionEdit,
+  isEditMode = false,
 }: {
   item: QuestionItem;
   explanation?: ExplanationData;
   choiceDisplayMode?: 'both' | 'korean' | 'english';
   onPassageEdit?: (questionId: string, newPassage: string) => void;
   onExplanationEdit?: ExplanationEditCallback;
+  onEnglishPassageEdit?: (questionId: string, newPassage: string) => void;
+  onChoiceEdit?: (questionId: string, choiceIndex: number, newChoice: string) => void;
+  onInstructionEdit?: (questionId: string, newInstruction: string) => void;
+  isEditMode?: boolean;
 }) => {
   // ExplanationData에서 번역 정보 추출
   const passageTranslation = explanation?.passageTranslation;
@@ -1032,6 +1164,18 @@ const SingleExplanationCard = ({
   const handlePassageSave = (newText: string) => {
     if (onPassageEdit) {
       onPassageEdit(item.id, newText);
+    }
+  };
+
+  const handleEnglishPassageSave = (newText: string) => {
+    if (onEnglishPassageEdit) {
+      onEnglishPassageEdit(item.id, newText);
+    }
+  };
+
+  const handleInstructionSave = (newText: string) => {
+    if (onInstructionEdit) {
+      onInstructionEdit(item.id, newText);
     }
   };
 
@@ -1045,11 +1189,14 @@ const SingleExplanationCard = ({
         <div className="question-content">
           {/* 발문 번역 */}
           {instructionText && instructionText.trim() && (
-            <p className="instruction-translation" style={{ fontSize: scaledSize(9.5), color: '#333', marginBottom: '10px' }}>
-              {instructionText}
-            </p>
+            <EditablePassage
+              text={instructionText}
+              onSave={onInstructionEdit ? handleInstructionSave : undefined}
+              className="instruction-translation"
+              style={{ fontSize: scaledSize(9.5), color: '#333', marginBottom: '10px' }}
+            />
           )}
-          {/* 한글 번역만 표시 (영어 지문 없이) */}
+          {/* 한글 번역만 표시 (영어 지문 숨김) - 번역 없으면 영어 지문 fallback */}
           {passageTranslation ? (
             <EditablePassage
               text={passageTranslation}
@@ -1057,16 +1204,25 @@ const SingleExplanationCard = ({
               className="question-passage-translation"
               style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333', marginBottom: '12px' }}
             />
-          ) : (
-            /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
-            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6, marginBottom: '12px' }}>
-              {formatPassageWithUnderline(item.passage)}
-            </p>
-          )}
+          ) : item.passage ? (
+            <EditablePassage
+              text={item.passage}
+              onSave={onEnglishPassageEdit ? handleEnglishPassageSave : undefined}
+              className="question-passage"
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, marginBottom: '12px' }}
+            />
+          ) : null}
           {/* 보기 */}
           <div className="question-choices" style={{ marginTop: '8px', fontSize: scaledSize(9.5) }}>
             {item.choices.map((choice, idx) => (
-              choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx], choiceDisplayMode)
+              choice && renderEditableChoice(
+                choice,
+                idx,
+                item.answer,
+                choiceTranslations?.[idx],
+                choiceDisplayMode,
+                onChoiceEdit ? (newChoice) => onChoiceEdit(item.id, idx, newChoice) : undefined
+              )
             ))}
           </div>
         </div>
@@ -1074,7 +1230,7 @@ const SingleExplanationCard = ({
 
       {/* 우측: 해설 */}
       <div className="explanation-content">
-        <ExplanationSectionByType item={item} explanation={explanation} showNumber={false} onEdit={onExplanationEdit} />
+        <ExplanationSectionByType item={item} explanation={explanation} showNumber={false} onEdit={onExplanationEdit} isEditMode={isEditMode} />
       </div>
     </div>
   );
@@ -1087,12 +1243,20 @@ const GroupedExplanationCard = ({
   choiceDisplayMode = 'both',
   onPassageEdit,
   onExplanationEdit,
+  onEnglishPassageEdit,
+  onChoiceEdit,
+  onInstructionEdit,
+  isEditMode = false,
 }: {
   group: PassageGroup;
   explanations?: Map<string, ExplanationData>;
   choiceDisplayMode?: 'both' | 'korean' | 'english';
   onPassageEdit?: (questionId: string, newPassage: string) => void;
   onExplanationEdit?: ExplanationEditCallback;
+  onEnglishPassageEdit?: (questionId: string, newPassage: string) => void;
+  onChoiceEdit?: (questionId: string, choiceIndex: number, newChoice: string) => void;
+  onInstructionEdit?: (questionId: string, newInstruction: string) => void;
+  isEditMode?: boolean;
 }) => {
   const firstItem = group.items[0];
   // 첫 번째 문제의 해설에서 지문 번역 가져오기
@@ -1107,6 +1271,12 @@ const GroupedExplanationCard = ({
   const handlePassageSave = (newText: string) => {
     if (onPassageEdit) {
       onPassageEdit(firstItem.id, newText);
+    }
+  };
+
+  const handleEnglishPassageSave = (newText: string) => {
+    if (onEnglishPassageEdit) {
+      onEnglishPassageEdit(firstItem.id, newText);
     }
   };
 
@@ -1127,7 +1297,7 @@ const GroupedExplanationCard = ({
           </div>
         )}
         <div className="question-content">
-          {/* 한글 번역만 표시 (영어 지문 없이) */}
+          {/* 한글 번역만 표시 (영어 지문 숨김) - 번역 없으면 영어 지문 fallback */}
           {passageTranslation ? (
             <EditablePassage
               text={passageTranslation}
@@ -1135,12 +1305,14 @@ const GroupedExplanationCard = ({
               className="question-passage-translation"
               style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333' }}
             />
-          ) : (
-            /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
-            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
-              {formatPassageWithUnderline(firstItem.passage)}
-            </p>
-          )}
+          ) : firstItem.passage ? (
+            <EditablePassage
+              text={firstItem.passage}
+              onSave={onEnglishPassageEdit ? handleEnglishPassageSave : undefined}
+              className="question-passage"
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}
+            />
+          ) : null}
 
           {/* 각 문제의 보기 */}
           {group.items.map((item) => {
@@ -1152,11 +1324,22 @@ const GroupedExplanationCard = ({
               <div key={item.id} className="grouped-question-choices">
                 <div className="grouped-question-header">
                   <span className="grouped-question-num">{item.questionNumber}.</span>
-                  <span className="grouped-question-instruction">{instructionText}</span>
+                  <EditableText
+                    text={instructionText || ''}
+                    onSave={onInstructionEdit ? (newText) => onInstructionEdit(item.id, newText) : undefined}
+                    className="grouped-question-instruction"
+                  />
                 </div>
                 <div className="question-choices">
                   {item.choices.map((choice, idx) => (
-                    choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx], choiceDisplayMode)
+                    choice && renderEditableChoice(
+                      choice,
+                      idx,
+                      item.answer,
+                      choiceTranslations?.[idx],
+                      choiceDisplayMode,
+                      onChoiceEdit ? (newChoice) => onChoiceEdit(item.id, idx, newChoice) : undefined
+                    )
                   ))}
                 </div>
               </div>
@@ -1174,6 +1357,7 @@ const GroupedExplanationCard = ({
               explanation={explanations?.get(item.id)}
               showNumber={true}
               onEdit={onExplanationEdit}
+              isEditMode={isEditMode}
             />
           </div>
         ))}
@@ -1192,6 +1376,10 @@ interface ExplanationViewProps {
   choiceDisplayMode?: 'both' | 'korean' | 'english'; // 보기 표시 설정
   onPassageTranslationEdit?: (questionId: string, newPassage: string) => void; // 지문 번역 편집 콜백
   onExplanationEdit?: ExplanationEditCallback; // 해설 필드 편집 콜백
+  onEnglishPassageEdit?: (questionId: string, newPassage: string) => void; // 영어 지문 편집 콜백
+  onChoiceEdit?: (questionId: string, choiceIndex: number, newChoice: string) => void; // 보기 편집 콜백
+  onInstructionEdit?: (questionId: string, newInstruction: string) => void; // 발문 편집 콜백
+  isEditMode?: boolean; // 편집 모드
 }
 
 export const ExplanationView = memo(function ExplanationView({
@@ -1203,6 +1391,10 @@ export const ExplanationView = memo(function ExplanationView({
   choiceDisplayMode = 'both',
   onPassageTranslationEdit,
   onExplanationEdit,
+  onEnglishPassageEdit,
+  onChoiceEdit,
+  onInstructionEdit,
+  isEditMode = false,
 }: ExplanationViewProps) {
   // 같은 지문을 공유하는 문제들 그룹핑
   const groupedQuestions = useMemo(() => groupByPassage(data), [data]);
@@ -1220,6 +1412,10 @@ export const ExplanationView = memo(function ExplanationView({
             choiceDisplayMode={choiceDisplayMode}
             onPassageEdit={onPassageTranslationEdit}
             onExplanationEdit={onExplanationEdit}
+            onEnglishPassageEdit={onEnglishPassageEdit}
+            onChoiceEdit={onChoiceEdit}
+            onInstructionEdit={onInstructionEdit}
+            isEditMode={isEditMode}
           />
         );
       }
@@ -1232,10 +1428,21 @@ export const ExplanationView = memo(function ExplanationView({
           choiceDisplayMode={choiceDisplayMode}
           onPassageEdit={onPassageTranslationEdit}
           onExplanationEdit={onExplanationEdit}
+          onEnglishPassageEdit={onEnglishPassageEdit}
+          onChoiceEdit={onChoiceEdit}
+          onInstructionEdit={onInstructionEdit}
+          isEditMode={isEditMode}
         />
       );
     });
-  }, [groupedQuestions, explanations, choiceDisplayMode, onPassageTranslationEdit, onExplanationEdit]);
+  }, [groupedQuestions, explanations, choiceDisplayMode, onPassageTranslationEdit, onExplanationEdit, onEnglishPassageEdit, onChoiceEdit, onInstructionEdit, isEditMode]);
+
+  // 그룹 문제(2개 이상)의 인덱스 계산 - 전체 페이지 사용
+  const fullPageIndices = useMemo(() => {
+    return groupedQuestions
+      .map((group, idx) => (group.items.length > 1 ? idx : -1))
+      .filter(idx => idx !== -1);
+  }, [groupedQuestions]);
 
   return (
     <A4PageLayout
@@ -1255,6 +1462,7 @@ export const ExplanationView = memo(function ExplanationView({
         </div>
       }
       showHeaderOnFirstPageOnly={true}
+      fullPageIndices={fullPageIndices}
     >
       {pageChildren}
     </A4PageLayout>

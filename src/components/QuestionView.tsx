@@ -110,6 +110,10 @@ interface QuestionViewProps {
   choiceDisplayMode?: 'both' | 'korean' | 'english'; // 보기 표시 설정
   onPassageTranslationEdit?: (questionId: string, newPassage: string) => void; // 지문 번역 편집 콜백
   onExplanationEdit?: ExplanationEditCallback; // 해설 필드 편집 콜백
+  onEnglishPassageEdit?: (questionId: string, newPassage: string) => void; // 영어 지문 편집 콜백
+  onChoiceEdit?: (questionId: string, choiceIndex: number, newChoice: string) => void; // 보기 편집 콜백
+  onInstructionEdit?: (questionId: string, newInstruction: string) => void; // 발문 편집 콜백
+  isEditMode?: boolean; // 편집 모드
 }
 
 // 같은 발문을 가진 연속 문제들을 그룹핑
@@ -367,6 +371,10 @@ export const QuestionView = memo(function QuestionView({
   choiceDisplayMode = 'both',
   onPassageTranslationEdit,
   onExplanationEdit,
+  onEnglishPassageEdit,
+  onChoiceEdit,
+  onInstructionEdit,
+  isEditMode,
 }: QuestionViewProps) {
   const groupedQuestions = useMemo(() => groupByInstruction(data), [data]);
 
@@ -447,6 +455,10 @@ export const QuestionView = memo(function QuestionView({
         choiceDisplayMode={choiceDisplayMode}
         onPassageTranslationEdit={onPassageTranslationEdit}
         onExplanationEdit={onExplanationEdit}
+        onEnglishPassageEdit={onEnglishPassageEdit}
+        onChoiceEdit={onChoiceEdit}
+        onInstructionEdit={onInstructionEdit}
+        isEditMode={isEditMode}
       />
     );
   }
