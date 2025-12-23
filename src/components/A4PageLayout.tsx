@@ -188,6 +188,13 @@ export function A4PageLayout({
             </div>
           )}
 
+          {/* 브랜드 - 좌하단 (유닛 정보 없을 때) */}
+          {!unitInfo && (
+            <div className="page-number-bottom-left">
+              <span style={{ fontWeight: 700 }}>JEJE</span> TRANSFER
+            </div>
+          )}
+
           {/* 페이지 번호 - 우하단 */}
           <div className="page-number-bottom-right">
             {pageIndex + 1} / {pages.length}

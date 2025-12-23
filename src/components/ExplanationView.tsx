@@ -37,12 +37,12 @@ const stripLeadingNumber = (text: string): string => {
 
 // ===== 빠른 정답 답안표 컴포넌트 =====
 const QuickAnswerTable = ({ questions }: { questions: QuestionItem[] }) => {
-  // 10열, 행은 문제 수에 따라 자동 확장
-  const cols = 10;
+  // 세로 5문제씩 그룹화 (01-05, 06-10, 11-15...)
+  const rowsPerGroup = 5;
   const maxQuestionNumber = questions.length > 0
     ? Math.max(...questions.map(q => q.questionNumber))
     : 0;
-  const rows = Math.max(1, Math.ceil(maxQuestionNumber / cols));
+  const numGroups = Math.ceil(maxQuestionNumber / rowsPerGroup); // 열 개수 (5문제 그룹)
 
   // 정답 번호 추출 (①→1, 1→1 등 통합 처리)
   const getAnswerNumber = (answer: string): string => {
@@ -55,25 +55,26 @@ const QuickAnswerTable = ({ questions }: { questions: QuestionItem[] }) => {
 
   return (
     <div className="quick-answer-table">
-      <div className="quick-answer-title">빠른 정답</div>
-      <table className="quick-answer-grid horizontal">
+      <div className="quick-answer-title">Quick Ver.</div>
+      <table className="quick-answer-grid vertical">
         <tbody>
-          {Array.from({ length: rows }, (_, rowIdx) => (
+          {Array.from({ length: rowsPerGroup }, (_, rowIdx) => (
             <tr key={rowIdx}>
-              {Array.from({ length: cols }, (_, colIdx) => {
-                const qNum = rowIdx * cols + colIdx + 1;
+              {Array.from({ length: numGroups }, (_, groupIdx) => {
+                // 세로로 5문제씩: 그룹0(1-5), 그룹1(6-10), 그룹2(11-15)...
+                const qNum = groupIdx * rowsPerGroup + rowIdx + 1;
                 const question = questions.find(q => q.questionNumber === qNum);
                 // 문제 번호가 최대 문제 번호를 초과하면 빈 셀 표시
                 if (qNum > maxQuestionNumber) {
                   return (
-                    <td key={colIdx} className="quick-answer-cell horizontal" style={{ opacity: 0.3 }}>
+                    <td key={groupIdx} className="quick-answer-cell vertical" style={{ opacity: 0.3 }}>
                       <span className="quick-answer-num">{String(qNum).padStart(2, '0')}</span>
                       <span className="quick-answer-circle"></span>
                     </td>
                   );
                 }
                 return (
-                  <td key={colIdx} className="quick-answer-cell horizontal">
+                  <td key={groupIdx} className="quick-answer-cell vertical">
                     <span className="quick-answer-num">{String(qNum).padStart(2, '0')}</span>
                     <span className="quick-answer-circle">
                       {question ? getAnswerNumber(question.answer) : ''}
@@ -893,24 +894,24 @@ const renderChoiceWithTranslation = (
       <div
         key={idx}
         className={`question-choice-translated ${isCorrect ? 'correct' : ''}`}
-        style={{ fontSize: scaledSize(10) }}
+        style={{ fontSize: scaledSize(9.5) }}
       >
         <span className="choice-label">{choiceLabels[idx]}</span>
         {displayMode === 'both' ? (
           // 영어 + 한글 둘 다
           <span className="choice-text">
-            <span className="choice-english">{choice}</span>
-            <span className="choice-korean">{choiceTranslation.korean}</span>
+            <span className="choice-english">{stripLeadingNumber(choice)}</span>
+            <span className="choice-korean">{stripLeadingNumber(choiceTranslation.korean)}</span>
           </span>
         ) : displayMode === 'english' ? (
           // 영어만
           <span className="choice-text">
-            <span className="choice-english">{choice}</span>
+            <span className="choice-english">{stripLeadingNumber(choice)}</span>
           </span>
         ) : (
           // 한글만
           <span className="choice-text">
-            <span className="choice-korean-only">{choiceTranslation.korean}</span>
+            <span className="choice-korean-only">{stripLeadingNumber(choiceTranslation.korean)}</span>
           </span>
         )}
       </div>
@@ -922,7 +923,7 @@ const renderChoiceWithTranslation = (
     <span
       key={idx}
       className={`question-choice ${isCorrect ? 'correct' : ''}`}
-      style={{ fontSize: scaledSize(10) }}
+      style={{ fontSize: scaledSize(9.5) }}
     >
       {choiceLabels[idx]} {choice}
     </span>
@@ -964,7 +965,7 @@ const SingleExplanationCard = ({
         <div className="question-content">
           {/* 발문 번역 */}
           {instructionText && instructionText.trim() && (
-            <p className="instruction-translation" style={{ fontSize: scaledSize(10), color: '#333', marginBottom: '10px' }}>
+            <p className="instruction-translation" style={{ fontSize: scaledSize(9.5), color: '#333', marginBottom: '10px' }}>
               {instructionText}
             </p>
           )}
@@ -974,16 +975,16 @@ const SingleExplanationCard = ({
               text={passageTranslation}
               onSave={handlePassageSave}
               className="question-passage-translation"
-              style={{ fontSize: scaledSize(10), lineHeight: 1.6, color: '#333', marginBottom: '12px' }}
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333', marginBottom: '12px' }}
             />
           ) : (
             /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
-            <p className="question-passage" style={{ fontSize: scaledSize(10), lineHeight: 1.6, marginBottom: '12px' }}>
+            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6, marginBottom: '12px' }}>
               {formatPassageWithUnderline(item.passage)}
             </p>
           )}
           {/* 보기 */}
-          <div className="question-choices" style={{ marginTop: '8px' }}>
+          <div className="question-choices" style={{ marginTop: '8px', fontSize: scaledSize(9.5) }}>
             {item.choices.map((choice, idx) => (
               choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx], choiceDisplayMode)
             ))}
@@ -1052,11 +1053,11 @@ const GroupedExplanationCard = ({
               text={passageTranslation}
               onSave={handlePassageSave}
               className="question-passage-translation"
-              style={{ fontSize: scaledSize(10), lineHeight: 1.6, color: '#333' }}
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333' }}
             />
           ) : (
             /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
-            <p className="question-passage" style={{ fontSize: scaledSize(10), lineHeight: 1.6 }}>
+            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
               {formatPassageWithUnderline(firstItem.passage)}
             </p>
           )}
