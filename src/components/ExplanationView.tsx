@@ -148,7 +148,7 @@ const EditableText = ({
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
             className="w-full p-2 text-xs border rounded resize-none"
-            style={{ minHeight: '60px', fontSize: scaledSize(9), lineHeight: 1.5 }}
+            style={{ minHeight: '60px', fontSize: scaledSize(10), lineHeight: 1.5 }}
             autoFocus
           />
         ) : (
@@ -158,7 +158,7 @@ const EditableText = ({
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
             className="w-full p-1 text-xs border rounded"
-            style={{ fontSize: scaledSize(9) }}
+            style={{ fontSize: scaledSize(10) }}
             autoFocus
           />
         )}
@@ -246,7 +246,7 @@ const EditablePassage = ({
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
           className="w-full p-2 text-xs border rounded resize-none"
-          style={{ minHeight: '100px', fontSize: scaledSize(9), lineHeight: 1.6 }}
+          style={{ minHeight: '100px', fontSize: scaledSize(10), lineHeight: 1.6 }}
           autoFocus
         />
         <div className="flex gap-1 mt-1">
@@ -893,7 +893,7 @@ const renderChoiceWithTranslation = (
       <div
         key={idx}
         className={`question-choice-translated ${isCorrect ? 'correct' : ''}`}
-        style={{ fontSize: scaledSize(9) }}
+        style={{ fontSize: scaledSize(10) }}
       >
         <span className="choice-label">{choiceLabels[idx]}</span>
         {displayMode === 'both' ? (
@@ -922,7 +922,7 @@ const renderChoiceWithTranslation = (
     <span
       key={idx}
       className={`question-choice ${isCorrect ? 'correct' : ''}`}
-      style={{ fontSize: scaledSize(9) }}
+      style={{ fontSize: scaledSize(10) }}
     >
       {choiceLabels[idx]} {choice}
     </span>
@@ -946,6 +946,7 @@ const SingleExplanationCard = ({
   // ExplanationData에서 번역 정보 추출
   const passageTranslation = explanation?.passageTranslation;
   const choiceTranslations = explanation?.choiceTranslations;
+  const instructionText = explanation?.instructionTranslation || item.instruction;
 
   const handlePassageSave = (newText: string) => {
     if (onPassageEdit) {
@@ -961,22 +962,28 @@ const SingleExplanationCard = ({
           {item.questionNumber}
         </div>
         <div className="question-content">
+          {/* 발문 번역 */}
+          {instructionText && instructionText.trim() && (
+            <p className="instruction-translation" style={{ fontSize: scaledSize(10), color: '#333', marginBottom: '10px' }}>
+              {instructionText}
+            </p>
+          )}
           {/* 한글 번역만 표시 (영어 지문 없이) */}
           {passageTranslation ? (
             <EditablePassage
               text={passageTranslation}
               onSave={handlePassageSave}
               className="question-passage-translation"
-              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333' }}
+              style={{ fontSize: scaledSize(10), lineHeight: 1.6, color: '#333', marginBottom: '12px' }}
             />
           ) : (
             /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
-            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
+            <p className="question-passage" style={{ fontSize: scaledSize(10), lineHeight: 1.6, marginBottom: '12px' }}>
               {formatPassageWithUnderline(item.passage)}
             </p>
           )}
           {/* 보기 */}
-          <div className="question-choices" style={{ marginTop: choiceTranslations ? '12px' : undefined }}>
+          <div className="question-choices" style={{ marginTop: '8px' }}>
             {item.choices.map((choice, idx) => (
               choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx], choiceDisplayMode)
             ))}
@@ -1045,11 +1052,11 @@ const GroupedExplanationCard = ({
               text={passageTranslation}
               onSave={handlePassageSave}
               className="question-passage-translation"
-              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333' }}
+              style={{ fontSize: scaledSize(10), lineHeight: 1.6, color: '#333' }}
             />
           ) : (
             /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
-            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
+            <p className="question-passage" style={{ fontSize: scaledSize(10), lineHeight: 1.6 }}>
               {formatPassageWithUnderline(firstItem.passage)}
             </p>
           )}
