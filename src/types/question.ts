@@ -40,6 +40,7 @@ export interface ChoiceTranslation {
 // 공통 번역 필드
 export interface TranslationFields {
   passageTranslation?: string;           // 지문 한글 번역
+  instructionTranslation?: string;       // 발문 한글 번역
   choiceTranslations?: ChoiceTranslation[]; // 보기 번역 (5개)
 }
 

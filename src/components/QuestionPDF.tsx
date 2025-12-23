@@ -1090,7 +1090,7 @@ const ExplanationCardPDF = ({
             <>
               <View style={styles.explanationBlock}>
                 <Text style={styles.explanationBlockTitle}>
-                  동의어 해설 - {underlinedWord}
+                  동의어 해설 | {underlinedWord}
                 </Text>
                 <Text style={styles.explanationBlockContent}>
                   {(explanation as any)?.wordExplanation || 'AI 해설이 생성되면 여기에 표시됩니다.'}
@@ -1176,7 +1176,7 @@ const ExplanationCardPDF = ({
             <>
               <View style={styles.explanationBlock}>
                 <Text style={styles.explanationBlockTitle}>
-                  지문 분석
+                  지문 분석 |
                 </Text>
                 <Text style={styles.explanationBlockContent}>
                   {(explanation as any)?.passageAnalysis || 'AI 해설이 생성되면 여기에 표시됩니다.'}
@@ -1184,7 +1184,7 @@ const ExplanationCardPDF = ({
               </View>
               <View style={styles.explanationBlock}>
                 <Text style={styles.explanationBlockTitle}>
-                  정답 해설
+                  정답 해설 |
                 </Text>
                 <Text style={styles.explanationBlockContent}>
                   {(explanation as any)?.correctExplanation || ''}
@@ -1192,7 +1192,7 @@ const ExplanationCardPDF = ({
               </View>
               <View style={styles.explanationBlock}>
                 <Text style={styles.explanationBlockTitle}>
-                  오답 소거
+                  오답 소거 |
                 </Text>
                 <View style={styles.choiceExplanations}>
                   {(explanation as any)?.wrongExplanations && (explanation as any).wrongExplanations.length > 0 ? (
@@ -1337,7 +1337,7 @@ const GroupedExplanationCardPDF = ({
                   <>
                     <View style={styles.explanationBlock}>
                       <Text style={styles.explanationBlockTitle}>
-                        동의어 해설 - {underlinedWord}
+                        동의어 해설 | {underlinedWord}
                       </Text>
                       <Text style={styles.explanationBlockContent}>
                         {(explanation as any)?.wordExplanation || 'AI 해설이 생성되면 여기에 표시됩니다.'}
@@ -1396,19 +1396,19 @@ const GroupedExplanationCardPDF = ({
                 {(item.categoryMain === '대의 파악' || item.categoryMain === '정보 파악') && (
                   <>
                     <View style={styles.explanationBlock}>
-                      <Text style={styles.explanationBlockTitle}>지문 분석</Text>
+                      <Text style={styles.explanationBlockTitle}>지문 분석 |</Text>
                       <Text style={styles.explanationBlockContent}>
                         {(explanation as any)?.passageAnalysis || 'AI 해설이 생성되면 여기에 표시됩니다.'}
                       </Text>
                     </View>
                     <View style={styles.explanationBlock}>
-                      <Text style={styles.explanationBlockTitle}>정답 해설</Text>
+                      <Text style={styles.explanationBlockTitle}>정답 해설 |</Text>
                       <Text style={styles.explanationBlockContent}>
                         {(explanation as any)?.correctExplanation || ''}
                       </Text>
                     </View>
                     <View style={styles.explanationBlock}>
-                      <Text style={styles.explanationBlockTitle}>오답 소거</Text>
+                      <Text style={styles.explanationBlockTitle}>오답 소거 |</Text>
                       <View style={styles.choiceExplanations}>
                         {(explanation as any)?.wrongExplanations && (explanation as any).wrongExplanations.length > 0 ? (
                           (explanation as any).wrongExplanations.map((exp: string, expIdx: number) => {

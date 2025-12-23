@@ -16,42 +16,74 @@ import type {
   ChoiceTranslation,
 } from '../types/question';
 
-// ===== QUICK VER. 답안표 컴포넌트 =====
+// ===== 정답 정규화 헬퍼 (①↔1 통합 비교용) =====
+const normalizeAnswer = (answer: string): string => {
+  const circleToNum: Record<string, string> = { '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5' };
+  if (circleToNum[answer]) return circleToNum[answer];
+  if (/^[1-5]$/.test(answer)) return answer;
+  return answer;
+};
+
+// 정답 비교 (①과 1을 같은 것으로 처리)
+const isAnswerMatch = (answer: string, choiceLabel: string): boolean => {
+  return normalizeAnswer(answer) === normalizeAnswer(choiceLabel);
+};
+
+// 정답 보기 텍스트 추출 (answer 번호에 해당하는 choice)
+const getAnswerChoiceText = (answer: string, choices: string[]): string => {
+  const answerNum = parseInt(normalizeAnswer(answer));
+  if (answerNum >= 1 && answerNum <= 5 && choices[answerNum - 1]) {
+    return choices[answerNum - 1];
+  }
+  return '';
+};
+
+// AI 해설에서 앞에 붙은 번호 제거 (① 사회적... → 사회적...)
+const stripLeadingNumber = (text: string): string => {
+  // ①, ②, ③, ④, ⑤ 또는 (A), (B) 등으로 시작하는 경우 제거
+  return text.replace(/^[①②③④⑤]\s*/, '').replace(/^\([A-E]\)\s*/, '').trim();
+};
+
+// ===== 빠른 정답 답안표 컴포넌트 =====
 const QuickAnswerTable = ({ questions }: { questions: QuestionItem[] }) => {
-  // 7열, 행은 문제 수에 따라 자동 확장
-  const cols = 7;
+  // 세로 5문제씩 그룹화 (01-05, 06-10, 11-15...)
+  const rowsPerGroup = 5;
   const maxQuestionNumber = questions.length > 0
     ? Math.max(...questions.map(q => q.questionNumber))
     : 0;
-  const rows = Math.max(1, Math.ceil(maxQuestionNumber / cols));
+  const numGroups = Math.ceil(maxQuestionNumber / rowsPerGroup); // 열 개수 (5문제 그룹)
 
-  // 정답 번호 추출 (①→1, ②→2, ...)
+  // 정답 번호 추출 (①→1, 1→1 등 통합 처리)
   const getAnswerNumber = (answer: string): string => {
-    const map: Record<string, string> = { '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5' };
-    return map[answer] || answer;
+    const circleToNum: Record<string, string> = { '①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5' };
+    if (circleToNum[answer]) return circleToNum[answer];
+    // 이미 숫자면 그대로 반환
+    if (/^[1-5]$/.test(answer)) return answer;
+    return answer;
   };
 
   return (
     <div className="quick-answer-table">
-      <div className="quick-answer-title">QUICK VER.</div>
-      <table className="quick-answer-grid">
+      <div className="quick-answer-title">Quick Ver.</div>
+      <table className="quick-answer-grid vertical">
         <tbody>
-          {Array.from({ length: rows }, (_, rowIdx) => (
+          {Array.from({ length: rowsPerGroup }, (_, rowIdx) => (
             <tr key={rowIdx}>
-              {Array.from({ length: cols }, (_, colIdx) => {
-                const qNum = rowIdx * cols + colIdx + 1;
+              {Array.from({ length: numGroups }, (_, groupIdx) => {
+                // 세로로 5문제씩: 그룹0(1-5), 그룹1(6-10), 그룹2(11-15)...
+                const qNum = groupIdx * rowsPerGroup + rowIdx + 1;
                 const question = questions.find(q => q.questionNumber === qNum);
                 // 문제 번호가 최대 문제 번호를 초과하면 빈 셀 표시
                 if (qNum > maxQuestionNumber) {
                   return (
-                    <td key={colIdx} className="quick-answer-cell" style={{ opacity: 0.3 }}>
+                    <td key={groupIdx} className="quick-answer-cell vertical" style={{ opacity: 0.3 }}>
                       <span className="quick-answer-num">{String(qNum).padStart(2, '0')}</span>
                       <span className="quick-answer-circle"></span>
                     </td>
                   );
                 }
                 return (
-                  <td key={colIdx} className="quick-answer-cell">
+                  <td key={groupIdx} className="quick-answer-cell vertical">
                     <span className="quick-answer-num">{String(qNum).padStart(2, '0')}</span>
                     <span className="quick-answer-circle">
                       {question ? getAnswerNumber(question.answer) : ''}
@@ -126,7 +158,7 @@ const EditableText = ({
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
             className="w-full p-2 text-xs border rounded resize-none"
-            style={{ minHeight: '60px', fontSize: scaledSize(9), lineHeight: 1.5 }}
+            style={{ minHeight: '60px', fontSize: scaledSize(10), lineHeight: 1.5 }}
             autoFocus
           />
         ) : (
@@ -136,7 +168,7 @@ const EditableText = ({
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
             className="w-full p-1 text-xs border rounded"
-            style={{ fontSize: scaledSize(9) }}
+            style={{ fontSize: scaledSize(10) }}
             autoFocus
           />
         )}
@@ -224,7 +256,7 @@ const EditablePassage = ({
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
           className="w-full p-2 text-xs border rounded resize-none"
-          style={{ minHeight: '100px', fontSize: scaledSize(9), lineHeight: 1.6 }}
+          style={{ minHeight: '100px', fontSize: scaledSize(10), lineHeight: 1.6 }}
           autoFocus
         />
         <div className="flex gap-1 mt-1">
@@ -362,6 +394,46 @@ const groupByPassage = (items: QuestionItem[]): PassageGroup[] => {
 // 해설 편집 콜백 타입
 type ExplanationEditCallback = (questionId: string, field: string, value: string | { english: string; korean: string }[]) => void;
 
+// ===== 통일된 정답 헤더 컴포넌트 =====
+const AnswerHeader = ({
+  questionNumber,
+  answer,
+  answerText,
+  answerChange,
+  showNumber = true,
+  categoryMain,
+  categorySub
+}: {
+  questionNumber: number;
+  answer: string;
+  answerText?: string;
+  answerChange?: string;
+  showNumber?: boolean;
+  categoryMain?: string;
+  categorySub?: string;
+}) => (
+  <div className="explanation-answer-header">
+    <div className="answer-left">
+      {showNumber && <span className="question-num-badge">{questionNumber}</span>}
+      <span className="answer-label">정답</span>
+      <span className="answer-badge">{normalizeAnswer(answer)}</span>
+      {/* 문법: answerChange (원래 → 수정) 표시 */}
+      {answerChange && (
+        <span className="answer-change">{answerChange}</span>
+      )}
+      {/* 일반: 정답 보기 텍스트 표시 */}
+      {!answerChange && answerText && (
+        <span className="answer-text">{answerText}</span>
+      )}
+    </div>
+    {categoryMain && (
+      <div className="answer-category">
+        {categoryMain}{categorySub ? ` | ${categorySub}` : ''}
+      </div>
+    )}
+  </div>
+);
+
 // 어휘(동의어) 해설
 const VocabularySection = ({
   item,
@@ -385,17 +457,20 @@ const VocabularySection = ({
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <div className="explanation-answer-header">
-        {showNumber && <span className="question-num-badge">{item.questionNumber}</span>}
-        <span className="answer-badge">{answerNum}</span>
-        <span className="answer-word">{answerWord}</span>
-      </div>
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 동의어 해설 */}
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📖</span>
-          동의어 해설 - {underlinedWord}
+          동의어 해설 | {underlinedWord}
         </div>
         <div className="explanation-block-content">
           <EditableText
@@ -462,19 +537,19 @@ const GrammarSection = ({
   explanation?: GrammarExplanation;
   showNumber?: boolean;
 }) => {
-  const answerIdx = ['①', '②', '③', '④', '⑤'].indexOf(item.answer);
   const labels = ['(A)', '(B)', '(C)', '(D)', '(E)'];
 
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
-      <div className="explanation-answer-header grammar-header">
-        {showNumber && <span className="question-num-badge">{item.questionNumber}</span>}
-        <span className="answer-label">정답 |</span>
-        <span className="answer-badge">{item.answer}</span>
-        <span className="answer-change">{labels[answerIdx]} {explanation?.answerChange || ''}</span>
-        <span className="test-point">▶ 출제 Point | {explanation?.testPoint || ''}</span>
-      </div>
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerChange={explanation?.answerChange}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 정답 해설 */}
       <div className="explanation-block">
@@ -520,18 +595,21 @@ const LogicSection = ({
 
   return (
     <div className="explanation-section">
-      {/* 문제 번호 헤더 (그룹 내 여러 문제일 때) */}
-      {showNumber && (
-        <div className="explanation-answer-header">
-          <span className="question-num-badge">{item.questionNumber}</span>
-        </div>
-      )}
+      {/* 정답 헤더 */}
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
-      {/* Step 1) 빈칸 타게팅 */}
+      {/* 빈칸 타게팅 | */}
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📖</span>
-          Step 1) 빈칸 타게팅
+          빈칸 타게팅 |
         </div>
         <div className="explanation-block-content">
           {explanation?.step1Targeting || (
@@ -544,7 +622,7 @@ const LogicSection = ({
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📝</span>
-          Step 2) 근거 확인
+          근거 확인 |
         </div>
         <div className="explanation-block-content">
           {explanation?.step2Evidence || (
@@ -557,14 +635,14 @@ const LogicSection = ({
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📝</span>
-          Step 3) 보기 판단
+          보기 판단 |
         </div>
         <div className="explanation-block-content choice-explanations">
           {explanation?.step3Choices && explanation.step3Choices.length > 0 ? (
             explanation.step3Choices.map((exp, idx) => (
-              <div key={idx} className={`choice-item ${item.answer === choiceLabels[idx] ? 'correct' : ''}`}>
+              <div key={idx} className={`choice-item ${isAnswerMatch(item.answer, choiceLabels[idx]) ? 'correct' : ''}`}>
                 <span className="choice-label">{choiceLabels[idx]}</span>
-                <span className="choice-text">{exp}</span>
+                <span className="choice-text">{stripLeadingNumber(exp)}</span>
               </div>
             ))
           ) : (
@@ -590,18 +668,21 @@ const MainIdeaSection = ({
 
   return (
     <div className="explanation-section">
-      {/* 문제 번호 헤더 (그룹 내 여러 문제일 때) */}
-      {showNumber && (
-        <div className="explanation-answer-header">
-          <span className="question-num-badge">{item.questionNumber}</span>
-        </div>
-      )}
+      {/* 정답 헤더 */}
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 지문 분석 */}
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📖</span>
-          지문 분석
+          지문 분석 |
         </div>
         <div className="explanation-block-content">
           {explanation?.passageAnalysis || (
@@ -614,7 +695,7 @@ const MainIdeaSection = ({
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📝</span>
-          정답 해설
+          정답 해설 |
         </div>
         <div className="explanation-block-content">
           {explanation?.correctExplanation || (
@@ -627,17 +708,17 @@ const MainIdeaSection = ({
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📝</span>
-          오답 소거
+          오답 소거 |
         </div>
         <div className="explanation-block-content choice-explanations">
           {explanation?.wrongExplanations && explanation.wrongExplanations.length > 0 ? (
             explanation.wrongExplanations.map((exp, idx) => {
               // 정답은 스킵
-              if (item.answer === choiceLabels[idx]) return null;
+              if (isAnswerMatch(item.answer, choiceLabels[idx])) return null;
               return (
                 <div key={idx} className="choice-item">
-                  <span className="choice-label">{choiceLabels[idx]}번:</span>
-                  <span className="choice-text">{exp}</span>
+                  <span className="choice-label">{choiceLabels[idx]}</span>
+                  <span className="choice-text">{stripLeadingNumber(exp)}</span>
                 </div>
               );
             })
@@ -664,18 +745,21 @@ const InsertionSection = ({
 
   return (
     <div className="explanation-section">
-      {/* 문제 번호 헤더 (그룹 내 여러 문제일 때) */}
-      {showNumber && (
-        <div className="explanation-answer-header">
-          <span className="question-num-badge">{item.questionNumber}</span>
-        </div>
-      )}
+      {/* 정답 헤더 */}
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 정답 해설 */}
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📖</span>
-          정답 해설
+          정답 해설 |
         </div>
         <div className="explanation-block-content">
           {explanation?.correctExplanation || (
@@ -713,12 +797,15 @@ const OrderSection = ({
 }) => {
   return (
     <div className="explanation-section">
-      {/* 문제 번호 헤더 (그룹 내 여러 문제일 때) */}
-      {showNumber && (
-        <div className="explanation-answer-header">
-          <span className="question-num-badge">{item.questionNumber}</span>
-        </div>
-      )}
+      {/* 정답 헤더 */}
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 보기의 1열 */}
       <div className="explanation-block">
@@ -768,18 +855,21 @@ const WordAppropriatenessSection = ({
 
   return (
     <div className="explanation-section">
-      {/* 문제 번호 헤더 (그룹 내 여러 문제일 때) */}
-      {showNumber && (
-        <div className="explanation-answer-header">
-          <span className="question-num-badge">{item.questionNumber}</span>
-        </div>
-      )}
+      {/* 정답 헤더 */}
+      <AnswerHeader
+        questionNumber={item.questionNumber}
+        answer={item.answer}
+        answerText={getAnswerChoiceText(item.answer, item.choices)}
+        showNumber={showNumber}
+        categoryMain={item.categoryMain}
+        categorySub={item.categorySub}
+      />
 
       {/* 핵심 주제 */}
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📖</span>
-          핵심 주제
+          핵심 주제 |
         </div>
         <div className="explanation-block-content">
           {explanation?.mainTopic || (
@@ -792,14 +882,14 @@ const WordAppropriatenessSection = ({
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📝</span>
-          정답 해설
+          정답 해설 |
         </div>
         <div className="explanation-block-content choice-explanations">
           {explanation?.choiceExplanations && explanation.choiceExplanations.length > 0 ? (
             explanation.choiceExplanations.map((exp, idx) => (
               <div key={idx} className="choice-item">
                 <span className="choice-label">{labels[idx]}</span>
-                <span className="choice-text">{exp}</span>
+                <span className="choice-text">{stripLeadingNumber(exp)}</span>
               </div>
             ))
           ) : (
@@ -876,7 +966,7 @@ const renderChoiceWithTranslation = (
   displayMode: 'both' | 'korean' | 'english' = 'both'
 ) => {
   const choiceLabels = ['①', '②', '③', '④', '⑤'];
-  const isCorrect = answer === choiceLabels[idx];
+  const isCorrect = isAnswerMatch(answer, choiceLabels[idx]);
 
   // 번역이 있는 경우
   if (choiceTranslation) {
@@ -884,24 +974,24 @@ const renderChoiceWithTranslation = (
       <div
         key={idx}
         className={`question-choice-translated ${isCorrect ? 'correct' : ''}`}
-        style={{ fontSize: scaledSize(9) }}
+        style={{ fontSize: scaledSize(9.5) }}
       >
         <span className="choice-label">{choiceLabels[idx]}</span>
         {displayMode === 'both' ? (
           // 영어 + 한글 둘 다
           <span className="choice-text">
-            <span className="choice-english">{choice}</span>
-            <span className="choice-korean">{choiceTranslation.korean}</span>
+            <span className="choice-english">{stripLeadingNumber(choice)}</span>
+            <span className="choice-korean">{stripLeadingNumber(choiceTranslation.korean)}</span>
           </span>
         ) : displayMode === 'english' ? (
           // 영어만
           <span className="choice-text">
-            <span className="choice-english">{choice}</span>
+            <span className="choice-english">{stripLeadingNumber(choice)}</span>
           </span>
         ) : (
           // 한글만
           <span className="choice-text">
-            <span className="choice-korean-only">{choiceTranslation.korean}</span>
+            <span className="choice-korean-only">{stripLeadingNumber(choiceTranslation.korean)}</span>
           </span>
         )}
       </div>
@@ -913,7 +1003,7 @@ const renderChoiceWithTranslation = (
     <span
       key={idx}
       className={`question-choice ${isCorrect ? 'correct' : ''}`}
-      style={{ fontSize: scaledSize(9) }}
+      style={{ fontSize: scaledSize(9.5) }}
     >
       {choiceLabels[idx]} {choice}
     </span>
@@ -937,6 +1027,7 @@ const SingleExplanationCard = ({
   // ExplanationData에서 번역 정보 추출
   const passageTranslation = explanation?.passageTranslation;
   const choiceTranslations = explanation?.choiceTranslations;
+  const instructionText = explanation?.instructionTranslation || item.instruction;
 
   const handlePassageSave = (newText: string) => {
     if (onPassageEdit) {
@@ -952,22 +1043,28 @@ const SingleExplanationCard = ({
           {item.questionNumber}
         </div>
         <div className="question-content">
+          {/* 발문 번역 */}
+          {instructionText && instructionText.trim() && (
+            <p className="instruction-translation" style={{ fontSize: scaledSize(9.5), color: '#333', marginBottom: '10px' }}>
+              {instructionText}
+            </p>
+          )}
           {/* 한글 번역만 표시 (영어 지문 없이) */}
           {passageTranslation ? (
             <EditablePassage
               text={passageTranslation}
               onSave={handlePassageSave}
               className="question-passage-translation"
-              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333' }}
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333', marginBottom: '12px' }}
             />
           ) : (
             /* 한글 번역이 없으면 영어 지문 표시 (fallback) */
-            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
+            <p className="question-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6, marginBottom: '12px' }}>
               {formatPassageWithUnderline(item.passage)}
             </p>
           )}
           {/* 보기 */}
-          <div className="question-choices" style={{ marginTop: choiceTranslations ? '12px' : undefined }}>
+          <div className="question-choices" style={{ marginTop: '8px', fontSize: scaledSize(9.5) }}>
             {item.choices.map((choice, idx) => (
               choice && renderChoiceWithTranslation(choice, idx, item.answer, choiceTranslations?.[idx], choiceDisplayMode)
             ))}
@@ -1002,11 +1099,10 @@ const GroupedExplanationCard = ({
   const firstExplanation = explanations?.get(firstItem.id);
   const passageTranslation = firstExplanation?.passageTranslation;
 
-  // 문제 번호 범위 (예: 33~34)
+  // 문제 번호 범위 (예: 15~17)
   const questionNumbers = group.items.map(i => i.questionNumber);
-  const numberRange = questionNumbers.length > 1
-    ? `${Math.min(...questionNumbers)}~${Math.max(...questionNumbers)}`
-    : String(questionNumbers[0]);
+  const minNum = Math.min(...questionNumbers);
+  const maxNum = Math.max(...questionNumbers);
 
   const handlePassageSave = (newText: string) => {
     if (onPassageEdit) {
@@ -1018,9 +1114,18 @@ const GroupedExplanationCard = ({
     <div className="explanation-card grouped">
       {/* 좌측: 지문 + 모든 문제의 보기 */}
       <div className="explanation-question">
-        <div className="question-number" style={{ fontSize: scaledSize(18) }}>
-          {numberRange}
-        </div>
+        {/* 문제 번호: 다중 지문일 경우 세로 배치 */}
+        {questionNumbers.length > 1 ? (
+          <div className="question-number-vertical" style={{ fontSize: scaledSize(18) }}>
+            <span>{minNum}</span>
+            <span className="number-separator-vertical">~</span>
+            <span>{maxNum}</span>
+          </div>
+        ) : (
+          <div className="question-number" style={{ fontSize: scaledSize(18) }}>
+            {minNum}
+          </div>
+        )}
         <div className="question-content">
           {/* 한글 번역만 표시 (영어 지문 없이) */}
           {passageTranslation ? (
@@ -1041,12 +1146,13 @@ const GroupedExplanationCard = ({
           {group.items.map((item) => {
             const itemExplanation = explanations?.get(item.id);
             const choiceTranslations = itemExplanation?.choiceTranslations;
+            const instructionText = itemExplanation?.instructionTranslation || item.instruction;
 
             return (
               <div key={item.id} className="grouped-question-choices">
                 <div className="grouped-question-header">
                   <span className="grouped-question-num">{item.questionNumber}.</span>
-                  <span className="grouped-question-instruction">{item.instruction}</span>
+                  <span className="grouped-question-instruction">{instructionText}</span>
                 </div>
                 <div className="question-choices">
                   {item.choices.map((choice, idx) => (
