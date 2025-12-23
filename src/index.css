@@ -3104,6 +3104,22 @@ body {
     display: flex;
   }
 
+  .page-footer {
+    position: absolute;
+    bottom: 22mm;
+    left: 20mm;
+    right: 20mm;
+  }
+
+  .page-number-bottom-left {
+    color: #666;
+    font-family: 'Pretendard Variable', Pretendard, sans-serif;
+    font-size: 11px;
+    position: absolute;
+    bottom: 10mm;
+    left: 20mm;
+  }
+
   .page-number-bottom-right {
     color: #666;
     font-family: 'Pretendard Variable', Pretendard, sans-serif;
@@ -3115,6 +3131,22 @@ body {
 }
 
 @media print {
+  .page-footer {
+    position: absolute;
+    bottom: 22mm;
+    left: 20mm;
+    right: 20mm;
+  }
+
+  .page-number-bottom-left {
+    color: #666;
+    font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;
+    font-size: 11px;
+    position: absolute;
+    bottom: 10mm;
+    left: 20mm;
+  }
+
   .page-number-bottom-right {
     color: #666;
     font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', '맑은 고딕', sans-serif;

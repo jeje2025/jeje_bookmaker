@@ -7,6 +7,11 @@ import { UnitSplitButton } from './components/UnitSplitButton';
 import { VocabularyCover } from './components/VocabularyCover';
 import { VocabularyInput } from './components/VocabularyInput';
 import { VocabularyView } from './components/VocabularyView';
+import { GrammarSelector, type GrammarItem, GRAMMAR_TYPES } from './components/GrammarSelector';
+import { GrammarTable } from './components/GrammarTable';
+import { QuestionInput } from './components/QuestionInput';
+import { QuestionView } from './components/QuestionView';
+import type { QuestionItem, HeaderInfo as QuestionHeaderInfo, ViewMode as QuestionViewMode } from './types/question';
 // import { PDFSaveModal } from './components/PDFSaveModal'; // 모달 없이 바로 저장으로 변경
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog';
 import { Input } from './components/ui/input';
@@ -225,6 +230,14 @@ export default function App() {
   const [colorPalette, setColorPalette] = useState<PaletteKey>('viva-magenta'); // 배경색 팔레트 (기본: 비바 마젠타)
   const [fontSize, setFontSize] = useState<FontSizeKey>('medium'); // 글씨 크기 (기본: 보통)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // 사이드바 접기
+  const [appMode, setAppMode] = useState<'vocabulary' | 'grammar' | 'question'>('question'); // 단어장 / 구문교재 / 문제집 모드
+  const [selectedGrammarItems, setSelectedGrammarItems] = useState<GrammarItem[]>([]); // 선택된 구문 문장들
+  const [grammarHeaderInfo, setGrammarHeaderInfo] = useState({ headerTitle: '구문교재', headerDescription: '', footerLeft: '' }); // 구문교재 헤더
+  const [grammarViewMode, setGrammarViewMode] = useState<'question' | 'answer'>('question'); // 구문교재 뷰모드: 문제지/해설지
+  // 문제집 모드 상태
+  const [questionList, setQuestionList] = useState<QuestionItem[]>([]); // 문제 리스트
+  const [questionHeaderInfo, setQuestionHeaderInfo] = useState<QuestionHeaderInfo>({ headerTitle: '2025 동국대 편입', headerDescription: '', footerLeft: '' }); // 문제집 헤더
+  const [questionViewMode, setQuestionViewMode] = useState<QuestionViewMode>('question'); // 문제집 뷰모드: 문제지/해설지
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -644,8 +657,40 @@ export default function App() {
       >
         {/* 헤더 - 고정, 높이 정확히 맞춤 */}
         <div className="px-6 border-b border-gray-200 flex-shrink-0 relative" style={{ height: '73px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <h1 className="text-slate-800">단어장 생성기</h1>
-          <p className="text-slate-500 text-xs mt-1">크롬 권장 · Made By 제제샘</p>
+          {/* 앱 모드 전환 탭 */}
+          <div className="flex items-center gap-1 mb-1">
+            <button
+              onClick={() => setAppMode('question')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                appMode === 'question'
+                  ? 'bg-slate-800 text-white'
+                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              문제집
+            </button>
+            <button
+              onClick={() => setAppMode('vocabulary')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                appMode === 'vocabulary'
+                  ? 'bg-slate-800 text-white'
+                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              단어장
+            </button>
+            <button
+              onClick={() => setAppMode('grammar')}
+              className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+                appMode === 'grammar'
+                  ? 'bg-slate-800 text-white'
+                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+              }`}
+            >
+              구문교재
+            </button>
+          </div>
+          <p className="text-slate-500 text-xs">크롬 권장 · Made By 제제샘</p>
           {/* 접기 버튼 */}
           <button
             onClick={() => setIsSidebarCollapsed(true)}
@@ -658,60 +703,81 @@ export default function App() {
 
         {/* 단어 입력 + 최근 생성 영역 - 함께 스크롤 */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden">
-          {/* 단어 입력 영역 */}
-          <div className="p-4">
-            <VocabularyInput 
-              onSave={handleVocabularySave} 
-              data={vocabularyList}
-              fullscreen={true}
-              headerInfo={headerInfo}
-              onHeaderChange={setHeaderInfo}
-              onChange={(updatedData) => {
-                // 사이드바에서 엑셀 수정 시 실시간으로 PDF 미리보기에 반영
-                setVocabularyList(updatedData);
-              }}
-            />
-          </div>
+          {appMode === 'vocabulary' ? (
+            <>
+              {/* 단어 입력 영역 */}
+              <div className="p-4">
+                <VocabularyInput
+                  onSave={handleVocabularySave}
+                  data={vocabularyList}
+                  fullscreen={true}
+                  headerInfo={headerInfo}
+                  onHeaderChange={setHeaderInfo}
+                  onChange={(updatedData) => {
+                    // 사이드바에서 엑셀 수정 시 실시간으로 PDF 미리보기에 반영
+                    setVocabularyList(updatedData);
+                  }}
+                />
+              </div>
 
-          {/* 최근 생성 영역 */}
-          <div className="border-t border-gray-200 bg-slate-50">
-            <div className="p-3 border-b border-gray-200 bg-white sticky top-0">
-              <div className="flex items-center gap-2">
-                <Clock size={16} className="text-slate-600" />
-                <h3 className="text-sm text-slate-700">최근 생성</h3>
+              {/* 최근 생성 영역 */}
+              <div className="border-t border-gray-200 bg-slate-50">
+                <div className="p-3 border-b border-gray-200 bg-white sticky top-0">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-slate-600" />
+                    <h3 className="text-sm text-slate-700">최근 생성</h3>
+                  </div>
+                </div>
+                {recentLogs.length === 0 ? (
+                  <div className="p-4 text-center text-slate-400 text-xs">
+                    아직 생성된 단어장이 없습니다
+                  </div>
+                ) : (
+                  <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
+                    {recentLogs.map((log, index) => (
+                      <button
+                        key={log.id || index}
+                        onClick={() => handleLoadLog(log.id)}
+                        className="w-full text-left p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"
+                      >
+                        <p className="text-xs text-slate-900 font-medium truncate">
+                          {log.headerTitle || '제목 없음'}
+                        </p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-slate-500">
+                            {new Date(log.timestamp).toLocaleDateString('ko-KR', {
+                              month: 'numeric',
+                              day: 'numeric'
+                            })}
+                          </p>
+                          <p className="text-xs text-slate-600 font-medium">
+                            {log.wordCount || 0}개
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
+            </>
+          ) : appMode === 'question' ? (
+            /* 문제집 모드 - 문제 데이터 입력 UI */
+            <div className="p-4">
+              <QuestionInput
+                onSave={setQuestionList}
+                data={questionList}
+                headerInfo={questionHeaderInfo}
+                onHeaderChange={setQuestionHeaderInfo}
+              />
             </div>
-            {recentLogs.length === 0 ? (
-              <div className="p-4 text-center text-slate-400 text-xs">
-                아직 생성된 단어장이 없습니다
-              </div>
-            ) : (
-              <div className="p-3 space-y-2 max-h-[400px] overflow-y-auto">
-                {recentLogs.map((log, index) => (
-                  <button
-                    key={log.id || index}
-                    onClick={() => handleLoadLog(log.id)}
-                    className="w-full text-left p-3 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition-colors"
-                  >
-                    <p className="text-xs text-slate-900 font-medium truncate">
-                      {log.headerTitle || '제목 없음'}
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-xs text-slate-500">
-                        {new Date(log.timestamp).toLocaleDateString('ko-KR', {
-                          month: 'numeric',
-                          day: 'numeric'
-                        })}
-                      </p>
-                      <p className="text-xs text-slate-600 font-medium">
-                        {log.wordCount || 0}개
-                      </p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+          ) : (
+            /* 구문교재 모드 - 문법 요소 선택 UI */
+            <GrammarSelector
+              onSelectionChange={setSelectedGrammarItems}
+              headerInfo={grammarHeaderInfo}
+              onHeaderChange={setGrammarHeaderInfo}
+            />
+          )}
         </div>
       </div>
 
@@ -733,154 +799,232 @@ export default function App() {
             </button>
           )}
 
-          <button
-            onClick={() => setViewMode('card')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'card'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <FileText size={14} />
-            카드형
-          </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'table'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <Table2 size={14} />
-            표버전
-          </button>
-          <button
-            onClick={() => setViewMode('tableSimple')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'tableSimple'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <FileSpreadsheet size={14} />
-            간단
-          </button>
-          <button
-            onClick={() => setViewMode('tableSimpleTest')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'tableSimpleTest'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <FileSpreadsheet size={14} />
-            간단 테스트
-          </button>
-          <button
-            onClick={() => setViewMode('test')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'test'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <FileQuestion size={14} />
-            동의어 테스트
-          </button>
-          <button
-            onClick={() => setViewMode('testDefinition')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'testDefinition'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <BookOpen size={14} />
-            영영 테스트
-          </button>
-          <button
-            onClick={() => setViewMode('testAnswer')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'testAnswer'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <FileCheck size={14} />
-            동의어 답지
-          </button>
-          <button
-            onClick={() => setViewMode('testDefinitionAnswer')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'testDefinitionAnswer'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <FileCheck size={14} />
-            영영 답지
-          </button>
-          <button
-            onClick={() => setViewMode('cover')}
-            className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-              viewMode === 'cover'
-                ? 'text-slate-900 font-semibold'
-                : 'text-slate-400 hover:text-slate-600'
-            }`}
-          >
-            <Image size={14} />
-            표지
-          </button>
+          {/* 단어장 모드 - 뷰 모드 버튼들 */}
+          {appMode === 'vocabulary' && (
+            <>
+              <button
+                onClick={() => setViewMode('card')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'card'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileText size={14} />
+                카드형
+              </button>
+              <button
+                onClick={() => setViewMode('table')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'table'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <Table2 size={14} />
+                표버전
+              </button>
+              <button
+                onClick={() => setViewMode('tableSimple')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'tableSimple'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileSpreadsheet size={14} />
+                간단
+              </button>
+              <button
+                onClick={() => setViewMode('tableSimpleTest')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'tableSimpleTest'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileSpreadsheet size={14} />
+                간단 테스트
+              </button>
+              <button
+                onClick={() => setViewMode('test')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'test'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileQuestion size={14} />
+                동의어 테스트
+              </button>
+              <button
+                onClick={() => setViewMode('testDefinition')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'testDefinition'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <BookOpen size={14} />
+                영영 테스트
+              </button>
+              <button
+                onClick={() => setViewMode('testAnswer')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'testAnswer'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileCheck size={14} />
+                동의어 답지
+              </button>
+              <button
+                onClick={() => setViewMode('testDefinitionAnswer')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'testDefinitionAnswer'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileCheck size={14} />
+                영영 답지
+              </button>
+              <button
+                onClick={() => setViewMode('cover')}
+                className={`shrink-0 pl-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  viewMode === 'cover'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <Image size={14} />
+                표지
+              </button>
 
-          {/* 편집 모드 토글 버튼 - 표버전, 카드형에서만 표시 */}
-          {(viewMode === 'table' || viewMode === 'card') && (
-            <button
-              onClick={() => setIsEditMode(!isEditMode)}
-              className={`shrink-0 px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                isEditMode
-                  ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              <Edit3 size={16} />
-              <span className="text-sm">{isEditMode ? '편집중' : '편집'}</span>
-            </button>
+              {/* 편집 모드 토글 버튼 - 표버전, 카드형에서만 표시 */}
+              {(viewMode === 'table' || viewMode === 'card') && (
+                <button
+                  onClick={() => setIsEditMode(!isEditMode)}
+                  className={`shrink-0 px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
+                    isEditMode
+                      ? 'bg-blue-100 text-blue-600 hover:bg-blue-200'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Edit3 size={16} />
+                  <span className="text-sm">{isEditMode ? '편집중' : '편집'}</span>
+                </button>
+              )}
+
+              {/* 단어 섞기 버튼 - 테스트에서만 표시 */}
+              {viewMode === 'test' && (
+                <button
+                  onClick={() => {
+                    handleShuffleWords();
+                    toast.success('문제 순서가 섞였습니다!', { duration: 1000 });
+                  }}
+                  className="shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-600"
+                >
+                  <Shuffle size={14} />
+                  랜덤
+                </button>
+              )}
+
+              {/* 표지 설정 - 표지에서만 표시 */}
+              {viewMode === 'cover' && (
+                <Select
+                  value={coverVariant}
+                  onValueChange={(value: 'photo' | 'gradient' | 'minimal') => setCoverVariant(value)}
+                >
+                  <SelectTrigger className="shrink-0 w-24 h-8 text-xs border-0 shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="photo">사진</SelectItem>
+                    <SelectItem value="gradient">그라디언트</SelectItem>
+                    <SelectItem value="minimal">미니멀</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+
+              {/* 구분선 */}
+              <div className="h-4 w-px bg-slate-200 mx-1 shrink-0" />
+            </>
           )}
 
-          {/* 단어 섞기 버튼 - 테스트에서만 표시 */}
-          {viewMode === 'test' && (
-            <button
-              onClick={() => {
-                handleShuffleWords();
-                toast.success('문제 순서가 섞였습니다!', { duration: 1000 });
-              }}
-              className="shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 text-slate-400 hover:text-slate-600"
-            >
-              <Shuffle size={14} />
-              랜덤
-            </button>
+          {/* 문제집 모드 - 뷰모드 전환 버튼 */}
+          {appMode === 'question' && (
+            <>
+              <button
+                onClick={() => setQuestionViewMode('question')}
+                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  questionViewMode === 'question'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileText size={14} />
+                문제지
+              </button>
+              <button
+                onClick={() => setQuestionViewMode('answer')}
+                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  questionViewMode === 'answer'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileCheck size={14} />
+                해설지
+              </button>
+              <button
+                onClick={() => setQuestionViewMode('vocabulary')}
+                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  questionViewMode === 'vocabulary'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <List size={14} />
+                어휘 문제지
+              </button>
+              <div className="shrink-0 px-3 py-1.5 text-sm text-slate-600">
+                <span className="font-medium">{questionList.length}</span>개 문제
+              </div>
+            </>
           )}
 
-          {/* 표지 설정 - 표지에서만 표시 */}
-          {viewMode === 'cover' && (
-            <Select
-              value={coverVariant}
-              onValueChange={(value: 'photo' | 'gradient' | 'minimal') => setCoverVariant(value)}
-            >
-              <SelectTrigger className="shrink-0 w-24 h-8 text-xs border-0 shadow-none">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="photo">사진</SelectItem>
-                <SelectItem value="gradient">그라디언트</SelectItem>
-                <SelectItem value="minimal">미니멀</SelectItem>
-              </SelectContent>
-            </Select>
+          {/* 구문교재 모드 - 뷰모드 전환 버튼 */}
+          {appMode === 'grammar' && (
+            <>
+              <button
+                onClick={() => setGrammarViewMode('question')}
+                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  grammarViewMode === 'question'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileText size={14} />
+                문제지
+              </button>
+              <button
+                onClick={() => setGrammarViewMode('answer')}
+                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  grammarViewMode === 'answer'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileCheck size={14} />
+                해설지
+              </button>
+              <div className="shrink-0 px-3 py-1.5 text-sm text-slate-600">
+                <span className="font-medium">{selectedGrammarItems.length}</span>개 선택
+              </div>
+            </>
           )}
-
-          {/* 구분선 */}
-          <div className="h-4 w-px bg-slate-200 mx-1 shrink-0" />
 
           {/* 유닛 분할 */}
           <div className="shrink-0">
@@ -961,27 +1105,69 @@ export default function App() {
                 </div>
               )}
 
-              {viewMode === 'cover' ? (
-                <VocabularyCover
-                  data={vocabularyList}
-                  headerInfo={headerInfo}
-                  photo={coverPhoto}
-                  authorName={coverAuthorName}
-                  variant={coverVariant}
-                  onPhotoUpload={(photoUrl) => setCoverPhoto(photoUrl)}
-                  onHeaderInfoChange={(info) => setHeaderInfo(info)}
-                  onAuthorNameChange={(name) => setCoverAuthorName(name)}
-                />
+              {appMode === 'vocabulary' ? (
+                // 단어장 모드
+                viewMode === 'cover' ? (
+                  <VocabularyCover
+                    data={vocabularyList}
+                    headerInfo={headerInfo}
+                    photo={coverPhoto}
+                    authorName={coverAuthorName}
+                    variant={coverVariant}
+                    onPhotoUpload={(photoUrl) => setCoverPhoto(photoUrl)}
+                    onHeaderInfoChange={(info) => setHeaderInfo(info)}
+                    onAuthorNameChange={(name) => setCoverAuthorName(name)}
+                  />
+                ) : (
+                  <VocabularyView
+                    viewMode={viewMode as 'card' | 'table' | 'tableSimple' | 'tableSimpleTest' | 'test' | 'testDefinition' | 'testAnswer' | 'testDefinitionAnswer'}
+                    data={currentUnitData}
+                    headerInfo={headerInfo}
+                    isEditMode={isEditMode}
+                    unitNumber={unitNumber}
+                    onWordUpdate={handleWordUpdate}
+                    onHeaderChange={handleHeaderChange}
+                  />
+                )
+              ) : appMode === 'question' ? (
+                // 문제집 모드
+                questionList.length > 0 ? (
+                  <QuestionView
+                    viewMode={questionViewMode}
+                    data={questionList}
+                    headerInfo={questionHeaderInfo}
+                    onHeaderChange={setQuestionHeaderInfo}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-slate-400">
+                    <div className="text-center">
+                      <p className="text-lg mb-2">문제 데이터를 입력해주세요</p>
+                      <p className="text-sm">왼쪽에서 TSV 데이터를 붙여넣거나 파일을 업로드하세요</p>
+                    </div>
+                  </div>
+                )
               ) : (
-                <VocabularyView
-                  viewMode={viewMode as 'card' | 'table' | 'tableSimple' | 'tableSimpleTest' | 'test' | 'testDefinition' | 'testAnswer' | 'testDefinitionAnswer'}
-                  data={currentUnitData}
-                  headerInfo={headerInfo}
-                  isEditMode={isEditMode}
-                  unitNumber={unitNumber}
-                  onWordUpdate={handleWordUpdate}
-                  onHeaderChange={handleHeaderChange}
-                />
+                // 구문교재 모드
+                selectedGrammarItems.length > 0 ? (
+                  <GrammarTable
+                    data={selectedGrammarItems}
+                    headerInfo={grammarHeaderInfo}
+                    showAnswer={grammarViewMode === 'answer'}
+                    unitInfo={(() => {
+                      // 선택된 문장들의 문법 유형 추출
+                      const grammarType = selectedGrammarItems[0]?.grammarType;
+                      const grammarLabel = GRAMMAR_TYPES.find(t => t.id === grammarType)?.label || grammarType;
+                      return grammarLabel ? `Unit1 | ${grammarLabel}` : undefined;
+                    })()}
+                  />
+                ) : (
+                  <div className="flex items-center justify-center h-64 text-slate-400">
+                    <div className="text-center">
+                      <p className="text-lg mb-2">문장을 선택해주세요</p>
+                      <p className="text-sm">왼쪽에서 문법 요소를 선택하고 문장을 체크하세요</p>
+                    </div>
+                  </div>
+                )
               )}
             </div>
           </div>

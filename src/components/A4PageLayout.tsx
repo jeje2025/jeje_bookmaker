@@ -8,6 +8,7 @@ interface A4PageLayoutProps {
   showFooterOnLastPageOnly?: boolean;
   tableHeader?: React.ReactNode; // 테이블 헤더 (매 페이지 상단에 표시)
   fontScale?: number; // 글씨 크기 스케일 (페이지 분할 재계산용)
+  unitInfo?: string; // 유닛 정보 (예: "Unit1 | 명사절") - 좌하단에 표시
 }
 
 export function A4PageLayout({
@@ -17,7 +18,8 @@ export function A4PageLayout({
   showHeaderOnFirstPageOnly = false,
   showFooterOnLastPageOnly = false,
   tableHeader,
-  fontScale = 1
+  fontScale = 1,
+  unitInfo
 }: A4PageLayoutProps) {
   const [pages, setPages] = useState<React.ReactNode[][]>([]);
   const measureRef = useRef<HTMLDivElement>(null);
@@ -177,6 +179,13 @@ export function A4PageLayout({
           {/* 푸터 - 마지막 페이지만 또는 모든 페이지 */}
           {(showFooterOnLastPageOnly ? pageIndex === pages.length - 1 : true) && footerContent && (
             <div className="page-footer">{footerContent}</div>
+          )}
+
+          {/* 유닛 정보 - 좌하단 */}
+          {unitInfo && (
+            <div className="page-number-bottom-left">
+              {unitInfo}
+            </div>
           )}
 
           {/* 페이지 번호 - 우하단 */}
