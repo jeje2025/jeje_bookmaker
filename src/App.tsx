@@ -11,7 +11,9 @@ import { GrammarSelector, type GrammarItem, GRAMMAR_TYPES } from './components/G
 import { GrammarTable } from './components/GrammarTable';
 import { QuestionInput } from './components/QuestionInput';
 import { QuestionView } from './components/QuestionView';
-import type { QuestionItem, HeaderInfo as QuestionHeaderInfo, ViewMode as QuestionViewMode } from './types/question';
+import { VocaPreviewInput } from './components/VocaPreviewInput';
+import type { QuestionItem, HeaderInfo as QuestionHeaderInfo, ViewMode as QuestionViewMode, ExplanationData, VocaPreviewWord } from './types/question';
+import { generateExplanations, generateVocaPreview } from './services/geminiExplanation';
 // import { PDFSaveModal } from './components/PDFSaveModal'; // 모달 없이 바로 저장으로 변경
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog';
 import { Input } from './components/ui/input';
@@ -238,6 +240,13 @@ export default function App() {
   const [questionList, setQuestionList] = useState<QuestionItem[]>([]); // 문제 리스트
   const [questionHeaderInfo, setQuestionHeaderInfo] = useState<QuestionHeaderInfo>({ headerTitle: '2025 동국대 편입', headerDescription: '', footerLeft: '' }); // 문제집 헤더
   const [questionViewMode, setQuestionViewMode] = useState<QuestionViewMode>('question'); // 문제집 뷰모드: 문제지/해설지
+  const [questionExplanations, setQuestionExplanations] = useState<Map<string, ExplanationData>>(new Map()); // 해설 데이터
+  const [isGeneratingExplanations, setIsGeneratingExplanations] = useState(false); // 해설 생성 중
+  const [generationProgress, setGenerationProgress] = useState<{ current: number; total: number } | null>(null); // 해설 생성 진행률
+  const [vocaPreviewWords, setVocaPreviewWords] = useState<VocaPreviewWord[]>([]); // 단어장 데이터
+  const [isGeneratingVocaPreview, setIsGeneratingVocaPreview] = useState(false); // 단어장 생성 중
+  const [vocaPreviewStatus, setVocaPreviewStatus] = useState<string>(''); // 단어장 생성 상태 메시지
+  const geminiApiKey = import.meta.env.VITE_GEMINI_API_KEY || ''; // Gemini API 키 (환경 변수)
   const clickCountRef = useRef(0);
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   
@@ -632,6 +641,133 @@ export default function App() {
     }
   }, [headerInfo, viewMode, unitSize, vocabularyList, colorPalette, fontSize]);
 
+  // AI 해설 데이터 localStorage에 저장 (최근 2개만 유지)
+  const saveExplanationsToLocalStorage = (explanations: Map<string, ExplanationData>, questions: QuestionItem[], vocaWords?: VocaPreviewWord[]) => {
+    try {
+      const timestamp = new Date().toISOString();
+      const record = {
+        id: timestamp,
+        timestamp,
+        headerTitle: questionHeaderInfo.headerTitle,
+        questionCount: questions.length,
+        explanations: Object.fromEntries(explanations), // Map -> Object
+        questions: questions,
+        vocaPreviewWords: vocaWords || [] // 단어장 데이터도 저장
+      };
+
+      // 기존 기록 불러오기
+      const existingData = localStorage.getItem('question-explanations-history');
+      let history: any[] = existingData ? JSON.parse(existingData) : [];
+
+      // 새 기록 추가
+      history.unshift(record);
+
+      // 최근 2개만 유지
+      history = history.slice(0, 2);
+
+      // 저장
+      localStorage.setItem('question-explanations-history', JSON.stringify(history));
+      console.log('📦 해설+단어장 데이터 저장 완료 (최근 2개 유지):', history.length);
+    } catch (error) {
+      console.error('해설 데이터 저장 실패:', error);
+    }
+  };
+
+  // AI 해설 생성 핸들러 (내부 함수) - 해설 + 단어장 동시 생성
+  const doGenerateExplanations = async (questions: QuestionItem[], apiKey: string) => {
+    setIsGeneratingExplanations(true);
+    setGenerationProgress({ current: 0, total: questions.length });
+    toast.info(`${questions.length}개 문제 해설 생성 시작...`, { duration: 2000 });
+
+    try {
+      // 1. 해설 생성
+      const explanations = await generateExplanations(
+        questions,
+        apiKey,
+        (current, total) => {
+          setGenerationProgress({ current, total });
+        }
+      );
+
+      setQuestionExplanations(explanations);
+      toast.success(`${explanations.size}개 해설 생성 완료!`, { duration: 1000 });
+
+      // 2. 단어장도 함께 생성
+      setIsGeneratingVocaPreview(true);
+      setVocaPreviewStatus('단어장 생성 중...');
+      toast.info('단어장 자동 생성 시작...', { duration: 1500 });
+
+      try {
+        const words = await generateVocaPreview(
+          questions,
+          apiKey,
+          (status) => setVocaPreviewStatus(status)
+        );
+        setVocaPreviewWords(words);
+        toast.success(`${words.length}개 단어 추출 완료!`, { duration: 1000 });
+
+        // 해설 + 단어장 모두 완료 후 localStorage에 저장
+        saveExplanationsToLocalStorage(explanations, questions, words);
+      } catch (vocaError) {
+        console.error('단어장 생성 실패:', vocaError);
+        toast.error('단어장 생성에 실패했습니다.', { duration: 1000 });
+        // 단어장 실패해도 해설은 저장
+        saveExplanationsToLocalStorage(explanations, questions);
+      } finally {
+        setIsGeneratingVocaPreview(false);
+        setVocaPreviewStatus('');
+      }
+
+    } catch (error) {
+      console.error('해설 생성 실패:', error);
+      toast.error('해설 생성에 실패했습니다.', { duration: 1000 });
+    } finally {
+      setIsGeneratingExplanations(false);
+      setGenerationProgress(null);
+    }
+  };
+
+  // AI 해설 생성 핸들러 (외부 호출용)
+  const handleGenerateExplanations = useCallback((questions: QuestionItem[]) => {
+    if (!geminiApiKey) {
+      toast.error('.env 파일에 VITE_GEMINI_API_KEY를 설정해주세요.', { duration: 2000 });
+      return;
+    }
+    doGenerateExplanations(questions, geminiApiKey);
+  }, [geminiApiKey]);
+
+  // 단어장 생성 핸들러
+  const handleGenerateVocaPreview = useCallback(async () => {
+    if (!geminiApiKey) {
+      toast.error('.env 파일에 VITE_GEMINI_API_KEY를 설정해주세요.', { duration: 2000 });
+      return;
+    }
+    if (questionList.length === 0) {
+      toast.error('문제 데이터가 없습니다.', { duration: 1000 });
+      return;
+    }
+
+    setIsGeneratingVocaPreview(true);
+    setVocaPreviewStatus('시작...');
+    toast.info('단어장 생성 시작...', { duration: 2000 });
+
+    try {
+      const words = await generateVocaPreview(
+        questionList,
+        geminiApiKey,
+        (status) => setVocaPreviewStatus(status)
+      );
+      setVocaPreviewWords(words);
+      toast.success(`${words.length}개 단어 추출 완료!`, { duration: 1000 });
+    } catch (error) {
+      console.error('단어장 생성 실패:', error);
+      toast.error('단어장 생성에 실패했습니다.', { duration: 1000 });
+    } finally {
+      setIsGeneratingVocaPreview(false);
+      setVocaPreviewStatus('');
+    }
+  }, [geminiApiKey, questionList]);
+
   // 단어 순서 랜덤 섞기 (ID는 1부터 유지)
   const handleShuffleWords = () => {
     const shuffled = [...vocabularyList];
@@ -761,15 +897,43 @@ export default function App() {
               </div>
             </>
           ) : appMode === 'question' ? (
-            /* 문제집 모드 - 문제 데이터 입력 UI */
-            <div className="p-4">
-              <QuestionInput
-                onSave={setQuestionList}
-                data={questionList}
-                headerInfo={questionHeaderInfo}
-                onHeaderChange={setQuestionHeaderInfo}
-              />
-            </div>
+            /* 문제집 모드 */
+            questionViewMode === 'vocaPreview' ? (
+              /* 단어장 모드 - 단어 데이터 입력 UI */
+              <div className="p-4 h-full">
+                <VocaPreviewInput
+                  data={vocaPreviewWords}
+                  onSave={setVocaPreviewWords}
+                  headerInfo={questionHeaderInfo}
+                  onHeaderChange={setQuestionHeaderInfo}
+                  onGenerateVocaPreview={handleGenerateVocaPreview}
+                  isGenerating={isGeneratingVocaPreview}
+                  generatingStatus={vocaPreviewStatus}
+                />
+              </div>
+            ) : (
+              /* 문제집 모드 - 문제 데이터 입력 UI */
+              <div className="p-4">
+                <QuestionInput
+                  onSave={setQuestionList}
+                  data={questionList}
+                  headerInfo={questionHeaderInfo}
+                  onHeaderChange={setQuestionHeaderInfo}
+                  onGenerateExplanations={handleGenerateExplanations}
+                  isGenerating={isGeneratingExplanations}
+                  explanations={questionExplanations}
+                  generationProgress={generationProgress ?? undefined}
+                  onLoadExplanationHistory={(questions, explanations, headerTitle, vocaWords) => {
+                    setQuestionList(questions);
+                    setQuestionExplanations(explanations);
+                    setQuestionHeaderInfo(prev => ({ ...prev, headerTitle }));
+                    if (vocaWords && vocaWords.length > 0) {
+                      setVocaPreviewWords(vocaWords);
+                    }
+                  }}
+                />
+              </div>
+            )
           ) : (
             /* 구문교재 모드 - 문법 요소 선택 UI */
             <GrammarSelector
@@ -989,6 +1153,17 @@ export default function App() {
                 <List size={14} />
                 어휘 문제지
               </button>
+              <button
+                onClick={() => setQuestionViewMode('vocaPreview')}
+                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  questionViewMode === 'vocaPreview'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <BookOpen size={14} />
+                단어장
+              </button>
               <div className="shrink-0 px-3 py-1.5 text-sm text-slate-600">
                 <span className="font-medium">{questionList.length}</span>개 문제
               </div>
@@ -1131,13 +1306,23 @@ export default function App() {
                 )
               ) : appMode === 'question' ? (
                 // 문제집 모드
-                questionList.length > 0 ? (
+                (questionList.length > 0 || (questionViewMode === 'vocaPreview' && vocaPreviewWords.length > 0)) ? (
                   <QuestionView
                     viewMode={questionViewMode}
                     data={questionList}
                     headerInfo={questionHeaderInfo}
+                    explanations={questionExplanations}
                     onHeaderChange={setQuestionHeaderInfo}
+                    vocaPreviewWords={vocaPreviewWords}
+                    onVocaPreviewWordsChange={setVocaPreviewWords}
                   />
+                ) : questionViewMode === 'vocaPreview' ? (
+                  <div className="flex items-center justify-center h-64 text-slate-400">
+                    <div className="text-center">
+                      <p className="text-lg mb-2">단어장 데이터가 없습니다</p>
+                      <p className="text-sm">왼쪽에서 AI 단어장 생성 버튼을 클릭하거나 직접 입력하세요</p>
+                    </div>
+                  </div>
                 ) : (
                   <div className="flex items-center justify-center h-64 text-slate-400">
                     <div className="text-center">

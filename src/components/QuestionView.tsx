@@ -2,8 +2,9 @@ import { memo, useMemo } from 'react';
 import { QuestionCard } from './QuestionCard';
 import { HeaderFooter } from './HeaderFooter';
 import { A4PageLayout } from './A4PageLayout';
+import { ExplanationView } from './ExplanationView';
 import { scaledSize } from '../utils/fontScale';
-import type { QuestionItem, HeaderInfo, ViewMode } from '../types/question';
+import type { QuestionItem, HeaderInfo, ViewMode, ExplanationData, VocaPreviewWord } from '../types/question';
 
 // 어휘 문제에서 단어 추출 (밑줄 표시된 단어)
 const extractUnderlinedWord = (passage: string): string | null => {
@@ -99,7 +100,10 @@ interface QuestionViewProps {
   data: QuestionItem[];
   headerInfo: HeaderInfo;
   unitNumber?: number;
+  explanations?: Map<string, ExplanationData>;  // questionId -> ExplanationData
   onHeaderChange: (updated: Partial<HeaderInfo>) => void;
+  vocaPreviewWords?: VocaPreviewWord[];
+  onVocaPreviewWordsChange?: (words: VocaPreviewWord[]) => void;
 }
 
 // 같은 발문을 가진 연속 문제들을 그룹핑
@@ -247,58 +251,156 @@ const AnalysisSidebar = ({ categoryMain, categorySub }: { categoryMain: string; 
   );
 };
 
-// 문제 그룹 + 사이드바 레이아웃
-const QuestionGroupWithSidebar = ({
-  group,
-  showAnswer
+// 개별 문제 컴포넌트 (사이드바 없이)
+const QuestionOnly = ({
+  item,
+  showAnswer,
+  showInstruction,
+  isLastInGroup
 }: {
-  group: { instruction: string; items: QuestionItem[] };
+  item: QuestionItem;
   showAnswer: boolean;
+  showInstruction: boolean;
+  isLastInGroup: boolean;
 }) => {
-  // 그룹의 첫 문제 유형으로 사이드바 결정
-  const categoryMain = group.items[0]?.categoryMain || '';
-  const categorySub = group.items[0]?.categorySub || '';
-
   return (
-    <div className="question-group-layout">
-      {/* 좌측: 문제들 */}
-      <div className="questions-column">
-        {group.items.map((item, idx) => (
-          <QuestionCard
-            key={item.id}
-            item={item}
-            showAnswer={showAnswer}
-            showInstruction={idx === 0}
-          />
-        ))}
-      </div>
-
-      {/* 우측: 분석 영역 */}
-      <div className="sidebar-column">
-        <AnalysisSidebar categoryMain={categoryMain} categorySub={categorySub} />
-      </div>
+    <div className="question-only-item" style={{ marginBottom: isLastInGroup ? '16px' : '0' }}>
+      <QuestionCard
+        item={item}
+        showAnswer={showAnswer}
+        showInstruction={showInstruction}
+      />
     </div>
   );
 };
+
+// 사이드바만 있는 컴포넌트
+const SidebarOnly = ({
+  categoryMain,
+  categorySub
+}: {
+  categoryMain: string;
+  categorySub: string;
+}) => {
+  return (
+    <div className="sidebar-only-item">
+      <AnalysisSidebar categoryMain={categoryMain} categorySub={categorySub} />
+    </div>
+  );
+};
+
+// 단어장 프리뷰 행 컴포넌트 (이미지 스타일)
+const VocaPreviewRow = ({
+  left,
+  right,
+  showLeftNumber,
+  showRightNumber
+}: {
+  left: VocaPreviewWord;
+  right: VocaPreviewWord | null;
+  showLeftNumber: boolean;
+  showRightNumber: boolean;
+}) => (
+  <tr style={{ borderBottom: '1px solid #e5e7eb' }}>
+    {/* 왼쪽 - 번호 */}
+    <td style={{ width: '4%', padding: '3px 4px', verticalAlign: 'middle' }}>
+      {showLeftNumber && (
+        <span style={{ fontSize: scaledSize(9), color: 'var(--primary-color, #be185d)', fontWeight: 600 }}>
+          {left.questionNumber}
+        </span>
+      )}
+    </td>
+    {/* 왼쪽 - 단어 */}
+    <td style={{ width: '18%', padding: '3px 6px', verticalAlign: 'middle' }}>
+      <span style={{ fontSize: scaledSize(10), fontWeight: 500 }}>
+        {left.word}
+      </span>
+    </td>
+    {/* 왼쪽 - 뜻 */}
+    <td style={{ width: '28%', padding: '3px 6px', verticalAlign: 'middle' }}>
+      <span style={{ fontSize: scaledSize(9), color: '#4b5563' }}>
+        {left.meaning}
+      </span>
+    </td>
+    {/* 오른쪽 - 번호 */}
+    <td style={{ width: '4%', padding: '3px 4px', verticalAlign: 'middle' }}>
+      {right && showRightNumber && (
+        <span style={{ fontSize: scaledSize(9), color: 'var(--primary-color, #be185d)', fontWeight: 600 }}>
+          {right.questionNumber}
+        </span>
+      )}
+    </td>
+    {/* 오른쪽 - 단어 */}
+    <td style={{ width: '18%', padding: '3px 6px', verticalAlign: 'middle' }}>
+      {right && (
+        <span style={{ fontSize: scaledSize(10), fontWeight: 500 }}>
+          {right.word}
+        </span>
+      )}
+    </td>
+    {/* 오른쪽 - 뜻 */}
+    <td style={{ width: '28%', padding: '3px 6px', verticalAlign: 'middle' }}>
+      {right && (
+        <span style={{ fontSize: scaledSize(9), color: '#4b5563' }}>
+          {right.meaning}
+        </span>
+      )}
+    </td>
+  </tr>
+);
 
 export const QuestionView = memo(function QuestionView({
   viewMode,
   data,
   headerInfo,
   unitNumber,
+  explanations,
   onHeaderChange,
+  vocaPreviewWords,
+  onVocaPreviewWordsChange,
 }: QuestionViewProps) {
   const groupedQuestions = useMemo(() => groupByInstruction(data), [data]);
 
-  // 각 그룹을 별도 children으로 전달
+  // 각 문제를 개별 단위로 전달 (페이지 분할 가능)
+  // 사이드바는 그룹 첫 문제에만 표시
   const pageChildren = useMemo(() => {
-    return groupedQuestions.map((group, idx) => (
-      <QuestionGroupWithSidebar
-        key={idx}
-        group={group}
-        showAnswer={viewMode === 'answer'}
-      />
-    ));
+    const children: React.ReactNode[] = [];
+
+    groupedQuestions.forEach((group, groupIdx) => {
+      const categoryMain = group.items[0]?.categoryMain || '';
+      const categorySub = group.items[0]?.categorySub || '';
+
+      group.items.forEach((item, itemIdx) => {
+        const isFirst = itemIdx === 0;
+        const isLast = itemIdx === group.items.length - 1;
+        const isVocab = item.categoryMain === '어휘';
+
+        children.push(
+          <div
+            key={`${groupIdx}-${item.id}`}
+            className="question-row-with-sidebar"
+            style={{ marginBottom: isLast ? '20px' : '8px' }}
+          >
+            {/* 문제 영역 (60%) */}
+            <div className="questions-column">
+              <QuestionCard
+                item={item}
+                showAnswer={viewMode === 'answer'}
+                showInstruction={isFirst}
+              />
+            </div>
+            {/* 사이드바 영역 (40%) - 어휘는 그룹 첫 문제에만, 나머지는 매 문제마다 */}
+            <div className="sidebar-column">
+              {(isVocab ? isFirst : true) && (
+                <AnalysisSidebar categoryMain={item.categoryMain} categorySub={item.categorySub} />
+              )}
+            </div>
+          </div>
+        );
+      });
+    });
+
+    return children;
   }, [groupedQuestions, viewMode]);
 
   if (viewMode === 'question') {
@@ -322,23 +424,16 @@ export const QuestionView = memo(function QuestionView({
 
   if (viewMode === 'answer') {
     return (
-      <A4PageLayout
-        headerContent={
-          <HeaderFooter
-            headerInfo={{
-              ...headerInfo,
-              headerTitle: headerInfo.headerTitle + ' - 해설지',
-            }}
-            showFooter={false}
-            isEditable={false}
-            onHeaderChange={onHeaderChange}
-            unitNumber={unitNumber}
-          />
-        }
-        showHeaderOnFirstPageOnly={true}
-      >
-        {pageChildren}
-      </A4PageLayout>
+      <ExplanationView
+        data={data}
+        headerInfo={{
+          ...headerInfo,
+          headerTitle: headerInfo.headerTitle + ' - 해설지',
+        }}
+        unitNumber={unitNumber}
+        explanations={explanations}
+        onHeaderChange={onHeaderChange}
+      />
     );
   }
 
@@ -384,6 +479,134 @@ export const QuestionView = memo(function QuestionView({
         showHeaderOnFirstPageOnly={true}
       >
         {tableRows}
+      </A4PageLayout>
+    );
+  }
+
+  // 단어장 프리뷰 뷰모드 - 외부에서 제공한 단어 데이터를 2열 표로 표시
+  if (viewMode === 'vocaPreview') {
+    const words = vocaPreviewWords || [];
+
+    if (words.length === 0) {
+      return (
+        <div className="flex items-center justify-center h-64 text-slate-400">
+          <div className="text-center">
+            <p className="text-lg mb-2">단어장 데이터가 없습니다</p>
+            <p className="text-sm">사이드바에서 단어를 입력해주세요</p>
+          </div>
+        </div>
+      );
+    }
+
+    // 페이지당 행 수 (2열이므로 한 페이지에 ROWS_PER_PAGE * 2개 단어)
+    const ROWS_PER_PAGE = 28;
+    const WORDS_PER_PAGE = ROWS_PER_PAGE * 2; // 한 페이지당 56개 단어
+
+    type PairedWord = {
+      left: VocaPreviewWord;
+      right: VocaPreviewWord | null;
+      showLeftNumber: boolean;
+      showRightNumber: boolean;
+    };
+
+    // 페이지별로 단어 분할 후, 각 페이지 내에서 1열→2열 배치
+    const pages: PairedWord[][] = [];
+
+    for (let pageStart = 0; pageStart < words.length; pageStart += WORDS_PER_PAGE) {
+      const pageWords = words.slice(pageStart, pageStart + WORDS_PER_PAGE);
+      const pageRows: PairedWord[] = [];
+
+      // 이 페이지 내에서 1열 다 채우고 2열 채우기
+      const halfPoint = Math.ceil(pageWords.length / 2);
+
+      let prevLeftNum = -1;
+      let prevRightNum = -1;
+
+      for (let i = 0; i < halfPoint; i++) {
+        const left = pageWords[i];
+        const right = pageWords[i + halfPoint] || null;
+
+        // 왼쪽 열: 이전 왼쪽 번호와 다르면 표시
+        const showLeftNumber = left.questionNumber !== prevLeftNum;
+        // 오른쪽 열: 이전 오른쪽 번호와 다르면 표시
+        const showRightNumber = right ? right.questionNumber !== prevRightNum : false;
+
+        pageRows.push({
+          left,
+          right,
+          showLeftNumber,
+          showRightNumber
+        });
+
+        prevLeftNum = left.questionNumber;
+        if (right) prevRightNum = right.questionNumber;
+      }
+
+      pages.push(pageRows);
+    }
+
+    // 페이지별 테이블 생성
+    const pageTables = pages.map((pageRows, pageIndex) => (
+      <div key={pageIndex} style={{ marginBottom: pageIndex < pages.length - 1 ? '20px' : 0 }}>
+        <table className="w-full border-collapse" style={{
+          tableLayout: 'fixed',
+          border: '1px solid var(--primary-color, #be185d)',
+          borderRadius: '8px',
+          overflow: 'hidden'
+        }}>
+          <tbody>
+            {pageRows.map((pair, rowIndex) => (
+              <VocaPreviewRow
+                key={rowIndex}
+                left={pair.left}
+                right={pair.right}
+                showLeftNumber={pair.showLeftNumber}
+                showRightNumber={pair.showRightNumber}
+              />
+            ))}
+            {/* 페이지가 32행 미만이면 빈 행으로 채우기 */}
+            {pageRows.length < ROWS_PER_PAGE && Array(ROWS_PER_PAGE - pageRows.length).fill(null).map((_, i) => (
+              <tr key={`empty-${i}`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                <td style={{ width: '4%', padding: '3px 4px' }}>&nbsp;</td>
+                <td style={{ width: '18%', padding: '3px 6px' }}>&nbsp;</td>
+                <td style={{ width: '28%', padding: '3px 6px' }}>&nbsp;</td>
+                <td style={{ width: '4%', padding: '3px 4px' }}>&nbsp;</td>
+                <td style={{ width: '18%', padding: '3px 6px' }}>&nbsp;</td>
+                <td style={{ width: '28%', padding: '3px 6px' }}>&nbsp;</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ));
+
+    return (
+      <A4PageLayout
+        headerContent={
+          <HeaderFooter
+            headerInfo={{
+              ...headerInfo,
+              headerTitle: 'Voca Preview',
+              headerDescription: headerInfo.headerTitle,
+            }}
+            showFooter={false}
+            isEditable={false}
+            onHeaderChange={onHeaderChange}
+            unitNumber={unitNumber}
+          />
+        }
+        footerContent={
+          headerInfo.footerLeft ? (
+            <div className="mt-4 pt-2">
+              <p style={{ fontSize: scaledSize(11), fontFamily: 'SUIT' }} className="text-gray-600 print:text-black">
+                {headerInfo.footerLeft}
+              </p>
+            </div>
+          ) : null
+        }
+        showHeaderOnFirstPageOnly={true}
+      >
+        {pageTables}
       </A4PageLayout>
     );
   }

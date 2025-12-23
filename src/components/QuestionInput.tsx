@@ -3,13 +3,31 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { toast } from 'sonner';
-import type { QuestionItem, HeaderInfo } from '../types/question';
+import { ChevronDown, ChevronUp, RotateCcw, Clock } from 'lucide-react';
+import type { QuestionItem, HeaderInfo, ExplanationData, VocaPreviewWord } from '../types/question';
+import { DEFAULT_PROMPTS, PROMPT_LABELS, setCustomPrompts } from '../services/geminiExplanation';
+
+// 해설 기록 타입
+interface ExplanationHistoryRecord {
+  id: string;
+  timestamp: string;
+  headerTitle: string;
+  questionCount: number;
+  explanations: Record<string, ExplanationData>;
+  questions: QuestionItem[];
+  vocaPreviewWords?: VocaPreviewWord[]; // 단어장 데이터
+}
 
 interface QuestionInputProps {
   onSave: (data: QuestionItem[]) => void;
   data: QuestionItem[];
   headerInfo: HeaderInfo;
   onHeaderChange: (info: HeaderInfo) => void;
+  onGenerateExplanations?: (questions: QuestionItem[]) => void;
+  isGenerating?: boolean;
+  explanations?: Map<string, ExplanationData>;
+  generationProgress?: { current: number; total: number };
+  onLoadExplanationHistory?: (questions: QuestionItem[], explanations: Map<string, ExplanationData>, headerTitle: string, vocaWords?: VocaPreviewWord[]) => void;
 }
 
 // 셀 데이터 인터페이스 (그리드용)
@@ -120,7 +138,7 @@ const convertToQuestionItem = (cells: CellData[]): QuestionItem[] => {
     }));
 };
 
-export function QuestionInput({ onSave, data, headerInfo, onHeaderChange }: QuestionInputProps) {
+export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGenerateExplanations, isGenerating, explanations, generationProgress, onLoadExplanationHistory }: QuestionInputProps) {
   const [rows, setRows] = useState<CellData[]>(() => {
     if (data && data.length > 0) {
       return convertToCellData(data);
@@ -129,11 +147,48 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange }: Ques
   });
 
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number } | null>(null);
+
+  // 해설 기록 상태
+  const [explanationHistory, setExplanationHistory] = useState<ExplanationHistoryRecord[]>([]);
+
+  // 프롬프트 편집 상태
+  const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
+  const [selectedPromptType, setSelectedPromptType] = useState<string>('vocabulary');
+  const [editedPrompts, setEditedPrompts] = useState<Record<string, string>>(() => {
+    // localStorage에서 저장된 프롬프트 불러오기
+    const saved = localStorage.getItem('custom-prompts');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setCustomPrompts(parsed);
+        return parsed;
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  });
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | HTMLTextAreaElement | null }>({});
   const tableRef = useRef<HTMLDivElement>(null);
 
   // 내부 변경인지 외부 변경인지 구분하기 위한 ref
   const isInternalChange = useRef(false);
+
+  // 해설 기록 불러오기
+  useEffect(() => {
+    const loadHistory = () => {
+      try {
+        const historyData = localStorage.getItem('question-explanations-history');
+        if (historyData) {
+          const parsed = JSON.parse(historyData);
+          setExplanationHistory(parsed);
+        }
+      } catch (error) {
+        console.error('해설 기록 불러오기 실패:', error);
+      }
+    };
+    loadHistory();
+  }, [explanations]); // explanations가 변경되면 기록 새로고침
 
   // data prop 변경 시 rows 업데이트 (외부에서 변경된 경우만)
   useEffect(() => {
@@ -358,8 +413,8 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange }: Ques
       {/* 엑셀 그리드 */}
       <div
         ref={tableRef}
-        className="flex-1 overflow-auto border border-gray-300 rounded"
-        style={{ minHeight: '400px' }}
+        className="overflow-auto border border-gray-300 rounded"
+        style={{ height: '300px', maxHeight: '300px' }}
       >
         <table className="border-collapse" style={{ minWidth: '1600px' }}>
           <thead className="sticky top-0 bg-gray-100 z-10">
@@ -442,6 +497,195 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange }: Ques
       <div className="mt-3 text-xs text-slate-500 flex-shrink-0">
         <p>💡 팁: 엑셀에서 데이터를 복사(Ctrl+C)한 후 첫 번째 셀에 붙여넣기(Ctrl+V)하면 자동으로 채워집니다.</p>
       </div>
+
+      {/* AI 해설 생성 섹션 */}
+      {onGenerateExplanations && (
+        <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
+          {/* 프롬프트 편집기 */}
+          <div className="mb-4">
+            <button
+              onClick={() => setIsPromptEditorOpen(!isPromptEditorOpen)}
+              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
+            >
+              {isPromptEditorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              <span>프롬프트 설정</span>
+              {Object.keys(editedPrompts).length > 0 && (
+                <span className="text-xs text-purple-600">(수정됨)</span>
+              )}
+            </button>
+
+            {isPromptEditorOpen && (
+              <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                {/* 유형 선택 탭 */}
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {Object.keys(DEFAULT_PROMPTS).map((key) => (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedPromptType(key)}
+                      className={`px-2 py-1 text-xs rounded transition-colors ${
+                        selectedPromptType === key
+                          ? 'bg-purple-600 text-white'
+                          : editedPrompts[key]
+                          ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                      }`}
+                    >
+                      {PROMPT_LABELS[key]}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 프롬프트 편집 영역 */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs text-gray-600">
+                      {PROMPT_LABELS[selectedPromptType]} 프롬프트
+                    </Label>
+                    <div className="flex gap-2">
+                      {editedPrompts[selectedPromptType] && (
+                        <button
+                          onClick={() => {
+                            const newPrompts = { ...editedPrompts };
+                            delete newPrompts[selectedPromptType];
+                            setEditedPrompts(newPrompts);
+                            setCustomPrompts(newPrompts);
+                            localStorage.setItem('custom-prompts', JSON.stringify(newPrompts));
+                            toast.success('기본값으로 초기화됨', { duration: 1000 });
+                          }}
+                          className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                        >
+                          <RotateCcw size={12} />
+                          초기화
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <textarea
+                    value={editedPrompts[selectedPromptType] || DEFAULT_PROMPTS[selectedPromptType]}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const defaultValue = DEFAULT_PROMPTS[selectedPromptType];
+
+                      // 기본값과 동일하면 커스텀에서 제거, 다르면 저장
+                      const newPrompts = { ...editedPrompts };
+                      if (value === defaultValue) {
+                        delete newPrompts[selectedPromptType];
+                      } else {
+                        newPrompts[selectedPromptType] = value;
+                      }
+
+                      setEditedPrompts(newPrompts);
+                      setCustomPrompts(newPrompts);
+                      localStorage.setItem('custom-prompts', JSON.stringify(newPrompts));
+                    }}
+                    className="w-full h-48 p-2 text-xs font-mono bg-white border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="프롬프트를 입력하세요..."
+                  />
+                  <p className="text-xs text-gray-500">
+                    사용 가능한 변수: {'{{passage}}'}, {'{{choices}}'}, {'{{answer}}'}, {'{{instruction}}'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* 생성 버튼 영역 */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-medium text-gray-700">AI 해설 생성</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                입력된 문제를 분석하여 유형별 해설을 자동으로 생성합니다.
+                {explanations && explanations.size > 0 && (
+                  <span className="ml-2 text-green-600">
+                    ({explanations.size}개 해설 생성됨)
+                  </span>
+                )}
+              </p>
+            </div>
+            <Button
+              onClick={() => {
+                const questions = convertToQuestionItem(rows);
+                if (questions.length === 0) {
+                  toast.error('문제 데이터가 없습니다', { duration: 1000 });
+                  return;
+                }
+                onGenerateExplanations(questions);
+              }}
+              disabled={isGenerating || rows.every(r => !r.id && !r.passage)}
+              className="bg-slate-800 hover:bg-slate-700 text-white"
+            >
+              {isGenerating ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  생성 중...
+                </>
+              ) : (
+                <>
+                  🤖 AI 해설 생성
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* 프로그레스바 */}
+          {isGenerating && generationProgress && (
+            <div className="mt-3">
+              <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
+                <span>해설 생성 중...</span>
+                <span>{generationProgress.current} / {generationProgress.total}</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-slate-800 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* 최근 해설 기록 */}
+          {explanationHistory.length > 0 && onLoadExplanationHistory && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock size={14} className="text-slate-600" />
+                <h4 className="text-sm font-medium text-gray-700">최근 해설 기록</h4>
+                <span className="text-xs text-slate-400">(최근 2개 유지)</span>
+              </div>
+              <div className="space-y-2">
+                {explanationHistory.map((record) => (
+                  <button
+                    key={record.id}
+                    onClick={() => {
+                      // Record<string, ExplanationData>를 Map으로 변환
+                      const explanationsMap = new Map(Object.entries(record.explanations));
+                      onLoadExplanationHistory(record.questions, explanationsMap, record.headerTitle, record.vocaPreviewWords);
+                      toast.success('해설 기록을 불러왔습니다!', { duration: 1000 });
+                    }}
+                    className="w-full text-left p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors"
+                  >
+                    <p className="text-xs text-slate-900 font-medium truncate">
+                      {record.headerTitle || '제목 없음'}
+                    </p>
+                    <div className="flex items-center justify-between mt-1">
+                      <p className="text-xs text-slate-500">
+                        {new Date(record.timestamp).toLocaleDateString('ko-KR', {
+                          month: 'numeric',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                      <p className="text-xs text-slate-600 font-medium">
+                        {record.questionCount}문제 · {Object.keys(record.explanations).length}해설
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
