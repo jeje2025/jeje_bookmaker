@@ -2,10 +2,86 @@ import { useState, useRef, useEffect, KeyboardEvent, ClipboardEvent } from 'reac
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import { toast } from 'sonner';
-import { ChevronDown, ChevronUp, RotateCcw } from 'lucide-react';
+import { RotateCcw, Maximize2, Minimize2, Settings } from 'lucide-react';
 import type { QuestionItem, HeaderInfo, ExplanationData } from '../types/question';
 import { DEFAULT_PROMPTS, PROMPT_LABELS, setCustomPrompts } from '../services/geminiExplanation';
+
+// AI 제공자 타입
+type AIProvider = 'gemini' | 'openai' | 'claude';
+
+// AI 설정 인터페이스
+interface AISettings {
+  provider: AIProvider;
+  model: string;
+  apiKeys: {
+    gemini: string;
+    openai: string;
+    claude: string;
+  };
+}
+
+// AI 제공자별 모델 목록
+const AI_MODELS: Record<AIProvider, { value: string; label: string }[]> = {
+  gemini: [
+    { value: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash (추천)' },
+    { value: 'gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+    { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+  ],
+  openai: [
+    { value: 'gpt-4o', label: 'GPT-4o (추천)' },
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo' },
+  ],
+  claude: [
+    { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4 (추천)' },
+    { value: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
+    { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
+  ],
+};
+
+const AI_PROVIDER_LABELS: Record<AIProvider, string> = {
+  gemini: '🟡 Gemini (Google)',
+  openai: '🟢 ChatGPT (OpenAI)',
+  claude: '🟠 Claude (Anthropic)',
+};
+
+// 환경 변수에서 API 키 불러오기
+const ENV_API_KEYS = {
+  gemini: import.meta.env.VITE_GEMINI_API_KEY || '',
+  openai: import.meta.env.VITE_OPENAI_API_KEY || '',
+  claude: import.meta.env.VITE_CLAUDE_API_KEY || '',
+};
+
+// 기본 AI 설정
+const DEFAULT_AI_SETTINGS: AISettings = {
+  provider: 'gemini',
+  model: 'gemini-2.0-flash',
+  apiKeys: ENV_API_KEYS,
+};
+
+// AI 설정을 localStorage에서 불러오기
+const loadAISettings = (): AISettings => {
+  const saved = localStorage.getItem('ai-settings');
+  if (saved) {
+    try {
+      return { ...DEFAULT_AI_SETTINGS, ...JSON.parse(saved) };
+    } catch {
+      return DEFAULT_AI_SETTINGS;
+    }
+  }
+  return DEFAULT_AI_SETTINGS;
+};
+
+// AI 설정을 localStorage에 저장
+const saveAISettings = (settings: AISettings) => {
+  localStorage.setItem('ai-settings', JSON.stringify(settings));
+};
+
+// 현재 AI 설정 내보내기 (다른 컴포넌트에서 사용)
+export const getAISettings = loadAISettings;
 
 interface QuestionInputProps {
   onSave: (data: QuestionItem[]) => void;
@@ -16,6 +92,8 @@ interface QuestionInputProps {
   isGenerating?: boolean;
   explanations?: Map<string, ExplanationData>;
   generationProgress?: { current: number; total: number };
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
 // 셀 데이터 인터페이스 (그리드용)
@@ -33,12 +111,14 @@ interface CellData {
   choice4: string;
   choice5: string;
   answer: string;
+  hint: string;
+  explanation: string;
 }
 
 // 컬럼 정의
 const columns: (keyof CellData)[] = [
   'id', 'year', 'questionNumber', 'categoryMain', 'categorySub',
-  'instruction', 'passage', 'choice1', 'choice2', 'choice3', 'choice4', 'choice5', 'answer'
+  'instruction', 'passage', 'choice1', 'choice2', 'choice3', 'choice4', 'choice5', 'answer', 'hint', 'explanation'
 ];
 
 const columnLabels: { [key in keyof CellData]: string } = {
@@ -54,7 +134,9 @@ const columnLabels: { [key in keyof CellData]: string } = {
   choice3: '3',
   choice4: '4',
   choice5: '5',
-  answer: '정답'
+  answer: '정답',
+  hint: '힌트',
+  explanation: '해설'
 };
 
 const columnWidths: { [key in keyof CellData]: string } = {
@@ -70,7 +152,9 @@ const columnWidths: { [key in keyof CellData]: string } = {
   choice3: '100px',
   choice4: '100px',
   choice5: '100px',
-  answer: '50px'
+  answer: '50px',
+  hint: '150px',
+  explanation: '250px'
 };
 
 // 빈 행 생성
@@ -87,7 +171,9 @@ const createEmptyRow = (): CellData => ({
   choice3: '',
   choice4: '',
   choice5: '',
-  answer: ''
+  answer: '',
+  hint: '',
+  explanation: ''
 });
 
 // QuestionItem을 CellData로 변환
@@ -105,7 +191,9 @@ const convertToCellData = (items: QuestionItem[]): CellData[] => {
     choice3: item.choices[2] || '',
     choice4: item.choices[3] || '',
     choice5: item.choices[4] || '',
-    answer: item.answer
+    answer: item.answer,
+    hint: item.hint || '',
+    explanation: item.explanation || ''
   }));
 };
 
@@ -122,11 +210,13 @@ const convertToQuestionItem = (cells: CellData[]): QuestionItem[] => {
       instruction: cell.instruction,
       passage: cell.passage,
       choices: [cell.choice1, cell.choice2, cell.choice3, cell.choice4, cell.choice5],
-      answer: cell.answer
+      answer: cell.answer,
+      hint: cell.hint || undefined,
+      explanation: cell.explanation || undefined
     }));
 };
 
-export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGenerateExplanations, isGenerating, explanations, generationProgress }: QuestionInputProps) {
+export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGenerateExplanations, isGenerating, explanations, generationProgress, isExpanded, onToggleExpand }: QuestionInputProps) {
   const [rows, setRows] = useState<CellData[]>(() => {
     if (data && data.length > 0) {
       return convertToCellData(data);
@@ -153,6 +243,24 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
     }
     return {};
   });
+
+  // AI 설정 상태
+  const [aiSettings, setAiSettings] = useState<AISettings>(loadAISettings);
+  const [settingsTab, setSettingsTab] = useState<'ai' | 'prompts'>('ai');
+
+  // AI 설정 변경 핸들러
+  const handleAISettingsChange = (newSettings: Partial<AISettings>) => {
+    const updated = { ...aiSettings, ...newSettings };
+    setAiSettings(updated);
+    saveAISettings(updated);
+  };
+
+  // AI 제공자 변경 시 기본 모델도 변경
+  const handleProviderChange = (provider: AIProvider) => {
+    const defaultModel = AI_MODELS[provider][0].value;
+    handleAISettingsChange({ provider, model: defaultModel });
+  };
+
   const inputRefs = useRef<{ [key: string]: HTMLInputElement | HTMLTextAreaElement | null }>({});
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -343,7 +451,7 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
 
   // 긴 텍스트 컬럼인지 확인
   const isLongTextColumn = (col: keyof CellData) => {
-    return col === 'instruction' || col === 'passage';
+    return col === 'instruction' || col === 'passage' || col === 'hint' || col === 'explanation';
   };
 
   return (
@@ -384,6 +492,18 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
         <Button onClick={clearAll} variant="outline" size="sm">
           전체 비우기
         </Button>
+        {onToggleExpand && (
+          <Button
+            onClick={onToggleExpand}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-1"
+            title={isExpanded ? '사이드바 축소' : '사이드바 확장'}
+          >
+            {isExpanded ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            {isExpanded ? '축소' : '확장'}
+          </Button>
+        )}
         <span className="text-xs text-slate-500 self-center ml-auto">
           엑셀에서 복사 후 붙여넣기 가능 · 방향키로 셀 이동
         </span>
@@ -392,10 +512,10 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
       {/* 엑셀 그리드 */}
       <div
         ref={tableRef}
-        className="overflow-auto border border-gray-300 rounded"
-        style={{ height: '300px', maxHeight: '300px' }}
+        className="overflow-auto border border-gray-300 rounded flex-1"
+        style={{ minHeight: '300px' }}
       >
-        <table className="border-collapse" style={{ minWidth: '1600px' }}>
+        <table className="border-collapse" style={{ minWidth: '2000px' }}>
           <thead className="sticky top-0 bg-gray-100 z-10">
             <tr>
               <th className="border border-gray-300 px-2 py-2 text-xs w-10">#</th>
@@ -480,94 +600,6 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
       {/* AI 해설 생성 섹션 */}
       {onGenerateExplanations && (
         <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
-          {/* 프롬프트 편집기 */}
-          <div className="mb-4">
-            <button
-              onClick={() => setIsPromptEditorOpen(!isPromptEditorOpen)}
-              className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800"
-            >
-              {isPromptEditorOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-              <span>프롬프트 설정</span>
-              {Object.keys(editedPrompts).length > 0 && (
-                <span className="text-xs text-purple-600">(수정됨)</span>
-              )}
-            </button>
-
-            {isPromptEditorOpen && (
-              <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                {/* 유형 선택 탭 */}
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {Object.keys(DEFAULT_PROMPTS).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => setSelectedPromptType(key)}
-                      className={`px-2 py-1 text-xs rounded transition-colors ${
-                        selectedPromptType === key
-                          ? 'bg-purple-600 text-white'
-                          : editedPrompts[key]
-                          ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                          : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                      }`}
-                    >
-                      {PROMPT_LABELS[key]}
-                    </button>
-                  ))}
-                </div>
-
-                {/* 프롬프트 편집 영역 */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs text-gray-600">
-                      {PROMPT_LABELS[selectedPromptType]} 프롬프트
-                    </Label>
-                    <div className="flex gap-2">
-                      {editedPrompts[selectedPromptType] && (
-                        <button
-                          onClick={() => {
-                            const newPrompts = { ...editedPrompts };
-                            delete newPrompts[selectedPromptType];
-                            setEditedPrompts(newPrompts);
-                            setCustomPrompts(newPrompts);
-                            localStorage.setItem('custom-prompts', JSON.stringify(newPrompts));
-                            toast.success('기본값으로 초기화됨', { duration: 1000 });
-                          }}
-                          className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1"
-                        >
-                          <RotateCcw size={12} />
-                          초기화
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <textarea
-                    value={editedPrompts[selectedPromptType] || DEFAULT_PROMPTS[selectedPromptType]}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      const defaultValue = DEFAULT_PROMPTS[selectedPromptType];
-
-                      // 기본값과 동일하면 커스텀에서 제거, 다르면 저장
-                      const newPrompts = { ...editedPrompts };
-                      if (value === defaultValue) {
-                        delete newPrompts[selectedPromptType];
-                      } else {
-                        newPrompts[selectedPromptType] = value;
-                      }
-
-                      setEditedPrompts(newPrompts);
-                      setCustomPrompts(newPrompts);
-                      localStorage.setItem('custom-prompts', JSON.stringify(newPrompts));
-                    }}
-                    className="w-full h-48 p-2 text-xs font-mono bg-white border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-purple-500"
-                    placeholder="프롬프트를 입력하세요..."
-                  />
-                  <p className="text-xs text-gray-500">
-                    사용 가능한 변수: {'{{passage}}'}, {'{{choices}}'}, {'{{answer}}'}, {'{{instruction}}'}
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-
           {/* 생성 버튼 영역 */}
           <div className="flex items-center justify-between">
             <div>
@@ -581,29 +613,44 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
                 )}
               </p>
             </div>
-            <Button
-              onClick={() => {
-                const questions = convertToQuestionItem(rows);
-                if (questions.length === 0) {
-                  toast.error('문제 데이터가 없습니다', { duration: 1000 });
-                  return;
-                }
-                onGenerateExplanations(questions);
-              }}
-              disabled={isGenerating || rows.every(r => !r.id && !r.passage)}
-              className="bg-slate-800 hover:bg-slate-700 text-white"
-            >
-              {isGenerating ? (
-                <>
-                  <span className="animate-spin mr-2">⏳</span>
-                  생성 중...
-                </>
-              ) : (
-                <>
-                  🤖 AI 해설 생성
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              {/* AI 설정 버튼 */}
+              <Button
+                onClick={() => {
+                  setSettingsTab('ai');
+                  setIsPromptEditorOpen(true);
+                }}
+                variant="outline"
+                size="sm"
+                className="flex items-center gap-1"
+              >
+                <Settings size={14} />
+                AI 설정
+              </Button>
+              <Button
+                onClick={() => {
+                  const questions = convertToQuestionItem(rows);
+                  if (questions.length === 0) {
+                    toast.error('문제 데이터가 없습니다', { duration: 1000 });
+                    return;
+                  }
+                  onGenerateExplanations(questions);
+                }}
+                disabled={isGenerating || rows.every(r => !r.id && !r.passage)}
+                className="bg-slate-800 hover:bg-slate-700 text-white"
+              >
+                {isGenerating ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    생성 중...
+                  </>
+                ) : (
+                  <>
+                    🤖 AI 해설 생성
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
 
           {/* 프로그레스바 */}
@@ -624,6 +671,176 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
 
         </div>
       )}
+
+      {/* AI 설정 팝업 */}
+      <Dialog open={isPromptEditorOpen} onOpenChange={setIsPromptEditorOpen}>
+        <DialogContent className="max-w-5xl w-[95vw] h-[95vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle>AI 설정</DialogTitle>
+            <DialogDescription>
+              AI 제공자, 모델, API 키를 설정하고 프롬프트를 커스터마이징할 수 있습니다.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* 메인 탭 선택 */}
+          <div className="flex gap-2 border-b border-gray-200 pb-3">
+            <button
+              onClick={() => setSettingsTab('ai')}
+              className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${
+                settingsTab === 'ai'
+                  ? 'bg-slate-800 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              🤖 AI 설정
+            </button>
+            <button
+              onClick={() => setSettingsTab('prompts')}
+              className={`px-4 py-2 text-sm font-medium rounded-t-md transition-colors ${
+                settingsTab === 'prompts'
+                  ? 'bg-slate-800 text-white'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              📝 프롬프트 설정
+              {Object.keys(editedPrompts).length > 0 && (
+                <span className="ml-1 text-purple-300">•</span>
+              )}
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-auto">
+            {/* AI 설정 탭 */}
+            {settingsTab === 'ai' && (
+              <div className="space-y-6 p-2" style={{ height: 'calc(95vh - 180px)' }}>
+                {/* AI 제공자 선택 */}
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold text-gray-700">AI 제공자 선택</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {(Object.keys(AI_PROVIDER_LABELS) as AIProvider[]).map((provider) => (
+                      <button
+                        key={provider}
+                        onClick={() => handleProviderChange(provider)}
+                        className={`p-4 rounded-lg border-2 text-left transition-all ${
+                          aiSettings.provider === provider
+                            ? 'border-slate-800 bg-slate-800 text-white shadow-lg'
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className={`font-medium ${aiSettings.provider === provider ? 'text-white' : 'text-gray-800'}`}>{AI_PROVIDER_LABELS[provider]}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 모델 선택 */}
+                <div className="space-y-3">
+                  <Label className="text-base font-semibold text-gray-700">모델 선택</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {AI_MODELS[aiSettings.provider].map((model) => (
+                      <button
+                        key={model.value}
+                        onClick={() => handleAISettingsChange({ model: model.value })}
+                        className={`p-3 rounded-lg border-2 text-left transition-all ${
+                          aiSettings.model === model.value
+                            ? 'border-slate-800 bg-slate-800 text-white shadow-lg'
+                            : 'border-gray-200 bg-white hover:border-gray-300'
+                        }`}
+                      >
+                        <div className={`font-medium text-sm ${aiSettings.model === model.value ? 'text-white' : 'text-gray-800'}`}>{model.label}</div>
+                        <div className={`text-xs mt-0.5 font-mono ${aiSettings.model === model.value ? 'text-gray-300' : 'text-gray-400'}`}>{model.value}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 현재 설정 요약 */}
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className="text-sm font-medium text-slate-700 mb-2">현재 설정</div>
+                  <div className="text-sm text-slate-600 space-y-1">
+                    <div>• 제공자: <span className="font-medium">{AI_PROVIDER_LABELS[aiSettings.provider]}</span></div>
+                    <div>• 모델: <span className="font-mono text-xs">{aiSettings.model}</span></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 프롬프트 설정 탭 */}
+            {settingsTab === 'prompts' && (
+              <div className="flex flex-col gap-4 p-2" style={{ height: 'calc(95vh - 180px)' }}>
+                {/* 유형 선택 탭 */}
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  {Object.keys(DEFAULT_PROMPTS).map((key) => (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedPromptType(key)}
+                      className={`px-4 py-2 text-sm rounded-md font-medium transition-colors border-2 ${
+                        selectedPromptType === key
+                          ? 'bg-slate-800 border-slate-800 text-white'
+                          : editedPrompts[key]
+                          ? 'bg-purple-50 border-purple-300 text-purple-700 hover:bg-purple-100'
+                          : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      {PROMPT_LABELS[key]}
+                      {editedPrompts[key] && ' •'}
+                    </button>
+                  ))}
+                </div>
+
+                {/* 프롬프트 편집 영역 */}
+                <div className="flex-1 flex flex-col gap-3 min-h-0">
+                  <div className="flex items-center justify-between shrink-0">
+                    <Label className="text-base text-gray-700 font-semibold">
+                      {PROMPT_LABELS[selectedPromptType]} 프롬프트
+                    </Label>
+                    {editedPrompts[selectedPromptType] && (
+                      <button
+                        onClick={() => {
+                          const newPrompts = { ...editedPrompts };
+                          delete newPrompts[selectedPromptType];
+                          setEditedPrompts(newPrompts);
+                          setCustomPrompts(newPrompts);
+                          localStorage.setItem('custom-prompts', JSON.stringify(newPrompts));
+                          toast.success('기본값으로 초기화됨', { duration: 1000 });
+                        }}
+                        className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
+                      >
+                        <RotateCcw size={14} />
+                        기본값으로 초기화
+                      </button>
+                    )}
+                  </div>
+                  <textarea
+                    value={editedPrompts[selectedPromptType] || DEFAULT_PROMPTS[selectedPromptType]}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const defaultValue = DEFAULT_PROMPTS[selectedPromptType];
+
+                      const newPrompts = { ...editedPrompts };
+                      if (value === defaultValue) {
+                        delete newPrompts[selectedPromptType];
+                      } else {
+                        newPrompts[selectedPromptType] = value;
+                      }
+
+                      setEditedPrompts(newPrompts);
+                      setCustomPrompts(newPrompts);
+                      localStorage.setItem('custom-prompts', JSON.stringify(newPrompts));
+                    }}
+                    className="flex-1 p-4 text-sm font-mono bg-gray-50 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    style={{ minHeight: '500px' }}
+                    placeholder="프롬프트를 입력하세요..."
+                  />
+                  <p className="text-sm text-gray-500 shrink-0">
+                    사용 가능한 변수: {'{{passage}}'}, {'{{choices}}'}, {'{{answer}}'}, {'{{instruction}}'}, {'{{hint}}'}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

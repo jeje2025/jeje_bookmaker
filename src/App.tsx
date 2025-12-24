@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from './components/ui/button';
-import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image, Save, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image, Save, Printer, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { type PaletteKey, pantoneColors, ColorPaletteSelector, applyPalette } from './components/ColorPaletteSelector';
 import { type FontSizeKey, FontSizeSelector, applyFontSize, fontSizes } from './components/FontSizeSelector';
 import { UnitSplitButton } from './components/UnitSplitButton';
@@ -14,7 +14,8 @@ import { QuestionView } from './components/QuestionView';
 import { VocaPreviewInput } from './components/VocaPreviewInput';
 import { SessionManager } from './components/SessionManager';
 import type { QuestionItem, HeaderInfo as QuestionHeaderInfo, ViewMode as QuestionViewMode, ExplanationData, VocaPreviewWord, SavedSession, PdfPreviewState, EditedFieldMap, EditedField } from './types/question';
-import { generateExplanations, generateVocaPreview } from './services/geminiExplanation';
+import { generateExplanations, generateVocaPreview, parseExplanationJSON, processUserExplanations, type AISettings } from './services/geminiExplanation';
+import { getAISettings } from './components/QuestionInput';
 import { saveSession } from './services/sessionStorage';
 // import { PDFSaveModal } from './components/PDFSaveModal'; // 모달 없이 바로 저장으로 변경
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './components/ui/dialog';
@@ -234,6 +235,7 @@ export default function App() {
   const [colorPalette, setColorPalette] = useState<PaletteKey>('viva-magenta'); // 배경색 팔레트 (기본: 비바 마젠타)
   const [fontSize, setFontSize] = useState<FontSizeKey>('medium'); // 글씨 크기 (기본: 보통)
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // 사이드바 접기
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false); // 사이드바 확장 (좌우로 넓게)
   const [appMode, setAppMode] = useState<'vocabulary' | 'grammar' | 'question'>('question'); // 단어장 / 구문교재 / 문제집 모드
   const [selectedGrammarItems, setSelectedGrammarItems] = useState<GrammarItem[]>([]); // 선택된 구문 문장들
   const [grammarHeaderInfo, setGrammarHeaderInfo] = useState({ headerTitle: '구문교재', headerDescription: '', footerLeft: '' }); // 구문교재 헤더
@@ -270,6 +272,65 @@ export default function App() {
     applyPalette(colorPalette);
     applyFontSize(fontSize);
   }, []);
+
+  // questionList 변경 시 explanation 필드 처리
+  // 1. JSON 형식이면 바로 파싱
+  // 2. 일반 텍스트면 AI 번역을 생성하여 결합
+  useEffect(() => {
+    if (questionList.length === 0) return;
+
+    const newExplanations = new Map(questionExplanations);
+    let hasNewExplanations = false;
+    const questionsNeedingTranslation: QuestionItem[] = [];
+
+    questionList.forEach((question: QuestionItem) => {
+      // explanation 필드가 있고, 아직 questionExplanations에 없는 경우
+      if (question.explanation && question.explanation.trim() && !questionExplanations.has(question.id)) {
+        // JSON 형식인지 확인 (중괄호로 시작하면 JSON으로 간주)
+        const trimmed = question.explanation.trim();
+        if (trimmed.startsWith('{') || trimmed.startsWith('```json')) {
+          // JSON 형식이면 바로 파싱
+          const parsed = parseExplanationJSON(question.explanation);
+          if (parsed) {
+            newExplanations.set(question.id, parsed);
+            hasNewExplanations = true;
+            console.log(`[${question.id}] explanation 필드에서 JSON 해설 파싱 완료`);
+          }
+        } else {
+          // 일반 텍스트면 AI 번역이 필요한 목록에 추가
+          questionsNeedingTranslation.push(question);
+        }
+      }
+    });
+
+    // JSON 파싱된 결과가 있으면 먼저 반영
+    if (hasNewExplanations) {
+      setQuestionExplanations(newExplanations);
+    }
+
+    // 일반 텍스트 해설이 있으면 AI 번역 처리
+    if (questionsNeedingTranslation.length > 0 && geminiApiKey) {
+      console.log(`[사용자 해설] ${questionsNeedingTranslation.length}개 문제에 대해 AI 번역 생성 시작...`);
+
+      // 비동기로 처리
+      processUserExplanations(questionsNeedingTranslation, geminiApiKey, (current, total) => {
+        console.log(`[사용자 해설] 번역 진행: ${current}/${total}`);
+      }).then((results) => {
+        if (results.size > 0) {
+          setQuestionExplanations((prev: Map<string, ExplanationData>) => {
+            const updated = new Map(prev);
+            results.forEach((value, key) => {
+              updated.set(key, value);
+            });
+            return updated;
+          });
+          console.log(`[사용자 해설] ${results.size}개 해설 생성 완료 (사용자 텍스트 + AI 번역)`);
+        }
+      }).catch((error) => {
+        console.error('[사용자 해설] AI 번역 생성 실패:', error);
+      });
+    }
+  }, [questionList, geminiApiKey]);
 
   // 최근 로그 가져오기
   useEffect(() => {
@@ -749,16 +810,16 @@ export default function App() {
   };
 
   // AI 해설 생성 핸들러 (내부 함수) - 해설 + 단어장 동시 생성
-  const doGenerateExplanations = async (questions: QuestionItem[], apiKey: string) => {
+  const doGenerateExplanations = async (questions: QuestionItem[], aiSettings: AISettings) => {
     setIsGeneratingExplanations(true);
     setGenerationProgress({ current: 0, total: questions.length });
-    toast.info(`${questions.length}개 문제 해설 생성 시작...`, { duration: 2000 });
+    toast.info(`${questions.length}개 문제 해설 생성 시작... (${aiSettings.provider}/${aiSettings.model})`, { duration: 2000 });
 
     try {
-      // 1. 해설 생성
+      // 1. 해설 생성 (AI 설정 전달)
       const explanations = await generateExplanations(
         questions,
-        apiKey,
+        aiSettings,
         (current, total) => {
           setGenerationProgress({ current, total });
         }
@@ -767,7 +828,7 @@ export default function App() {
       setQuestionExplanations(explanations);
       toast.success(`${explanations.size}개 해설 생성 완료!`, { duration: 1000 });
 
-      // 2. 단어장도 함께 생성
+      // 2. 단어장도 함께 생성 (단어장은 Gemini 사용 - 비용 효율)
       setIsGeneratingVocaPreview(true);
       setVocaPreviewStatus('단어장 생성 중...');
       toast.info('단어장 자동 생성 시작...', { duration: 1500 });
@@ -775,7 +836,7 @@ export default function App() {
       try {
         const words = await generateVocaPreview(
           questions,
-          apiKey,
+          aiSettings.apiKey, // 단어장은 현재 선택된 API 키 사용
           (status) => setVocaPreviewStatus(status)
         );
         setVocaPreviewWords(words);
@@ -802,14 +863,28 @@ export default function App() {
     }
   };
 
-  // AI 해설 생성 핸들러 (외부 호출용)
+  // AI 해설 생성 핸들러 (외부 호출용) - AI 설정 적용
   const handleGenerateExplanations = useCallback((questions: QuestionItem[]) => {
-    if (!geminiApiKey) {
-      toast.error('.env 파일에 VITE_GEMINI_API_KEY를 설정해주세요.', { duration: 2000 });
+    // AI 설정 불러오기
+    const aiSettingsFromStorage = getAISettings();
+    const currentProvider = aiSettingsFromStorage.provider;
+    const currentApiKey = aiSettingsFromStorage.apiKeys[currentProvider];
+
+    // API 키 확인
+    if (!currentApiKey) {
+      toast.error(`${currentProvider.toUpperCase()} API 키가 설정되지 않았습니다. AI 설정에서 API 키를 입력하거나 .env 파일을 확인해주세요.`, { duration: 3000 });
       return;
     }
-    doGenerateExplanations(questions, geminiApiKey);
-  }, [geminiApiKey]);
+
+    // AISettings 객체 생성
+    const aiSettings: AISettings = {
+      provider: currentProvider,
+      model: aiSettingsFromStorage.model,
+      apiKey: currentApiKey
+    };
+
+    doGenerateExplanations(questions, aiSettings);
+  }, []);
 
   // 해설지 지문 번역 편집 핸들러
   const handlePassageTranslationEdit = useCallback((questionId: string, newPassage: string) => {
@@ -1032,7 +1107,11 @@ export default function App() {
       {/* Left Sidebar - 단어 입력창 - 인쇄 시 숨김 */}
       <div
         className="bg-white border-r border-gray-200 flex flex-col print:hidden overflow-hidden flex-shrink-0 transition-all duration-300"
-        style={{ width: isSidebarCollapsed ? 0 : 420, minWidth: isSidebarCollapsed ? 0 : 420, borderRightWidth: isSidebarCollapsed ? 0 : 1 }}
+        style={{
+          width: isSidebarCollapsed ? 0 : (isSidebarExpanded ? 720 : 420),
+          minWidth: isSidebarCollapsed ? 0 : (isSidebarExpanded ? 720 : 420),
+          borderRightWidth: isSidebarCollapsed ? 0 : 1
+        }}
       >
         {/* 헤더 - 고정, 높이 정확히 맞춤 */}
         <div className="px-6 border-b border-gray-200 flex-shrink-0 relative" style={{ height: '73px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -1164,6 +1243,8 @@ export default function App() {
                     isGenerating={isGeneratingExplanations}
                     explanations={questionExplanations}
                     generationProgress={generationProgress ?? undefined}
+                    isExpanded={isSidebarExpanded}
+                    onToggleExpand={() => setIsSidebarExpanded(!isSidebarExpanded)}
                   />
                 </div>
                 {/* 저장된 세션 관리 */}
@@ -1494,16 +1575,27 @@ export default function App() {
           {/* 구분선 */}
           <div className="h-4 w-px bg-slate-200 mx-1 shrink-0" />
 
-          {/* PDF 저장 */}
-          <Button
-            onClick={handleSavePDFClick}
-            disabled={isPDFLoading}
-            className="shrink-0 bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2 justify-center"
-            size="sm"
-          >
-            <Save size={14} />
-            {isPDFLoading ? '생성 중...' : 'PDF 저장'}
-          </Button>
+          {/* PDF 저장 & 인쇄 */}
+          <div className="shrink-0 flex gap-1">
+            <Button
+              onClick={handleSavePDFClick}
+              disabled={isPDFLoading}
+              className="bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2 justify-center"
+              size="sm"
+            >
+              <Save size={14} />
+              {isPDFLoading ? '생성 중...' : 'PDF 저장'}
+            </Button>
+            <Button
+              onClick={() => window.print()}
+              variant="outline"
+              className="flex items-center gap-1 justify-center px-3"
+              size="sm"
+              title="인쇄 (PDF로 저장 가능)"
+            >
+              <Printer size={14} />
+            </Button>
+          </div>
 
           {/* 관리자 버튼 */}
           <button

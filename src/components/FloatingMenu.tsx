@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Save, Layers, Palette, ChevronRight, X } from 'lucide-react';
+import { Settings, Save, Printer, Layers, Palette, ChevronRight, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { UnitSplitButton } from './UnitSplitButton';
 import { ColorPaletteSelector, type PaletteKey } from './ColorPaletteSelector';
@@ -16,6 +16,8 @@ interface FloatingMenuProps {
   // PDF 저장
   onSavePDF: () => void;
   isPDFLoading: boolean;
+  // 인쇄
+  onPrint: () => void;
   // 관리자
   onAdminClick: () => void;
 }
@@ -29,6 +31,7 @@ export function FloatingMenu({
   onColorPaletteChange,
   onSavePDF,
   isPDFLoading,
+  onPrint,
   onAdminClick,
 }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -81,16 +84,27 @@ export function FloatingMenu({
 
           <div className="border-t border-slate-100 my-1" />
 
-          {/* PDF 저장 */}
-          <Button
-            onClick={onSavePDF}
-            disabled={isPDFLoading}
-            className="w-full bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2 justify-center"
-            size="sm"
-          >
-            <Save size={14} />
-            {isPDFLoading ? '생성 중...' : 'PDF 저장'}
-          </Button>
+          {/* PDF 저장 & 인쇄 */}
+          <div className="flex gap-2">
+            <Button
+              onClick={onSavePDF}
+              disabled={isPDFLoading}
+              className="flex-1 bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-2 justify-center"
+              size="sm"
+            >
+              <Save size={14} />
+              {isPDFLoading ? '생성 중...' : 'PDF 저장'}
+            </Button>
+            <Button
+              onClick={onPrint}
+              variant="outline"
+              className="flex items-center gap-1 justify-center px-3"
+              size="sm"
+              title="인쇄 (PDF로 저장 가능)"
+            >
+              <Printer size={14} />
+            </Button>
+          </div>
 
           <div className="border-t border-slate-100 my-1" />
 

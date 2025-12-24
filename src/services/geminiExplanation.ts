@@ -1,5 +1,23 @@
 import type { QuestionItem, ExplanationData, VocaPreviewWord } from '../types/question';
 
+// ===== AI 설정 타입 =====
+export type AIProvider = 'gemini' | 'openai' | 'claude';
+
+export interface AISettings {
+  provider: AIProvider;
+  model: string;
+  apiKey: string;
+}
+
+// API URL 생성 함수
+function getGeminiApiUrl(model: string): string {
+  return `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+}
+
+const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+const CLAUDE_API_URL = 'https://api.anthropic.com/v1/messages';
+
+// 기본 Gemini URL (하위 호환성)
 const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // 번역 관련 공통 지침
@@ -301,18 +319,22 @@ export function getCustomPrompts(): Record<string, string> {
 
 // 프롬프트 템플릿에 변수 치환
 function fillPromptTemplate(template: string, question: QuestionItem): string {
-  const { passage, choices, answer, instruction } = question;
+  const { passage, choices, answer, instruction, hint } = question;
   const choiceLabels = ['①', '②', '③', '④', '⑤'];
   const choicesText = choices
     .map((c, i) => c ? `${choiceLabels[i]} ${c}` : '')
     .filter(Boolean)
     .join('\n');
 
+  // 힌트가 있으면 추가, 없으면 빈 문자열
+  const hintText = hint && hint.trim() ? hint.trim() : '';
+
   return template
     .replace(/\{\{passage\}\}/g, passage)
     .replace(/\{\{choices\}\}/g, choicesText)
     .replace(/\{\{answer\}\}/g, answer)
-    .replace(/\{\{instruction\}\}/g, instruction);
+    .replace(/\{\{instruction\}\}/g, instruction)
+    .replace(/\{\{hint\}\}/g, hintText);
 }
 
 // 카테고리에 맞는 프롬프트 키 반환
@@ -353,8 +375,126 @@ function getPromptByCategory(question: QuestionItem): string {
   return fillPromptTemplate(template, question);
 }
 
-// JSON 응답 파싱
-function parseGeminiResponse(text: string): ExplanationData | null {
+// ===== 통합 AI API 호출 함수 =====
+
+/**
+ * AI 제공자에 따라 적절한 API를 호출하여 텍스트 생성
+ */
+async function callAI(
+  prompt: string,
+  aiSettings: AISettings,
+  maxRetries: number = 3
+): Promise<string | null> {
+  const { provider, model, apiKey } = aiSettings;
+
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      let response: Response;
+      let generatedText: string | undefined;
+
+      if (provider === 'gemini') {
+        // Gemini API
+        const url = getGeminiApiUrl(model);
+        response = await fetch(`${url}?key=${apiKey}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.3, maxOutputTokens: 4096 }
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        }
+      } else if (provider === 'openai') {
+        // OpenAI API
+        response = await fetch(OPENAI_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: model,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.3,
+            max_tokens: 4096
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          generatedText = data.choices?.[0]?.message?.content;
+        }
+      } else if (provider === 'claude') {
+        // Claude API
+        response = await fetch(CLAUDE_API_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: model,
+            max_tokens: 4096,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          generatedText = data.content?.[0]?.text;
+        }
+      } else {
+        console.error('지원하지 않는 AI 제공자:', provider);
+        return null;
+      }
+
+      // 응답 처리
+      if (!response!.ok) {
+        const errorText = await response!.text();
+        console.error(`[${provider}] API 오류 (시도 ${attempt}/${maxRetries}):`, errorText);
+
+        // Rate Limit 에러면 대기 후 재시도
+        if (response!.status === 429 && attempt < maxRetries) {
+          const waitTime = attempt * 2000;
+          console.log(`[${provider}] Rate limit - ${waitTime}ms 대기 후 재시도`);
+          await new Promise(resolve => setTimeout(resolve, waitTime));
+          continue;
+        }
+        return null;
+      }
+
+      if (generatedText) {
+        return generatedText;
+      }
+
+      console.error(`[${provider}] 생성된 텍스트 없음`);
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        continue;
+      }
+      return null;
+
+    } catch (error) {
+      console.error(`[${provider}] API 호출 실패 (시도 ${attempt}/${maxRetries}):`, error);
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        continue;
+      }
+      return null;
+    }
+  }
+
+  return null;
+}
+
+// JSON 응답 파싱 (외부에서도 사용 가능하도록 export)
+export function parseExplanationJSON(text: string): ExplanationData | null {
   try {
     // 마크다운 코드 블록 제거
     let cleaned = text.trim();
@@ -374,72 +514,30 @@ function parseGeminiResponse(text: string): ExplanationData | null {
   }
 }
 
-// 단일 문제 해설 생성 (재시도 포함)
+// 단일 문제 해설 생성 (AI 설정 지원)
 async function generateSingleExplanation(
   question: QuestionItem,
-  apiKey: string,
+  aiSettings: AISettings,
   maxRetries: number = 3
 ): Promise<ExplanationData | null> {
   const prompt = getPromptByCategory(question);
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [{
-            parts: [{ text: prompt }]
-          }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 2048
-          }
-        })
-      });
+  console.log(`[${question.id}] ${aiSettings.provider}/${aiSettings.model}로 해설 생성 중...`);
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`[${question.id}] API 오류 (시도 ${attempt}/${maxRetries}):`, errorText);
+  const generatedText = await callAI(prompt, aiSettings, maxRetries);
 
-        // 429 (Rate Limit) 에러면 잠시 대기 후 재시도
-        if (response.status === 429 && attempt < maxRetries) {
-          const waitTime = attempt * 2000; // 2초, 4초, 6초...
-          console.log(`[${question.id}] Rate limit - ${waitTime}ms 대기 후 재시도`);
-          await new Promise(resolve => setTimeout(resolve, waitTime));
-          continue;
-        }
-        return null;
-      }
-
-      const data = await response.json();
-      const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-      if (!generatedText) {
-        console.error(`[${question.id}] 생성된 텍스트 없음`);
-        return null;
-      }
-
-      const result = parseGeminiResponse(generatedText);
-      if (!result && attempt < maxRetries) {
-        console.error(`[${question.id}] JSON 파싱 실패 (시도 ${attempt}/${maxRetries})`);
-        continue;
-      }
-
-      return result;
-    } catch (error) {
-      console.error(`[${question.id}] API 호출 실패 (시도 ${attempt}/${maxRetries}):`, error);
-      if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        continue;
-      }
-      return null;
-    }
+  if (!generatedText) {
+    console.error(`[${question.id}] 해설 생성 실패`);
+    return null;
   }
 
-  return null;
+  const result = parseExplanationJSON(generatedText);
+  if (!result) {
+    console.error(`[${question.id}] JSON 파싱 실패`);
+    return null;
+  }
+
+  return result;
 }
 
 // 같은 지문을 공유하는 문제들 그룹핑 (연속된 문제만)
@@ -486,10 +584,17 @@ function groupByPassage(items: QuestionItem[]): PassageGroup[] {
 // 같은 지문을 공유하는 문제들은 첫 번째 문제만 passageTranslation을 생성하고 나머지에 공유
 export async function generateExplanations(
   questions: QuestionItem[],
-  apiKey: string,
+  apiKeyOrSettings: string | AISettings,
   onProgress?: (current: number, total: number) => void
 ): Promise<Map<string, ExplanationData>> {
   const results = new Map<string, ExplanationData>();
+
+  // AI 설정 변환 (하위 호환성: 문자열이면 기본 Gemini 설정으로)
+  const aiSettings: AISettings = typeof apiKeyOrSettings === 'string'
+    ? { provider: 'gemini', model: 'gemini-2.0-flash', apiKey: apiKeyOrSettings }
+    : apiKeyOrSettings;
+
+  console.log(`🤖 해설 생성 시작: ${aiSettings.provider} / ${aiSettings.model}`);
 
   // 세트 문제 처리: passage가 없으면 이전 문제의 passage 상속
   let lastPassage = '';
@@ -513,8 +618,8 @@ export async function generateExplanations(
   const total = validQuestions.length;
   let completed = 0;
 
-  // 동시 처리 개수 (Gemini API rate limit 고려)
-  const CONCURRENT_LIMIT = 5;
+  // 동시 처리 개수 (API rate limit 고려)
+  const CONCURRENT_LIMIT = aiSettings.provider === 'gemini' ? 5 : 3;
 
   // 그룹별로 처리 - 첫 번째 문제의 passageTranslation을 나머지에 공유
   for (let i = 0; i < passageGroups.length; i += CONCURRENT_LIMIT) {
@@ -528,7 +633,7 @@ export async function generateExplanations(
       // 그룹 내 문제들을 순차 처리 (첫 번째 문제의 번역을 공유하기 위해)
       for (let j = 0; j < group.items.length; j++) {
         const question = group.items[j];
-        const explanation = await generateSingleExplanation(question, apiKey);
+        const explanation = await generateSingleExplanation(question, aiSettings);
 
         completed++;
         if (onProgress) {
@@ -701,4 +806,258 @@ export async function generateVocaPreview(
     console.error('단어장 생성 실패:', error);
     throw error;
   }
+}
+
+// ===== 번역 전용 API (Gemini 2.0 Flash) =====
+
+// 번역 전용 프롬프트
+const TRANSLATION_ONLY_PROMPT = `당신은 영한 번역 전문가입니다. 다음 영어 문제의 지문, 발문, 보기를 한국어로 번역해주세요.
+
+발문: {{instruction}}
+
+지문:
+{{passage}}
+
+보기:
+{{choices}}
+
+다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+{
+  "passageTranslation": "지문 전체 한국어 번역",
+  "instructionTranslation": "발문 한국어 번역",
+  "choiceTranslations": [
+    {"english": "보기1 원문", "korean": "보기1 번역", "showEnglish": true/false},
+    {"english": "보기2 원문", "korean": "보기2 번역", "showEnglish": true/false},
+    {"english": "보기3 원문", "korean": "보기3 번역", "showEnglish": true/false},
+    {"english": "보기4 원문", "korean": "보기4 번역", "showEnglish": true/false},
+    {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true/false}
+  ]
+}
+
+번역 규칙:
+1. 자연스러운 한국어로 번역
+2. 보기가 짧으면(30자 이하) showEnglish=true, 길면 showEnglish=false
+3. 빈 보기는 빈 문자열로 처리`;
+
+// 번역 결과 타입
+export interface TranslationResult {
+  passageTranslation: string;
+  instructionTranslation: string;
+  choiceTranslations: { english: string; korean: string; showEnglish: boolean }[];
+}
+
+/**
+ * 번역만 생성 (Gemini 2.0 Flash 사용)
+ */
+export async function generateTranslationOnly(
+  question: QuestionItem,
+  apiKey: string
+): Promise<TranslationResult | null> {
+  const choiceLabels = ['①', '②', '③', '④', '⑤'];
+  const choicesText = question.choices
+    .map((c, i) => c ? `${choiceLabels[i]} ${c}` : '')
+    .filter(Boolean)
+    .join('\n');
+
+  const prompt = TRANSLATION_ONLY_PROMPT
+    .replace('{{instruction}}', question.instruction || '')
+    .replace('{{passage}}', question.passage || '')
+    .replace('{{choices}}', choicesText);
+
+  try {
+    const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 2048 }
+      })
+    });
+
+    if (!response.ok) {
+      console.error('번역 API 오류:', await response.text());
+      return null;
+    }
+
+    const data = await response.json();
+    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!generatedText) {
+      console.error('번역 결과 없음');
+      return null;
+    }
+
+    // JSON 파싱
+    let cleaned = generatedText.trim();
+    if (cleaned.startsWith('```json')) {
+      cleaned = cleaned.replace(/```json\n?/g, '').replace(/```\n?$/g, '');
+    } else if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/```\n?/g, '');
+    }
+
+    return JSON.parse(cleaned.trim()) as TranslationResult;
+  } catch (error) {
+    console.error('번역 생성 실패:', error);
+    return null;
+  }
+}
+
+// ===== 사용자 해설 + AI 번역 결합 =====
+
+/**
+ * 사용자가 입력한 해설 텍스트를 유형에 맞는 ExplanationData로 변환하고,
+ * AI로 번역을 생성하여 결합
+ */
+export async function createExplanationFromUserText(
+  question: QuestionItem,
+  userExplanation: string,
+  apiKey: string
+): Promise<ExplanationData | null> {
+  const promptKey = getPromptKey(question);
+
+  // 1. AI로 번역 생성
+  console.log(`[${question.id}] 번역 생성 중...`);
+  const translation = await generateTranslationOnly(question, apiKey);
+
+  if (!translation) {
+    console.error(`[${question.id}] 번역 생성 실패`);
+    return null;
+  }
+
+  // 2. 유형에 따라 기본 ExplanationData 생성 + 사용자 해설 삽입
+  const baseData = {
+    passageTranslation: translation.passageTranslation,
+    instructionTranslation: translation.instructionTranslation,
+    choiceTranslations: translation.choiceTranslations,
+  };
+
+  // 유형별 기본 구조 생성
+  switch (promptKey) {
+    case 'vocabulary':
+      return {
+        type: 'vocabulary',
+        wordExplanation: userExplanation,
+        synonyms: [],
+        ...baseData,
+      };
+
+    case 'grammar':
+      return {
+        type: 'grammar',
+        answerChange: '',
+        testPoint: '',
+        correctExplanation: userExplanation,
+        wrongExplanations: [],
+        ...baseData,
+      };
+
+    case 'logic':
+      return {
+        type: 'logic',
+        step1Targeting: userExplanation,
+        step2Evidence: '',
+        step3Choices: [],
+        ...baseData,
+      };
+
+    case 'mainIdea':
+      return {
+        type: 'mainIdea',
+        passageAnalysis: userExplanation,
+        correctExplanation: '',
+        wrongExplanations: [],
+        ...baseData,
+      };
+
+    case 'insertion':
+      return {
+        type: 'insertion',
+        correctExplanation: userExplanation,
+        positionExplanations: [],
+        passageTranslation: translation.passageTranslation,
+        instructionTranslation: translation.instructionTranslation,
+      };
+
+    case 'order':
+      return {
+        type: 'order',
+        firstParagraph: userExplanation,
+        splitPoint: '',
+        conclusion: '',
+        ...baseData,
+      };
+
+    case 'wordAppropriateness':
+      return {
+        type: 'wordAppropriateness',
+        mainTopic: userExplanation,
+        choiceExplanations: [],
+        ...baseData,
+      };
+
+    default:
+      return {
+        type: 'mainIdea',
+        passageAnalysis: userExplanation,
+        correctExplanation: '',
+        wrongExplanations: [],
+        ...baseData,
+      };
+  }
+}
+
+/**
+ * 여러 문제의 사용자 해설을 처리 (번역은 AI, 해설은 사용자 입력)
+ */
+export async function processUserExplanations(
+  questions: QuestionItem[],
+  apiKey: string,
+  onProgress?: (current: number, total: number) => void
+): Promise<Map<string, ExplanationData>> {
+  const results = new Map<string, ExplanationData>();
+
+  // explanation 필드가 있는 문제만 필터링
+  const questionsWithExplanation = questions.filter(
+    q => q.explanation && q.explanation.trim()
+  );
+
+  const total = questionsWithExplanation.length;
+  let completed = 0;
+
+  // 동시 처리 (5개씩)
+  const CONCURRENT_LIMIT = 5;
+
+  for (let i = 0; i < questionsWithExplanation.length; i += CONCURRENT_LIMIT) {
+    const chunk = questionsWithExplanation.slice(i, i + CONCURRENT_LIMIT);
+
+    const promises = chunk.map(async (question) => {
+      const explanation = await createExplanationFromUserText(
+        question,
+        question.explanation!,
+        apiKey
+      );
+
+      completed++;
+      if (onProgress) {
+        onProgress(completed, total);
+      }
+
+      return { id: question.id, explanation };
+    });
+
+    const chunkResults = await Promise.all(promises);
+
+    for (const { id, explanation } of chunkResults) {
+      if (explanation) {
+        results.set(id, explanation);
+      }
+    }
+
+    // Rate limit 방지
+    if (i + CONCURRENT_LIMIT < questionsWithExplanation.length) {
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+  }
+
+  return results;
 }

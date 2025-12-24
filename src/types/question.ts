@@ -9,6 +9,8 @@ export interface QuestionItem {
   passage: string;         // 지문 (Ⓐ, Ⓑ 등 마커 포함)
   choices: string[];       // 보기 5개 (①~⑤)
   answer: string;          // 정답 (①~⑤)
+  hint?: string;           // 힌트 (선택)
+  explanation?: string;    // 해설 (선택)
 }
 
 // 헤더 정보 타입
