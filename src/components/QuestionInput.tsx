@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { toast } from 'sonner';
 import { RotateCcw, Maximize2, Minimize2, Settings } from 'lucide-react';
 import type { QuestionItem, HeaderInfo, ExplanationData } from '../types/question';
-import { DEFAULT_PROMPTS, PROMPT_LABELS, setCustomPrompts } from '../services/geminiExplanation';
+import { DEFAULT_PROMPTS, PROMPT_LABELS, PROMPT_VARIABLES, setCustomPrompts } from '../services/geminiExplanation';
 
 // AI 제공자 타입
 type AIProvider = 'gemini' | 'openai' | 'claude';
@@ -828,12 +828,12 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
                       setCustomPrompts(newPrompts);
                       localStorage.setItem('custom-prompts', JSON.stringify(newPrompts));
                     }}
-                    className="flex-1 p-4 text-sm font-mono bg-gray-50 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-slate-500"
+                    className="flex-1 p-4 text-sm font-mono bg-gray-50 border border-gray-300 rounded-lg resize-y focus:outline-none focus:ring-2 focus:ring-slate-500"
                     style={{ minHeight: '500px' }}
                     placeholder="프롬프트를 입력하세요..."
                   />
                   <p className="text-sm text-gray-500 shrink-0">
-                    사용 가능한 변수: {'{{passage}}'}, {'{{choices}}'}, {'{{answer}}'}, {'{{instruction}}'}, {'{{hint}}'}
+                    사용 가능한 변수: {(PROMPT_VARIABLES[selectedPromptType] || PROMPT_VARIABLES.default).join(', ')}
                   </p>
                 </div>
               </div>

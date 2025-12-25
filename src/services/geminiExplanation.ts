@@ -304,6 +304,18 @@ export const PROMPT_LABELS: Record<string, string> = {
   default: '기본'
 };
 
+// 유형별 사용 가능한 변수
+export const PROMPT_VARIABLES: Record<string, string[]> = {
+  vocabulary: ['{{passage}}', '{{choices}}', '{{answer}}'],
+  grammar: ['{{passage}}', '{{choices}}', '{{answer}}', '{{instruction}}'],
+  logic: ['{{passage}}', '{{choices}}', '{{answer}}', '{{instruction}}'],
+  mainIdea: ['{{passage}}', '{{choices}}', '{{answer}}', '{{instruction}}'],
+  insertion: ['{{passage}}', '{{choices}}', '{{answer}}', '{{instruction}}'],
+  order: ['{{passage}}', '{{choices}}', '{{answer}}', '{{instruction}}'],
+  wordAppropriateness: ['{{passage}}', '{{choices}}', '{{answer}}', '{{instruction}}'],
+  default: ['{{passage}}', '{{choices}}', '{{answer}}', '{{instruction}}']
+};
+
 // 커스텀 프롬프트 저장소
 let customPrompts: Record<string, string> = {};
 
