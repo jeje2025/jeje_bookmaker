@@ -24,16 +24,18 @@ const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/
 const TRANSLATION_INSTRUCTION = `
 번역 규칙:
 1. passageTranslation: 지문 전체를 자연스러운 한국어로 번역
+   - 중요: 원문에서 **굵게** 표시된 단어/구절은 번역에서도 해당 한국어 부분을 **굵게** 표시하세요!
+   - 예시: "The **hasty** decision..." → "그 **성급한** 결정은..."
 2. instructionTranslation: 발문(문제 지시문)을 자연스러운 한국어로 번역
 3. choiceTranslations: 각 보기를 번역. 보기가 짧으면(단어/짧은 구) showEnglish=true, 길면(문장/긴 구절) showEnglish=false
    - 짧은 보기 기준: 영어 원문 30자 이하
 4. passageSummary: 지문 요약 정보
    - field: 분야 (심리학, 경제학, 생물학, 사회학, 철학 등)
    - topic: 중심 소재 (지문이 다루는 핵심 대상, 명사구)
-   - subject: 주제 (반드시 명사구! 문장 금지!)
-     * 올바른 예: "아이들의 놀이의 진지함", "사회학 연구의 일반화 가능성", "인지 편향의 영향"
-     * 잘못된 예: "아이들의 놀이는 어른들이 생각하는 것보다 훨씬 더 진지한 활동이다" (X - 문장임)
-     * 잘못된 예: "~이다", "~한다", "~있다"로 끝나면 안됨
+   - subject: 주제 (⚠️ 반드시 "~의 ~" 형태의 짧은 명사구! 문장 절대 금지!)
+     * ✅ 올바른 예: "놀이의 진지함", "일반화의 한계", "인지 편향의 영향", "기억의 재구성", "언어의 사회적 기능"
+     * ❌ 금지: "~이다", "~한다", "~있다", "~된다", "~하는 것" 등 서술어로 끝나는 형태
+     * ❌ 금지: 10자 초과 (최대 10자 이내로 작성!)
    - mainIdea: 요지 (완전한 문장으로 작성)
 
 문체 규칙 (매우 중요):
@@ -95,6 +97,8 @@ ${TRANSLATION_INSTRUCTION}
 정답: {{answer}}
 {{hint}}
 ${TRANSLATION_INSTRUCTION}
+주의: 문법 문제의 passageTranslation에서는 **굵게** 표시를 하지 마세요. 원문의 굵게 표시는 무시하고 일반 텍스트로 번역하세요.
+
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
 중요: 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
 {
@@ -141,6 +145,10 @@ ${TRANSLATION_INSTRUCTION}
 정답: {{answer}}
 {{hint}}
 ${TRANSLATION_INSTRUCTION}
+빈칸 번역 규칙 (논리/빈칸 유형 전용):
+- passageTranslation에서 빈칸(_____)에 정답을 채워 번역할 때, 정답 부분을 **굵게** 표시하세요!
+- 예시: "The key factor is _____." (정답: flexibility) → "핵심 요소는 **유연성**입니다."
+
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
 중요:
 - 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
@@ -1024,10 +1032,10 @@ const TRANSLATION_ONLY_PROMPT = `당신은 영한 번역 전문가입니다. 다
     {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true/false}
   ],
   "passageSummary": {
-    "field": "분야 (예: 심리학, 경제학, 생물학, 사회학, 철학, 언어학 등)",
-    "topic": "중심 소재 (지문이 다루는 핵심 대상/주제, 명사구 형태)",
-    "subject": "주제 (중심 소재에 대해 말하고자 하는 핵심 내용, 1문장)",
-    "mainIdea": "요지 (분야 + 중심 소재 + 주제를 결합한 핵심 메시지, 1문장)"
+    "field": "분야 (예: 심리학, 경제학, 생물학)",
+    "topic": "중심 소재 (명사구)",
+    "subject": "주제 (⚠️ 반드시 명사구! 최대 10자!)",
+    "mainIdea": "요지 (완전한 문장)"
   }
 }
 
@@ -1036,11 +1044,17 @@ const TRANSLATION_ONLY_PROMPT = `당신은 영한 번역 전문가입니다. 다
 2. 보기가 짧으면(30자 이하) showEnglish=true, 길면 showEnglish=false
 3. 빈 보기는 빈 문자열로 처리
 
+⚠️ subject(주제) 작성 규칙 - 매우 중요! ⚠️
+- 반드시 "~의 ~" 형태의 짧은 명사구로 작성 (최대 10자 이내!)
+- ✅ 올바른 예: "놀이의 진지함", "일반화의 한계", "기억의 재구성"
+- ❌ 금지: 문장 형태 ("~이다", "~한다", "~있다", "~된다", "~하는 것" 등 서술어로 끝나면 안됨)
+- ❌ 금지: 10자 초과
+
 요약 규칙:
-1. field: 학문 분야나 주제 영역 (간결하게)
+1. field: 학문 분야 (간결하게)
 2. topic: 지문의 중심 소재 (명사/명사구)
-3. subject: 중심 소재에 대한 핵심 서술 (주제문)
-4. mainIdea: 글의 요지 (topic + subject를 자연스럽게 결합)`;
+3. subject: 주제 (반드시 짧은 명사구! 문장 금지!)
+4. mainIdea: 글의 요지 (완전한 문장으로 작성)`;
 
 // 지문 요약 타입
 export interface PassageSummary {

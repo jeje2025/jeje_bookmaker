@@ -753,8 +753,15 @@ const createStyles = (palette: PaletteColors, fontScale: number = 1) => {
 // ===== 지문 포맷팅 (마크다운 스타일) =====
 const formatPassage = (text: string, styles: ReturnType<typeof createStyles>): React.ReactNode[] => {
   if (!text) return [];
+
+  // 유니코드 asterisk 변형을 일반 *로 정규화
+  const normalized = text
+    .replace(/＊/g, '*')  // Full-width asterisk (U+FF0A)
+    .replace(/∗/g, '*')  // Asterisk operator (U+2217)
+    .replace(/⁎/g, '*'); // Low asterisk (U+204E)
+
   const pattern = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|_[^_]+_|_{5,})/g;
-  const parts = text.split(pattern);
+  const parts = normalized.split(pattern);
 
   return parts.map((part, idx) => {
     // 빈칸 (5개 이상의 언더스코어)
@@ -969,7 +976,7 @@ const QuestionCardPDF = ({
                   key={idx}
                   style={showAnswer && isCorrect ? styles.qChoiceCorrect : styles.qChoice}
                 >
-                  {choiceLabels[idx]} {choice}
+                  {choiceLabels[idx]} {formatPassage(choice, styles)}
                 </Text>
               );
             })}
@@ -1070,7 +1077,7 @@ const ExplanationCardPDF = ({
                   <View key={idx} style={isCorrect ? styles.choiceTranslatedCorrect : styles.choiceTranslated}>
                     <Text style={styles.choiceLabel}>{choiceLabels[idx]}</Text>
                     {choiceDisplayMode === 'both' && (
-                      <Text style={styles.choiceEnglish}>{choice}</Text>
+                      <Text style={styles.choiceEnglish}>{formatPassage(choice, styles)}</Text>
                     )}
                     <Text style={choiceDisplayMode === 'korean' ? styles.choiceKoreanOnly : styles.choiceKorean}>
                       {translation.korean}
@@ -1085,7 +1092,7 @@ const ExplanationCardPDF = ({
                   key={idx}
                   style={isCorrect ? styles.questionChoiceCorrect : styles.questionChoice}
                 >
-                  {choiceLabels[idx]} {choice}
+                  {choiceLabels[idx]} {formatPassage(choice, styles)}
                 </Text>
               );
             })}

@@ -20,9 +20,15 @@ interface QuestionCardProps {
 const formatPassageWithUnderline = (text: string) => {
   if (!text) return null;
 
+  // 유니코드 asterisk 변형을 일반 *로 정규화
+  const normalized = text
+    .replace(/＊/g, '*')  // Full-width asterisk (U+FF0A)
+    .replace(/∗/g, '*')  // Asterisk operator (U+2217)
+    .replace(/⁎/g, '*'); // Low asterisk (U+204E)
+
   // 패턴: ***굵게+밑줄***, **굵게**, _밑줄_, 빈칸(5개 이상 언더스코어)
   const pattern = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|_[^_]+_|_{5,})/g;
-  const parts = text.split(pattern);
+  const parts = normalized.split(pattern);
 
   return parts.map((part, idx) => {
     // 빈칸 (5개 이상의 언더스코어)
@@ -115,46 +121,45 @@ const QuestionCardComponent = ({
 
   return (
     <div className="question-compact">
-      {/* 발문 (그룹 첫 문제만 표시) - 문제 번호 위에 */}
-      {showInstruction && instruction && (
-        <>
-          <p
-            className={isCommonInstruction ? "q-instruction q-instruction-common" : "q-instruction"}
-            style={{ fontSize: scaledSize(9.5) }}
-          >
-            {parsedInstruction.question}
-          </p>
-          {/* 문장 삽입 제시문 (별도 영역) */}
-          {parsedInstruction.insertSentence && (
-            <div className="q-insert-sentence" style={{ fontSize: scaledSize(9) }}>
-              {parsedInstruction.insertSentence}
-            </div>
-          )}
-        </>
-      )}
-
-      {/* 문제 번호 + 지문 + 보기 */}
+      {/* 문제 번호 + 발문 + 지문 + 보기 */}
       <div className="question-row">
-        {/* 문제 번호 배지 - 해설지 스타일과 동일 */}
+        {/* 문제 번호 - 해설지와 동일한 크기 */}
         {isGrouped && isFirstInGroup ? (
           // 공동 지문: 세로 배치 (33 ~ 34)
-          <div className="q-number q-number-vertical" style={{ fontSize: scaledSize(14) }}>
+          <div className="q-number q-number-vertical" style={{ fontSize: scaledSize(18) }}>
             <span>{minNum}</span>
             <span className="q-number-separator">~</span>
             <span>{maxNum}</span>
           </div>
         ) : !isGrouped ? (
           // 단일 문제: 일반 번호
-          <div className="q-number" style={{ fontSize: scaledSize(14) }}>
+          <div className="q-number" style={{ fontSize: scaledSize(18) }}>
             {questionNumber}
           </div>
         ) : (
           // 공동 지문의 두 번째 이후 문제: 개별 번호
-          <div className="q-number" style={{ fontSize: scaledSize(14) }}>
+          <div className="q-number" style={{ fontSize: scaledSize(18) }}>
             {questionNumber}
           </div>
         )}
         <div className="q-content">
+          {/* 발문 - 문제 번호 옆 (지문 위) */}
+          {showInstruction && instruction && (
+            <>
+              <p
+                className={isCommonInstruction ? "q-instruction q-instruction-common" : "q-instruction"}
+                style={{ fontSize: scaledSize(9.5) }}
+              >
+                {parsedInstruction.question}
+              </p>
+              {/* 문장 삽입 제시문 (별도 영역) */}
+              {parsedInstruction.insertSentence && (
+                <div className="q-insert-sentence" style={{ fontSize: scaledSize(9) }}>
+                  {parsedInstruction.insertSentence}
+                </div>
+              )}
+            </>
+          )}
           {/* 지문 - 공동 지문은 첫 문제에만 표시 */}
           {showPassage && (
             <p className="q-passage" style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}>
@@ -162,22 +167,32 @@ const QuestionCardComponent = ({
             </p>
           )}
 
-          {/* 보기 - 가로 배치 (밑줄형은 숨김) */}
-          {!hideChoices && (
-            <div className="q-choices">
-              {choices.map((choice, idx) => (
-                choice && (
-                  <span
-                    key={idx}
-                    className={`q-choice ${showAnswer && answer === choiceLabels[idx] ? 'correct' : ''}`}
-                    style={{ fontSize: scaledSize(9.5) }}
-                  >
-                    {choiceLabels[idx]} {choice}
-                  </span>
-                )
-              ))}
-            </div>
-          )}
+          {/* 보기 - 마커형((A), (B) 등)만 가로 배치 (밑줄형은 숨김) */}
+          {!hideChoices && (() => {
+            // 보기가 모두 마커형 ((A), (B), A, B 등 3자 이하 알파벳/괄호)인 경우만 가로 배치
+            const isMarkerChoice = (choice: string) => {
+              const trimmed = choice.trim();
+              // (A)~(E), A~E 패턴
+              return /^\([A-E]\)$/.test(trimmed) || /^[A-E]$/.test(trimmed);
+            };
+            const isAllMarkers = choices.filter(Boolean).every(c => isMarkerChoice(c));
+
+            return (
+              <div className={isAllMarkers ? "q-choices q-choices-horizontal" : "q-choices"}>
+                {choices.map((choice, idx) => (
+                  choice && (
+                    <span
+                      key={idx}
+                      className={`q-choice ${showAnswer && answer === choiceLabels[idx] ? 'correct' : ''}`}
+                      style={{ fontSize: scaledSize(9.5) }}
+                    >
+                      {choiceLabels[idx]} {formatPassageWithUnderline(choice)}
+                    </span>
+                  )
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

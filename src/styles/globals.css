@@ -467,16 +467,16 @@ body {
   align-items: flex-start;
 }
 
-/* 문제 번호 */
+/* 문제 번호 - 해설지와 동일한 스타일 */
 .q-number {
   display: inline-flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  min-width: 26px;
-  height: 26px;
+  min-width: 28px;
   color: var(--badge-text, #9b59b6);
   font-weight: 700;
   flex-shrink: 0;
+  line-height: 1.4;
 }
 
 /* 공동 지문 문제 번호 세로 배치 (33 ~ 34) - 해설지 스타일과 동일 */
@@ -555,11 +555,24 @@ body {
   margin-top: 6px;
 }
 
+/* 짧은 보기는 가로 배치 */
+.q-choices.q-choices-horizontal {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
 .q-choice {
   color: #333;
   white-space: normal;
   word-break: break-word;
   display: block;
+  padding-left: 1.1em;
+  text-indent: -1.1em;
+}
+
+.q-choices-horizontal .q-choice {
+  display: inline;
 }
 
 .q-choice.correct {

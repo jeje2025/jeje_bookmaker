@@ -486,10 +486,83 @@ export function QuestionInput({ onSave, data, headerInfo, onHeaderChange, onGene
     return rows;
   };
 
+  // HTML을 마크다운으로 변환 (굵게, 밑줄 서식 유지)
+  const convertHtmlToMarkdown = (html: string): string => {
+    // DOMParser로 HTML 파싱
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // 재귀적으로 노드를 마크다운으로 변환
+    const processNode = (node: Node): string => {
+      if (node.nodeType === Node.TEXT_NODE) {
+        return node.textContent || '';
+      }
+
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        const element = node as Element;
+        const tagName = element.tagName.toLowerCase();
+        const children = Array.from(node.childNodes).map(processNode).join('');
+
+        // 굵게 + 밑줄
+        const isBold = tagName === 'b' || tagName === 'strong' ||
+                       element.style?.fontWeight === 'bold' ||
+                       parseInt(element.style?.fontWeight || '0') >= 700;
+        const isUnderline = tagName === 'u' ||
+                           element.style?.textDecoration?.includes('underline');
+
+        if (isBold && isUnderline) {
+          return `***${children}***`;
+        } else if (isBold) {
+          return `**${children}**`;
+        } else if (isUnderline) {
+          return `_${children}_`;
+        }
+
+        // 이탤릭
+        if (tagName === 'i' || tagName === 'em') {
+          return `*${children}*`;
+        }
+
+        // 테이블 셀
+        if (tagName === 'td' || tagName === 'th') {
+          return children + '\t';
+        }
+
+        // 테이블 행
+        if (tagName === 'tr') {
+          return children.replace(/\t$/, '') + '\n';
+        }
+
+        return children;
+      }
+
+      return '';
+    };
+
+    // body 내용 처리
+    const result = processNode(doc.body);
+    return result.trim();
+  };
+
   // 붙여넣기 처리 (엑셀에서 복사한 데이터)
   const handlePaste = (e: ClipboardEvent<HTMLInputElement | HTMLTextAreaElement>, startRow: number, startCol: number) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text');
+
+    const plainData = e.clipboardData.getData('text');
+    const htmlData = e.clipboardData.getData('text/html');
+
+    // 기본적으로 plain text 사용
+    let pastedData = plainData;
+
+    // HTML이 있고, 테이블이 아닌 단일 셀 데이터인 경우만 서식 변환 시도
+    // (탭이 없으면 단일 셀로 간주)
+    if (htmlData && !plainData.includes('\t') && htmlData.includes('<')) {
+      const converted = convertHtmlToMarkdown(htmlData);
+      // 변환 결과에 탭이 없으면 (테이블 구조가 아니면) 사용
+      if (!converted.includes('\t') || converted.split('\t').length <= 2) {
+        pastedData = converted;
+      }
+    }
 
     // 탭이 없으면 단일 셀로 취급 (넘버스에서 셀 내부 줄바꿈이 있는 경우)
     const hasTab = pastedData.includes('\t');

@@ -171,8 +171,8 @@ const GroupedQuestionCard = ({ group, showAnswer = false }: GroupedQuestionCardP
     <div className="question-compact">
       {/* 문제 번호(세로) + 지문 + 각 문제별 발문/보기 */}
       <div className="question-row">
-        {/* 문제 번호 세로 배치 (37 ~ 38) */}
-        <div className="q-number q-number-vertical" style={{ fontSize: scaledSize(14) }}>
+        {/* 문제 번호 세로 배치 (37 ~ 38) - 해설지와 동일 크기 */}
+        <div className="q-number q-number-vertical" style={{ fontSize: scaledSize(18) }}>
           <span>{minNum}</span>
           <span className="q-number-separator">~</span>
           <span>{maxNum}</span>
@@ -258,21 +258,7 @@ const normalizePassage = (passage: string): string => {
 
 // 두 지문이 같은지 비교 (정규화 후 비교)
 const isSamePassage = (passage1: string, passage2: string): boolean => {
-  const norm1 = normalizePassage(passage1);
-  const norm2 = normalizePassage(passage2);
-  const result = norm1 === norm2;
-  // 디버깅
-  if (!result && passage1 && passage2) {
-    console.log('[isSamePassage] 다름:', {
-      p1_len: passage1.length,
-      p2_len: passage2.length,
-      norm1_len: norm1.length,
-      norm2_len: norm2.length,
-      p1_start: passage1.substring(0, 30),
-      p2_start: passage2.substring(0, 30),
-    });
-  }
-  return result;
+  return normalizePassage(passage1) === normalizePassage(passage2);
 };
 
 // 같은 지문을 가진 연속 문제들을 그룹핑 (해설지와 동일한 로직)
@@ -282,12 +268,10 @@ const groupByPassage = (items: QuestionItem[]) => {
   // 세트 문제 처리: passage가 없으면 이전 문제의 passage 상속
   let lastPassage = '';
   const processedItems = items.map(item => {
-    console.log(`[groupByPassage] 문제 ${item.questionNumber}: passage 길이=${item.passage?.length || 0}, 앞 20자="${item.passage?.substring(0, 20) || '(없음)'}"`);
     if (item.passage && item.passage.trim()) {
       lastPassage = item.passage;
       return item;
     } else if (lastPassage) {
-      console.log(`[groupByPassage] 문제 ${item.questionNumber}: lastPassage 상속`);
       return { ...item, passage: lastPassage };
     }
     return item;
@@ -310,13 +294,6 @@ const groupByPassage = (items: QuestionItem[]) => {
       });
     }
   });
-
-  // 디버깅: 그룹핑 결과 확인
-  console.log('[QuestionView] groupByPassage 결과:', result.map(g => ({
-    count: g.items.length,
-    numbers: g.items.map(i => i.questionNumber),
-    passagePreview: g.sharedPassage.substring(0, 50) + '...'
-  })));
 
   return result;
 };
@@ -595,9 +572,23 @@ export const QuestionView = memo(function QuestionView({
         );
       } else {
         // 단일 문제 또는 어휘/문법: 개별 QuestionCard로 렌더링
+        // 같은 발문을 가진 연속 문제들은 첫 번째만 발문 표시
+        let lastInstruction = '';
+
         group.items.forEach((item, itemIdx) => {
           const isFirst = itemIdx === 0;
           const isLast = itemIdx === group.items.length - 1;
+
+          // 현재 발문이 이전과 같으면 공통 발문으로 처리
+          const currentInstruction = item.instruction || '';
+          const isSameInstruction = currentInstruction === lastInstruction && currentInstruction !== '';
+          const showInstruction = !isSameInstruction; // 다른 발문일 때만 표시
+
+          // 다음 문제와 발문이 같은지 확인 (공통 발문 스타일 적용용)
+          const nextItem = group.items[itemIdx + 1];
+          const isCommonInstruction = nextItem && nextItem.instruction === currentInstruction && currentInstruction !== '';
+
+          lastInstruction = currentInstruction;
 
           children.push(
             <div
@@ -609,8 +600,8 @@ export const QuestionView = memo(function QuestionView({
                 <QuestionCard
                   item={item}
                   showAnswer={viewMode === 'answer'}
-                  showInstruction={true}
-                  isCommonInstruction={false}
+                  showInstruction={showInstruction}
+                  isCommonInstruction={isCommonInstruction}
                   groupQuestionNumbers={undefined}
                   isFirstInGroup={true}
                   hideChoices={item.categorySub === '밑줄형'}

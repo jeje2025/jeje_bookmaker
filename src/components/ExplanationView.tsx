@@ -1,4 +1,4 @@
-import { Fragment, memo, useMemo, useState, useCallback } from 'react';
+import { Fragment, memo, useMemo, useState, useCallback, useRef } from 'react';
 import { A4PageLayout } from './A4PageLayout';
 import { HeaderFooter } from './HeaderFooter';
 import { scaledSize } from '../utils/fontScale';
@@ -160,6 +160,51 @@ const QuickAnswerTable = ({ questions }: { questions: QuestionItem[] }) => {
   );
 };
 
+// ===== 마크다운 마크업 토글 헬퍼 =====
+// 선택된 텍스트에 마크업을 추가하거나 제거
+const toggleMarkup = (
+  text: string,
+  selectionStart: number,
+  selectionEnd: number,
+  markup: string // "**" for bold, "_" for underline
+): { newText: string; newStart: number; newEnd: number } => {
+  const before = text.slice(0, selectionStart);
+  const selected = text.slice(selectionStart, selectionEnd);
+  const after = text.slice(selectionEnd);
+
+  const markupLen = markup.length;
+
+  // 이미 마크업이 있는지 확인
+  const hasMarkupInside = selected.startsWith(markup) && selected.endsWith(markup) && selected.length >= markupLen * 2;
+  const hasMarkupOutside = before.endsWith(markup) && after.startsWith(markup);
+
+  if (hasMarkupInside) {
+    // 내부에 마크업이 있으면 제거
+    const newSelected = selected.slice(markupLen, -markupLen);
+    return {
+      newText: before + newSelected + after,
+      newStart: selectionStart,
+      newEnd: selectionStart + newSelected.length
+    };
+  } else if (hasMarkupOutside) {
+    // 외부에 마크업이 있으면 제거
+    const newBefore = before.slice(0, -markupLen);
+    const newAfter = after.slice(markupLen);
+    return {
+      newText: newBefore + selected + newAfter,
+      newStart: selectionStart - markupLen,
+      newEnd: selectionEnd - markupLen
+    };
+  } else {
+    // 마크업 추가
+    return {
+      newText: before + markup + selected + markup + after,
+      newStart: selectionStart + markupLen,
+      newEnd: selectionEnd + markupLen
+    };
+  }
+};
+
 // ===== 범용 편집 가능한 텍스트 컴포넌트 =====
 const EditableText = ({
   text,
@@ -180,6 +225,7 @@ const EditableText = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(text);
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
 
   // onSave가 없으면 편집 불가
   if (!onSave) {
@@ -200,14 +246,57 @@ const EditableText = ({
     setIsEditing(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     if (e.key === 'Escape') {
       setIsEditing(false);
+      return;
     }
     if (e.key === 'Enter' && !multiline) {
       e.preventDefault();
       handleSave();
+      return;
     }
+
+    // Cmd+B (굵게) 또는 Cmd+U (밑줄)
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'u')) {
+      e.preventDefault();
+      const target = e.currentTarget;
+      const start = target.selectionStart ?? 0;
+      const end = target.selectionEnd ?? 0;
+
+      if (start === end) return; // 선택 영역이 없으면 무시
+
+      const markup = e.key === 'b' ? '**' : '_';
+      const result = toggleMarkup(editValue, start, end, markup);
+
+      setEditValue(result.newText);
+
+      // 커서 위치 복원
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.setSelectionRange(result.newStart, result.newEnd);
+        }
+      }, 0);
+    }
+  };
+
+  // 편집 모드에서 단어 더블클릭 시 굵게 토글
+  const handleWordDoubleClick = (e: React.MouseEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    e.stopPropagation();
+    const target = e.currentTarget;
+    const start = target.selectionStart ?? 0;
+    const end = target.selectionEnd ?? 0;
+
+    if (start === end) return; // 선택 영역이 없으면 무시
+
+    const result = toggleMarkup(editValue, start, end, '**');
+    setEditValue(result.newText);
+
+    setTimeout(() => {
+      if (inputRef.current) {
+        inputRef.current.setSelectionRange(result.newStart, result.newEnd);
+      }
+    }, 0);
   };
 
   if (isEditing) {
@@ -215,19 +304,23 @@ const EditableText = ({
       <div className="edit-container print:hidden">
         {multiline ? (
           <textarea
+            ref={inputRef as React.RefObject<HTMLTextAreaElement>}
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
+            onDoubleClick={handleWordDoubleClick}
             className="w-full p-2 text-xs border rounded resize-none"
             style={{ minHeight: '60px', fontSize: scaledSize(10), lineHeight: 1.5 }}
             autoFocus
           />
         ) : (
           <input
+            ref={inputRef as React.RefObject<HTMLInputElement>}
             type="text"
             value={editValue}
             onChange={(e) => setEditValue(e.target.value)}
             onKeyDown={handleKeyDown}
+            onDoubleClick={handleWordDoubleClick}
             className="w-full p-1 text-xs border rounded"
             style={{ fontSize: scaledSize(10) }}
             autoFocus
@@ -247,6 +340,9 @@ const EditableText = ({
             취소
           </button>
         </div>
+        <p className="text-xs text-gray-500 mt-1">
+          Cmd+B: 굵게 | Cmd+U: 밑줄 | 단어 더블클릭: 굵게 토글
+        </p>
       </div>
     );
   }
@@ -283,6 +379,7 @@ const EditablePassage = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(text);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // onSave가 없으면 편집 불가
   if (!onSave) {
@@ -303,19 +400,63 @@ const EditablePassage = ({
     setIsEditing(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Escape') {
       setIsEditing(false);
+      return;
     }
+
+    // Cmd+B (굵게) 또는 Cmd+U (밑줄)
+    if ((e.metaKey || e.ctrlKey) && (e.key === 'b' || e.key === 'u')) {
+      e.preventDefault();
+      const target = e.currentTarget;
+      const start = target.selectionStart ?? 0;
+      const end = target.selectionEnd ?? 0;
+
+      if (start === end) return; // 선택 영역이 없으면 무시
+
+      const markup = e.key === 'b' ? '**' : '_';
+      const result = toggleMarkup(editValue, start, end, markup);
+
+      setEditValue(result.newText);
+
+      // 커서 위치 복원
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.setSelectionRange(result.newStart, result.newEnd);
+        }
+      }, 0);
+    }
+  };
+
+  // 편집 모드에서 단어 더블클릭 시 굵게 토글
+  const handleWordDoubleClick = (e: React.MouseEvent<HTMLTextAreaElement>) => {
+    e.stopPropagation();
+    const target = e.currentTarget;
+    const start = target.selectionStart ?? 0;
+    const end = target.selectionEnd ?? 0;
+
+    if (start === end) return; // 선택 영역이 없으면 무시
+
+    const result = toggleMarkup(editValue, start, end, '**');
+    setEditValue(result.newText);
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.setSelectionRange(result.newStart, result.newEnd);
+      }
+    }, 0);
   };
 
   if (isEditing) {
     return (
       <div className="passage-edit-container print:hidden">
         <textarea
+          ref={textareaRef}
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
+          onDoubleClick={handleWordDoubleClick}
           className="w-full p-2 text-xs border rounded resize-none"
           style={{ minHeight: '100px', fontSize: scaledSize(10), lineHeight: 1.6 }}
           autoFocus
@@ -335,7 +476,7 @@ const EditablePassage = ({
           </button>
         </div>
         <p className="text-xs text-gray-500 mt-1">
-          **굵게** / _밑줄_ / ***굵게+밑줄***
+          Cmd+B: 굵게 | Cmd+U: 밑줄 | 단어 더블클릭: 굵게 토글
         </p>
       </div>
     );
@@ -633,12 +774,12 @@ const GrammarSection = ({
   item,
   explanation,
   showNumber = true,
-  isEditMode = false
+  onEdit,
 }: {
   item: QuestionItem;
   explanation?: GrammarExplanation;
   showNumber?: boolean;
-  isEditMode?: boolean;
+  onEdit?: ExplanationEditCallback;
 }) => {
   const labels = ['(A)', '(B)', '(C)', '(D)', '(E)'];
 
@@ -647,7 +788,7 @@ const GrammarSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-                answer={item.answer}
+        answer={item.answer}
         answerChange={explanation?.answerChange}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -657,30 +798,35 @@ const GrammarSection = ({
       {/* 정답 해설 */}
       <div className="explanation-block">
         <div className="explanation-block-title">정답 해설 |</div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.correctExplanation) || (
-            <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.correctExplanation || ''}
+            placeholder="AI 해설이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'correctExplanation', newText) : undefined}
+          />
         </div>
       </div>
 
       {/* 오답 해설 */}
       <div className="explanation-block">
         <div className="explanation-block-title">오답 해설 |</div>
-        <div
-          className={`explanation-block-content wrong-explanations ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
+        <div className="explanation-block-content wrong-explanations">
           {explanation?.wrongExplanations && explanation.wrongExplanations.length > 0 ? (
             explanation.wrongExplanations.map((exp, idx) => (
               <div key={idx} className="wrong-item">
                 <span className="wrong-label">{labels[idx]}</span>
-                <span className="wrong-text">{stripMarkdown(exp)}</span>
+                <EditableText
+                  text={exp || ''}
+                  className="wrong-text"
+                  formatText={true}
+                  onSave={onEdit ? (newText) => {
+                    const newWrongExplanations = [...(explanation.wrongExplanations || [])];
+                    newWrongExplanations[idx] = newText;
+                    onEdit(item.id, 'wrongExplanations', newWrongExplanations as any);
+                  } : undefined}
+                />
               </div>
             ))
           ) : (
@@ -697,12 +843,12 @@ const LogicSection = ({
   item,
   explanation,
   showNumber = true,
-  isEditMode = false
+  onEdit,
 }: {
   item: QuestionItem;
   explanation?: LogicExplanation;
   showNumber?: boolean;
-  isEditMode?: boolean;
+  onEdit?: ExplanationEditCallback;
 }) => {
   const choiceLabels = ['①', '②', '③', '④', '⑤'];
 
@@ -711,7 +857,7 @@ const LogicSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-                answer={item.answer}
+        answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -724,14 +870,14 @@ const LogicSection = ({
           <span className="block-icon">📖</span>
           빈칸 타게팅 |
         </div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.step1Targeting) || (
-            <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.step1Targeting || ''}
+            placeholder="AI 해설이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'step1Targeting', newText) : undefined}
+          />
         </div>
       </div>
 
@@ -741,14 +887,14 @@ const LogicSection = ({
           <span className="block-icon">📝</span>
           근거 확인 |
         </div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.step2Evidence) || (
-            <span className="placeholder-text">근거 분석이 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.step2Evidence || ''}
+            placeholder="근거 분석이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'step2Evidence', newText) : undefined}
+          />
         </div>
       </div>
 
@@ -758,16 +904,21 @@ const LogicSection = ({
           <span className="block-icon">📝</span>
           보기 판단 |
         </div>
-        <div
-          className={`explanation-block-content choice-explanations ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
+        <div className="explanation-block-content choice-explanations">
           {explanation?.step3Choices && explanation.step3Choices.length > 0 ? (
             explanation.step3Choices.map((exp, idx) => (
               <div key={idx} className={`choice-item ${isAnswerMatch(item.answer, choiceLabels[idx]) ? 'correct' : ''}`}>
                 <span className="choice-label">{choiceLabels[idx]}</span>
-                <span className="choice-text">{stripLeadingNumber(exp)}</span>
+                <EditableText
+                  text={stripLeadingNumber(exp) || ''}
+                  className="choice-text"
+                  formatText={true}
+                  onSave={onEdit ? (newText) => {
+                    const newChoices = [...(explanation.step3Choices || [])];
+                    newChoices[idx] = newText;
+                    onEdit(item.id, 'step3Choices', newChoices as any);
+                  } : undefined}
+                />
               </div>
             ))
           ) : (
@@ -784,12 +935,12 @@ const MainIdeaSection = ({
   item,
   explanation,
   showNumber = true,
-  isEditMode = false
+  onEdit,
 }: {
   item: QuestionItem;
   explanation?: MainIdeaExplanation;
   showNumber?: boolean;
-  isEditMode?: boolean;
+  onEdit?: ExplanationEditCallback;
 }) => {
   const choiceLabels = ['①', '②', '③', '④', '⑤'];
 
@@ -798,7 +949,7 @@ const MainIdeaSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-                answer={item.answer}
+        answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -811,14 +962,14 @@ const MainIdeaSection = ({
           <span className="block-icon">📖</span>
           지문 분석 |
         </div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {explanation?.passageAnalysis || (
-            <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.passageAnalysis || ''}
+            placeholder="AI 해설이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'passageAnalysis', newText) : undefined}
+          />
         </div>
       </div>
 
@@ -828,14 +979,14 @@ const MainIdeaSection = ({
           <span className="block-icon">📝</span>
           정답 해설 |
         </div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.correctExplanation) || (
-            <span className="placeholder-text">정답 해설이 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.correctExplanation || ''}
+            placeholder="정답 해설이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'correctExplanation', newText) : undefined}
+          />
         </div>
       </div>
 
@@ -845,11 +996,7 @@ const MainIdeaSection = ({
           <span className="block-icon">📝</span>
           오답 소거 |
         </div>
-        <div
-          className={`explanation-block-content choice-explanations ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
+        <div className="explanation-block-content choice-explanations">
           {explanation?.wrongExplanations && explanation.wrongExplanations.length > 0 ? (
             explanation.wrongExplanations.map((exp, idx) => {
               // 정답은 스킵
@@ -857,7 +1004,16 @@ const MainIdeaSection = ({
               return (
                 <div key={idx} className="choice-item">
                   <span className="choice-label">{choiceLabels[idx]}</span>
-                  <span className="choice-text">{stripLeadingNumber(exp)}</span>
+                  <EditableText
+                    text={stripLeadingNumber(exp) || ''}
+                    className="choice-text"
+                    formatText={true}
+                    onSave={onEdit ? (newText) => {
+                      const newWrongExplanations = [...(explanation.wrongExplanations || [])];
+                      newWrongExplanations[idx] = newText;
+                      onEdit(item.id, 'wrongExplanations', newWrongExplanations as any);
+                    } : undefined}
+                  />
                 </div>
               );
             })
@@ -875,12 +1031,12 @@ const InsertionSection = ({
   item,
   explanation,
   showNumber = true,
-  isEditMode = false
+  onEdit,
 }: {
   item: QuestionItem;
   explanation?: InsertionExplanation;
   showNumber?: boolean;
-  isEditMode?: boolean;
+  onEdit?: ExplanationEditCallback;
 }) => {
   const labels = ['(A)', '(B)', '(C)', '(D)', '(E)'];
 
@@ -889,7 +1045,7 @@ const InsertionSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-                answer={item.answer}
+        answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -902,29 +1058,34 @@ const InsertionSection = ({
           <span className="block-icon">📖</span>
           정답 해설 |
         </div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.correctExplanation) || (
-            <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.correctExplanation || ''}
+            placeholder="AI 해설이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'correctExplanation', newText) : undefined}
+          />
         </div>
       </div>
 
       {/* 각 위치별 설명 */}
       {explanation?.positionExplanations && explanation.positionExplanations.length > 0 && (
         <div className="explanation-block">
-          <div
-            className={`explanation-block-content position-explanations ${isEditMode ? 'editable-content' : ''}`}
-            contentEditable={isEditMode}
-            suppressContentEditableWarning={true}
-          >
+          <div className="explanation-block-content position-explanations">
             {explanation.positionExplanations.map((exp, idx) => (
               <div key={idx} className="position-item">
                 <span className="position-label">{labels[idx]}</span>
-                <span className="position-text">{stripMarkdown(exp)}</span>
+                <EditableText
+                  text={exp || ''}
+                  className="position-text"
+                  formatText={true}
+                  onSave={onEdit ? (newText) => {
+                    const newPositions = [...(explanation.positionExplanations || [])];
+                    newPositions[idx] = newText;
+                    onEdit(item.id, 'positionExplanations', newPositions as any);
+                  } : undefined}
+                />
               </div>
             ))}
           </div>
@@ -939,19 +1100,19 @@ const OrderSection = ({
   item,
   explanation,
   showNumber = true,
-  isEditMode = false
+  onEdit,
 }: {
   item: QuestionItem;
   explanation?: OrderExplanation;
   showNumber?: boolean;
-  isEditMode?: boolean;
+  onEdit?: ExplanationEditCallback;
 }) => {
   return (
     <div className="explanation-section">
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-                answer={item.answer}
+        answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -961,43 +1122,40 @@ const OrderSection = ({
       {/* 보기의 1열 */}
       <div className="explanation-block">
         <div className="explanation-block-title highlight">보기의 1열 |</div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.firstParagraph) || (
-            <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.firstParagraph || ''}
+            placeholder="AI 해설이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'firstParagraph', newText) : undefined}
+          />
         </div>
       </div>
 
       {/* 쪼개는 포인트 */}
       <div className="explanation-block">
         <div className="explanation-block-title highlight">쪼개는 포인트 |</div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.splitPoint) || (
-            <span className="placeholder-text">쪼개는 포인트가 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.splitPoint || ''}
+            placeholder="쪼개는 포인트가 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'splitPoint', newText) : undefined}
+          />
         </div>
       </div>
 
       {/* 결론 */}
       <div className="explanation-block">
-        <div
-          className={`explanation-block-content conclusion ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.conclusion) || (
-            <span className="placeholder-text">
-              따라서 정답은 <strong>{item.answer}</strong>번입니다.
-            </span>
-          )}
+        <div className="explanation-block-content conclusion">
+          <EditableText
+            text={explanation?.conclusion || `따라서 정답은 ${item.answer}번입니다.`}
+            placeholder={`따라서 정답은 ${item.answer}번입니다.`}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'conclusion', newText) : undefined}
+          />
         </div>
       </div>
     </div>
@@ -1009,12 +1167,12 @@ const WordAppropriatenessSection = ({
   item,
   explanation,
   showNumber = true,
-  isEditMode = false
+  onEdit,
 }: {
   item: QuestionItem;
   explanation?: WordAppropriatenessExplanation;
   showNumber?: boolean;
-  isEditMode?: boolean;
+  onEdit?: ExplanationEditCallback;
 }) => {
   const labels = ['(A)', '(B)', '(C)', '(D)', '(E)'];
 
@@ -1023,7 +1181,7 @@ const WordAppropriatenessSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-                answer={item.answer}
+        answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -1036,14 +1194,14 @@ const WordAppropriatenessSection = ({
           <span className="block-icon">📖</span>
           핵심 주제 |
         </div>
-        <div
-          className={`explanation-block-content ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
-          {stripMarkdown(explanation?.mainTopic) || (
-            <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
-          )}
+        <div className="explanation-block-content">
+          <EditableText
+            text={explanation?.mainTopic || ''}
+            placeholder="AI 해설이 생성되면 여기에 표시됩니다."
+            multiline={true}
+            formatText={true}
+            onSave={onEdit ? (newText) => onEdit(item.id, 'mainTopic', newText) : undefined}
+          />
         </div>
       </div>
 
@@ -1053,16 +1211,21 @@ const WordAppropriatenessSection = ({
           <span className="block-icon">📝</span>
           정답 해설 |
         </div>
-        <div
-          className={`explanation-block-content choice-explanations ${isEditMode ? 'editable-content' : ''}`}
-          contentEditable={isEditMode}
-          suppressContentEditableWarning={true}
-        >
+        <div className="explanation-block-content choice-explanations">
           {explanation?.choiceExplanations && explanation.choiceExplanations.length > 0 ? (
             explanation.choiceExplanations.map((exp, idx) => (
               <div key={idx} className="choice-item">
                 <span className="choice-label">{labels[idx]}</span>
-                <span className="choice-text">{stripLeadingNumber(exp)}</span>
+                <EditableText
+                  text={stripLeadingNumber(exp) || ''}
+                  className="choice-text"
+                  formatText={true}
+                  onSave={onEdit ? (newText) => {
+                    const newChoices = [...(explanation.choiceExplanations || [])];
+                    newChoices[idx] = newText;
+                    onEdit(item.id, 'choiceExplanations', newChoices as any);
+                  } : undefined}
+                />
               </div>
             ))
           ) : (
@@ -1095,22 +1258,22 @@ const ExplanationSectionByType = ({
     return <VocabularySection item={item} explanation={explanation as VocabularyExplanation} showNumber={showNumber} onEdit={onEdit} isEditMode={isEditMode} />;
   }
   if (explType === 'grammar') {
-    return <GrammarSection item={item} explanation={explanation as GrammarExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <GrammarSection item={item} explanation={explanation as GrammarExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
   if (explType === 'logic') {
-    return <LogicSection item={item} explanation={explanation as LogicExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <LogicSection item={item} explanation={explanation as LogicExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
   if (explType === 'mainIdea') {
-    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
   if (explType === 'insertion') {
-    return <InsertionSection item={item} explanation={explanation as InsertionExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <InsertionSection item={item} explanation={explanation as InsertionExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
   if (explType === 'order') {
-    return <OrderSection item={item} explanation={explanation as OrderExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <OrderSection item={item} explanation={explanation as OrderExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
   if (explType === 'wordAppropriateness') {
-    return <WordAppropriatenessSection item={item} explanation={explanation as WordAppropriatenessExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <WordAppropriatenessSection item={item} explanation={explanation as WordAppropriatenessExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
 
   // fallback: categoryMain 기반 분기
@@ -1120,29 +1283,29 @@ const ExplanationSectionByType = ({
     return <VocabularySection item={item} explanation={explanation as VocabularyExplanation} showNumber={showNumber} onEdit={onEdit} isEditMode={isEditMode} />;
   }
   if (categoryMain === '문법') {
-    return <GrammarSection item={item} explanation={explanation as GrammarExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <GrammarSection item={item} explanation={explanation as GrammarExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
   if (categoryMain === '논리' || categoryMain === '빈칸') {
-    return <LogicSection item={item} explanation={explanation as LogicExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <LogicSection item={item} explanation={explanation as LogicExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
   if (categoryMain === '대의 파악') {
-    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
   if (categoryMain === '정보 파악') {
     if (categorySub === '순서') {
-      return <OrderSection item={item} explanation={explanation as OrderExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+      return <OrderSection item={item} explanation={explanation as OrderExplanation} showNumber={showNumber} onEdit={onEdit} />;
     }
     if (categorySub === '삽입') {
-      return <InsertionSection item={item} explanation={explanation as InsertionExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+      return <InsertionSection item={item} explanation={explanation as InsertionExplanation} showNumber={showNumber} onEdit={onEdit} />;
     }
     if (categorySub === '어휘 적절성' || categorySub === '밑줄 추론') {
-      return <WordAppropriatenessSection item={item} explanation={explanation as WordAppropriatenessExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+      return <WordAppropriatenessSection item={item} explanation={explanation as WordAppropriatenessExplanation} showNumber={showNumber} onEdit={onEdit} />;
     }
-    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+    return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} onEdit={onEdit} />;
   }
 
   // 기본 (알 수 없는 유형)
-  return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} isEditMode={isEditMode} />;
+  return <MainIdeaSection item={item} explanation={explanation as MainIdeaExplanation} showNumber={showNumber} onEdit={onEdit} />;
 };
 
 // ===== 보기 렌더링 헬퍼 (번역 포함) =====
@@ -1347,19 +1510,21 @@ const SingleExplanationCard = ({
               </div>
             </div>
           )}
-          {/* 보기 */}
-          <div className="question-choices" style={{ marginTop: '8px', fontSize: scaledSize(9.5) }}>
-            {item.choices.map((choice, idx) => (
-              choice && renderEditableChoice(
-                choice,
-                idx,
-                item.answer,
-                choiceTranslations?.[idx],
-                choiceDisplayMode,
-                onChoiceEdit ? (newChoice) => onChoiceEdit(item.id, idx, newChoice) : undefined
-              )
-            ))}
-          </div>
+          {/* 보기 - 문법 유형은 보기 숨김 */}
+          {item.categoryMain?.trim() !== '문법' && (
+            <div className="question-choices" style={{ marginTop: '8px', fontSize: scaledSize(9.5) }}>
+              {item.choices.map((choice, idx) => (
+                choice && renderEditableChoice(
+                  choice,
+                  idx,
+                  item.answer,
+                  choiceTranslations?.[idx],
+                  choiceDisplayMode,
+                  onChoiceEdit ? (newChoice) => onChoiceEdit(item.id, idx, newChoice) : undefined
+                )
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -1476,11 +1641,12 @@ const GroupedExplanationCard = ({
             </div>
           )}
 
-          {/* 각 문제의 보기 */}
+          {/* 각 문제의 보기 - 문법 유형은 보기 숨김 */}
           {group.items.map((item) => {
             const itemExplanation = explanations?.get(item.id);
             const choiceTranslations = itemExplanation?.choiceTranslations;
             const instructionText = itemExplanation?.instructionTranslation || item.instruction;
+            const isGrammar = item.categoryMain?.trim() === '문법';
 
             return (
               <div key={item.id} className="grouped-question-choices">
@@ -1492,18 +1658,20 @@ const GroupedExplanationCard = ({
                     className="grouped-question-instruction"
                   />
                 </div>
-                <div className="question-choices">
-                  {item.choices.map((choice, idx) => (
-                    choice && renderEditableChoice(
-                      choice,
-                      idx,
-                      item.answer,
-                      choiceTranslations?.[idx],
-                      choiceDisplayMode,
-                      onChoiceEdit ? (newChoice) => onChoiceEdit(item.id, idx, newChoice) : undefined
-                    )
-                  ))}
-                </div>
+                {!isGrammar && (
+                  <div className="question-choices">
+                    {item.choices.map((choice, idx) => (
+                      choice && renderEditableChoice(
+                        choice,
+                        idx,
+                        item.answer,
+                        choiceTranslations?.[idx],
+                        choiceDisplayMode,
+                        onChoiceEdit ? (newChoice) => onChoiceEdit(item.id, idx, newChoice) : undefined
+                      )
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
