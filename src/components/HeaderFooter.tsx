@@ -14,6 +14,7 @@ interface HeaderFooterProps {
   onFooterChange?: (value: string) => void;
   onHeaderChange?: (headerInfo: { headerTitle: string; headerDescription: string }) => void;
   unitNumber?: number;
+  categoryContent?: React.ReactNode; // 대분류 표 등 추가 컨텐츠
 }
 
 export function HeaderFooter({
@@ -23,7 +24,8 @@ export function HeaderFooter({
   isEditable = false,
   onFooterChange,
   onHeaderChange,
-  unitNumber
+  unitNumber,
+  categoryContent
 }: HeaderFooterProps) {
   if (!headerInfo) return null;
 
@@ -84,6 +86,12 @@ export function HeaderFooter({
                   {headerInfo.headerDescription}
                 </p>
               )}
+            </div>
+          )}
+          {/* 대분류 표 등 추가 컨텐츠 (설명 아래) */}
+          {categoryContent && (
+            <div className="mt-3">
+              {categoryContent}
             </div>
           )}
         </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Button } from './components/ui/button';
-import { Eye, LayoutGrid, Table2, List, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image, Save, Printer, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
+import { Eye, LayoutGrid, Table2, FileText, FileCheck, Edit3, BookOpen, Clock, FileSpreadsheet, FileQuestion, Shuffle, Image, Save, Printer, Settings, PanelLeftClose, PanelLeft } from 'lucide-react';
 import { type PaletteKey, pantoneColors, ColorPaletteSelector, applyPalette } from './components/ColorPaletteSelector';
 import { type FontSizeKey, FontSizeSelector, applyFontSize, fontSizes } from './components/FontSizeSelector';
 import { UnitSplitButton } from './components/UnitSplitButton';
@@ -242,11 +242,12 @@ export default function App() {
   const [grammarViewMode, setGrammarViewMode] = useState<'question' | 'answer'>('question'); // 구문교재 뷰모드: 문제지/해설지
   // 문제집 모드 상태
   const [questionList, setQuestionList] = useState<QuestionItem[]>([]); // 문제 리스트
-  const [questionHeaderInfo, setQuestionHeaderInfo] = useState<QuestionHeaderInfo>({ headerTitle: '2025 동국대 편입', headerDescription: '', footerLeft: '' }); // 문제집 헤더
+  const [questionHeaderInfo, setQuestionHeaderInfo] = useState<QuestionHeaderInfo>({ headerTitle: '학교와 연도를 입력하세요', headerDescription: '', footerLeft: '' }); // 문제집 헤더
   const [questionViewMode, setQuestionViewMode] = useState<QuestionViewMode>('question'); // 문제집 뷰모드: 문제지/해설지
   const [questionExplanations, setQuestionExplanations] = useState<Map<string, ExplanationData>>(new Map()); // 해설 데이터
   const [isGeneratingExplanations, setIsGeneratingExplanations] = useState(false); // 해설 생성 중
   const [generationProgress, setGenerationProgress] = useState<{ current: number; total: number } | null>(null); // 해설 생성 진행률
+  const [regeneratingIds, setRegeneratingIds] = useState<Set<string>>(new Set()); // 재생성 중인 문제 ID들
   const [vocaPreviewWords, setVocaPreviewWords] = useState<VocaPreviewWord[]>([]); // 단어장 데이터
   const [isGeneratingVocaPreview, setIsGeneratingVocaPreview] = useState(false); // 단어장 생성 중
   const [vocaPreviewStatus, setVocaPreviewStatus] = useState<string>(''); // 단어장 생성 상태 메시지
@@ -809,50 +810,32 @@ export default function App() {
     }
   };
 
-  // AI 해설 생성 핸들러 (내부 함수) - 해설 + 단어장 동시 생성
+  // AI 해설 생성 핸들러 (내부 함수)
   const doGenerateExplanations = async (questions: QuestionItem[], aiSettings: AISettings) => {
     setIsGeneratingExplanations(true);
     setGenerationProgress({ current: 0, total: questions.length });
     toast.info(`${questions.length}개 문제 해설 생성 시작... (${aiSettings.provider}/${aiSettings.model})`, { duration: 2000 });
 
+    // Gemini API 키 가져오기 (번역은 항상 Gemini 사용)
+    const allAiSettings = getAISettings();
+    const geminiApiKey = allAiSettings.apiKeys?.gemini || allAiSettings.apiKeys?.['gemini'];
+
     try {
-      // 1. 해설 생성 (AI 설정 전달)
+      // 해설 생성 (해설은 사용자 선택 AI, 번역은 Gemini 고정)
       const explanations = await generateExplanations(
         questions,
         aiSettings,
         (current, total) => {
           setGenerationProgress({ current, total });
-        }
+        },
+        geminiApiKey // 번역용 Gemini API 키 전달
       );
 
       setQuestionExplanations(explanations);
       toast.success(`${explanations.size}개 해설 생성 완료!`, { duration: 1000 });
 
-      // 2. 단어장도 함께 생성 (단어장은 Gemini 사용 - 비용 효율)
-      setIsGeneratingVocaPreview(true);
-      setVocaPreviewStatus('단어장 생성 중...');
-      toast.info('단어장 자동 생성 시작...', { duration: 1500 });
-
-      try {
-        const words = await generateVocaPreview(
-          questions,
-          aiSettings.apiKey, // 단어장은 현재 선택된 API 키 사용
-          (status) => setVocaPreviewStatus(status)
-        );
-        setVocaPreviewWords(words);
-        toast.success(`${words.length}개 단어 추출 완료!`, { duration: 1000 });
-
-        // 해설 + 단어장 모두 완료 후 localStorage에 저장
-        saveExplanationsToLocalStorage(explanations, questions, words);
-      } catch (vocaError) {
-        console.error('단어장 생성 실패:', vocaError);
-        toast.error('단어장 생성에 실패했습니다.', { duration: 1000 });
-        // 단어장 실패해도 해설은 저장
-        saveExplanationsToLocalStorage(explanations, questions);
-      } finally {
-        setIsGeneratingVocaPreview(false);
-        setVocaPreviewStatus('');
-      }
+      // localStorage에 저장
+      saveExplanationsToLocalStorage(explanations, questions, vocaPreviewWords.length > 0 ? vocaPreviewWords : undefined);
 
     } catch (error) {
       console.error('해설 생성 실패:', error);
@@ -862,6 +845,138 @@ export default function App() {
       setGenerationProgress(null);
     }
   };
+
+  // 단어장 생성 핸들러
+  const handleGenerateVocabulary = useCallback(async (questions: QuestionItem[]) => {
+    // Gemini API 키 가져오기
+    const allAiSettings = getAISettings();
+    const geminiApiKey = allAiSettings.apiKeys?.gemini || allAiSettings.apiKeys?.['gemini'];
+
+    if (!geminiApiKey) {
+      toast.error('단어장 생성을 위해 Gemini API 키를 설정해주세요.', { duration: 2000 });
+      return;
+    }
+
+    setIsGeneratingVocaPreview(true);
+    setVocaPreviewStatus('단어장 생성 중...');
+    toast.info(`${questions.length}개 문제에서 단어 추출 시작...`, { duration: 1500 });
+
+    try {
+      const words = await generateVocaPreview(
+        questions,
+        geminiApiKey,
+        (status) => setVocaPreviewStatus(status)
+      );
+      setVocaPreviewWords(words);
+      toast.success(`${words.length}개 단어 추출 완료!`, { duration: 1000 });
+
+      // 기존 해설이 있으면 함께 저장
+      if (questionExplanations.size > 0) {
+        saveExplanationsToLocalStorage(questionExplanations, questions, words);
+      }
+    } catch (error) {
+      console.error('단어장 생성 실패:', error);
+      toast.error('단어장 생성에 실패했습니다.', { duration: 1000 });
+    } finally {
+      setIsGeneratingVocaPreview(false);
+      setVocaPreviewStatus('');
+    }
+  }, [questionExplanations, vocaPreviewWords]);
+
+  // 단일 문제 해설 재생성 핸들러
+  const handleRegenerateQuestion = useCallback(async (questionId: string) => {
+    // 해당 문제 찾기
+    const questionIndex = questionList.findIndex(q => q.id === questionId);
+    if (questionIndex === -1) {
+      toast.error('문제를 찾을 수 없습니다.', { duration: 1000 });
+      return;
+    }
+
+    let question = { ...questionList[questionIndex] };
+
+    // passage가 비어있으면 위 행의 passage 참조 (세트 문제 지원)
+    if (!question.passage?.trim()) {
+      for (let i = questionIndex - 1; i >= 0; i--) {
+        if (questionList[i].passage?.trim()) {
+          question.passage = questionList[i].passage;
+          console.log(`[재생성] passage 상속: ${questionList[i].questionNumber}번에서 가져옴`);
+          break;
+        }
+      }
+    }
+
+    if (!question.passage?.trim()) {
+      toast.error('지문이 없는 문제는 재생성할 수 없습니다.', { duration: 2000 });
+      return;
+    }
+
+    // AI 설정 불러오기
+    const aiSettingsFromStorage = getAISettings();
+    const currentProvider = aiSettingsFromStorage.provider;
+    const currentApiKey = aiSettingsFromStorage.apiKeys[currentProvider];
+
+    if (!currentApiKey) {
+      toast.error(`${currentProvider.toUpperCase()} API 키가 설정되지 않았습니다.`, { duration: 2000 });
+      return;
+    }
+
+    const aiSettings: AISettings = {
+      provider: currentProvider,
+      model: aiSettingsFromStorage.model,
+      apiKey: currentApiKey
+    };
+
+    // Gemini API 키 가져오기 (번역은 항상 Gemini 사용)
+    const geminiApiKey = aiSettingsFromStorage.apiKeys?.gemini || aiSettingsFromStorage.apiKeys?.['gemini'];
+
+    // 재생성 중 상태 추가
+    setRegeneratingIds(prev => new Set(prev).add(questionId));
+    toast.info(`문제 ${question.questionNumber} 해설 재생성 중...`, { duration: 1500 });
+
+    try {
+      console.log('[재생성] 시작:', questionId, question.questionNumber);
+      console.log('[재생성] 힌트 확인:', question.hint ? `"${question.hint}"` : '(없음)');
+
+      // 단일 문제로 해설 생성 (해설은 사용자 선택 AI, 번역은 Gemini 고정)
+      const explanations = await generateExplanations(
+        [question],
+        aiSettings,
+        () => {}, // 프로그레스 무시
+        geminiApiKey // 번역용 Gemini API 키 전달
+      );
+
+      console.log('[재생성] 결과:', explanations.size, '개');
+      explanations.forEach((value, key) => {
+        console.log('[재생성] 해설 데이터:', key, value);
+      });
+
+      // 결과 병합
+      if (explanations.size > 0) {
+        setQuestionExplanations(prev => {
+          const newMap = new Map(prev);
+          explanations.forEach((value, key) => {
+            newMap.set(key, value);
+          });
+          console.log('[재생성] 상태 업데이트 완료, 총 해설:', newMap.size);
+          return newMap;
+        });
+        toast.success(`문제 ${question.questionNumber} 해설 재생성 완료!`, { duration: 1000 });
+      } else {
+        console.warn('[재생성] 결과가 비어있음');
+        toast.error('해설 재생성 결과가 비어있습니다.', { duration: 1500 });
+      }
+    } catch (error) {
+      console.error('[재생성] 실패:', error);
+      toast.error('해설 재생성에 실패했습니다.', { duration: 1000 });
+    } finally {
+      // 재생성 중 상태 제거
+      setRegeneratingIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(questionId);
+        return newSet;
+      });
+    }
+  }, [questionList]);
 
   // AI 해설 생성 핸들러 (외부 호출용) - AI 설정 적용
   const handleGenerateExplanations = useCallback((questions: QuestionItem[]) => {
@@ -1240,11 +1355,15 @@ export default function App() {
                     headerInfo={questionHeaderInfo}
                     onHeaderChange={setQuestionHeaderInfo}
                     onGenerateExplanations={handleGenerateExplanations}
+                    onGenerateVocabulary={handleGenerateVocabulary}
                     isGenerating={isGeneratingExplanations}
+                    isGeneratingVocabulary={isGeneratingVocaPreview}
                     explanations={questionExplanations}
                     generationProgress={generationProgress ?? undefined}
                     isExpanded={isSidebarExpanded}
                     onToggleExpand={() => setIsSidebarExpanded(!isSidebarExpanded)}
+                    onRegenerateQuestion={handleRegenerateQuestion}
+                    regeneratingIds={regeneratingIds}
                   />
                 </div>
                 {/* 저장된 세션 관리 */}
@@ -1448,28 +1567,6 @@ export default function App() {
                 문제지
               </button>
               <button
-                onClick={() => setQuestionViewMode('answer')}
-                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-                  questionViewMode === 'answer'
-                    ? 'text-slate-900 font-semibold'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <FileCheck size={14} />
-                해설지
-              </button>
-              <button
-                onClick={() => setQuestionViewMode('vocabulary')}
-                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
-                  questionViewMode === 'vocabulary'
-                    ? 'text-slate-900 font-semibold'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                <List size={14} />
-                어휘 문제지
-              </button>
-              <button
                 onClick={() => setQuestionViewMode('vocaPreview')}
                 className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
                   questionViewMode === 'vocaPreview'
@@ -1479,6 +1576,17 @@ export default function App() {
               >
                 <BookOpen size={14} />
                 단어장
+              </button>
+              <button
+                onClick={() => setQuestionViewMode('answer')}
+                className={`shrink-0 px-3 py-1.5 rounded text-xs transition-all flex items-center gap-1.5 ${
+                  questionViewMode === 'answer'
+                    ? 'text-slate-900 font-semibold'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                <FileCheck size={14} />
+                해설지
               </button>
               <div className="shrink-0 px-3 py-1.5 text-sm text-slate-600">
                 <span className="font-medium">{questionList.length}</span>개 문제

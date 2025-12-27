@@ -27,6 +27,19 @@ const TRANSLATION_INSTRUCTION = `
 2. instructionTranslation: 발문(문제 지시문)을 자연스러운 한국어로 번역
 3. choiceTranslations: 각 보기를 번역. 보기가 짧으면(단어/짧은 구) showEnglish=true, 길면(문장/긴 구절) showEnglish=false
    - 짧은 보기 기준: 영어 원문 30자 이하
+4. passageSummary: 지문 요약 정보
+   - field: 분야 (심리학, 경제학, 생물학, 사회학, 철학 등)
+   - topic: 중심 소재 (지문이 다루는 핵심 대상, 명사구)
+   - subject: 주제 (반드시 명사구! 문장 금지!)
+     * 올바른 예: "아이들의 놀이의 진지함", "사회학 연구의 일반화 가능성", "인지 편향의 영향"
+     * 잘못된 예: "아이들의 놀이는 어른들이 생각하는 것보다 훨씬 더 진지한 활동이다" (X - 문장임)
+     * 잘못된 예: "~이다", "~한다", "~있다"로 끝나면 안됨
+   - mainIdea: 요지 (완전한 문장으로 작성)
+
+문체 규칙 (매우 중요):
+- 모든 해설 텍스트는 반드시 "~합니다", "~입니다" 체로 작성하세요.
+- "~하다", "~이다" 체는 절대 사용하지 마세요.
+- 예시: "설명한다" (X) → "설명합니다" (O), "맞는 이유이다" (X) → "맞는 이유입니다" (O)
 `;
 
 // 유형별 기본 프롬프트 템플릿
@@ -40,11 +53,13 @@ export const DEFAULT_PROMPTS: Record<string, string> = {
 {{choices}}
 
 정답: {{answer}}
+{{hint}}
 ${TRANSLATION_INSTRUCTION}
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+중요: 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
 {
   "type": "vocabulary",
-  "wordExplanation": "밑줄 친 단어의 어원과 의미를 설명 (2-3문장)",
+  "wordExplanation": "밑줄 친 단어의 어원과 의미를 설명합니다 (2-3문장, ~합니다 체)",
   "synonyms": [
     {"english": "동의어1", "korean": "한국어 뜻1"},
     {"english": "동의어2", "korean": "한국어 뜻2"},
@@ -60,7 +75,13 @@ ${TRANSLATION_INSTRUCTION}
     {"english": "보기3 원문", "korean": "보기3 번역", "showEnglish": true},
     {"english": "보기4 원문", "korean": "보기4 번역", "showEnglish": true},
     {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true}
-  ]
+  ],
+  "passageSummary": {
+    "field": "분야",
+    "topic": "중심 소재",
+    "subject": "주제",
+    "mainIdea": "요지"
+  }
 }`,
 
   grammar: `당신은 영문법 전문가입니다. 다음 문법 문제에 대한 해설을 생성해주세요.
@@ -72,19 +93,21 @@ ${TRANSLATION_INSTRUCTION}
 {{choices}}
 
 정답: {{answer}}
+{{hint}}
 ${TRANSLATION_INSTRUCTION}
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+중요: 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
 {
   "type": "grammar",
   "answerChange": "오답 → 정답 형태 (예: established → establishing)",
   "testPoint": "출제 포인트 (예: 준동사 - 분사구문)",
-  "correctExplanation": "정답인 이유를 상세히 설명 (2-3문장)",
+  "correctExplanation": "정답인 이유를 상세히 설명합니다 (2-3문장, ~합니다 체)",
   "wrongExplanations": [
-    "A번 보기가 틀린 이유",
-    "B번 보기가 틀린 이유",
-    "C번 보기가 틀린 이유",
-    "D번 보기가 틀린 이유",
-    "E번 보기가 틀린 이유"
+    "A번 보기가 틀린 이유입니다 (~합니다 체)",
+    "B번 보기가 틀린 이유입니다",
+    "C번 보기가 틀린 이유입니다",
+    "D번 보기가 틀린 이유입니다",
+    "E번 보기가 틀린 이유입니다"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
   "instructionTranslation": "발문 한국어 번역",
@@ -94,7 +117,13 @@ ${TRANSLATION_INSTRUCTION}
     {"english": "보기3 원문", "korean": "보기3 번역", "showEnglish": true/false},
     {"english": "보기4 원문", "korean": "보기4 번역", "showEnglish": true/false},
     {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true/false}
-  ]
+  ],
+  "passageSummary": {
+    "field": "분야",
+    "topic": "중심 소재",
+    "subject": "주제",
+    "mainIdea": "요지"
+  }
 }
 
 참고: wrongExplanations에서 정답에 해당하는 항목은 "정답" 이라고만 적어주세요.`,
@@ -110,18 +139,34 @@ ${TRANSLATION_INSTRUCTION}
 {{choices}}
 
 정답: {{answer}}
+{{hint}}
 ${TRANSLATION_INSTRUCTION}
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+중요:
+- 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
+- step3Choices 배열의 각 항목은 번호(①②③④⑤)나 "보기 판단 -" 같은 접두어 없이 바로 해설 내용만 작성하세요.
+
+예시:
+{
+  "step3Choices": [
+    "'Additionally'는 추가 정보를 제공할 때 사용되므로 빈칸 뒤의 비판 내용과 맞지 않아 적절하지 않습니다.",
+    "'Accordingly'는 결과나 결론을 나타내므로 앞 문장의 내용을 이어받기에 적절하지 않습니다.",
+    "'However'는 대조를 나타내어 앞의 긍정적 설명과 뒤의 비판을 자연스럽게 연결하므로 정답입니다.",
+    "'Namely'는 구체적 설명이나 예시를 들 때 사용되므로 적절하지 않습니다.",
+    "'Unnoticeably'는 접속 부사가 아니라 부사이므로 문장을 연결하는 데 사용할 수 없습니다."
+  ]
+}
+
 {
   "type": "logic",
-  "step1Targeting": "빈칸이 무엇을 묻는지 파악 (빈칸의 역할, 문맥상 필요한 내용)",
-  "step2Evidence": "지문에서 찾은 단서와 근거 설명 (시그널 워드, 논리 관계 등)",
+  "step1Targeting": "빈칸이 무엇을 묻는지 파악합니다 (빈칸의 역할, 문맥상 필요한 내용)",
+  "step2Evidence": "지문에서 찾은 단서와 근거를 설명합니다 (시그널 워드, 논리 관계 등)",
   "step3Choices": [
-    "① 보기 판단 - 정답이면 왜 맞는지, 오답이면 왜 틀린지",
-    "② 보기 판단",
-    "③ 보기 판단",
-    "④ 보기 판단",
-    "⑤ 보기 판단"
+    "첫 번째 보기에 대한 해설 (번호 없이 바로 내용만)",
+    "두 번째 보기에 대한 해설",
+    "세 번째 보기에 대한 해설",
+    "네 번째 보기에 대한 해설",
+    "다섯 번째 보기에 대한 해설"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
   "instructionTranslation": "발문 한국어 번역",
@@ -131,7 +176,13 @@ ${TRANSLATION_INSTRUCTION}
     {"english": "보기3 원문", "korean": "보기3 번역", "showEnglish": true/false},
     {"english": "보기4 원문", "korean": "보기4 번역", "showEnglish": true/false},
     {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true/false}
-  ]
+  ],
+  "passageSummary": {
+    "field": "분야",
+    "topic": "중심 소재",
+    "subject": "주제",
+    "mainIdea": "요지"
+  }
 }`,
 
   mainIdea: `당신은 영어 독해 전문가입니다. 다음 대의파악 문제에 대한 해설을 생성해주세요.
@@ -145,18 +196,34 @@ ${TRANSLATION_INSTRUCTION}
 {{choices}}
 
 정답: {{answer}}
+{{hint}}
 ${TRANSLATION_INSTRUCTION}
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+중요:
+- 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
+- wrongExplanations 배열의 각 항목은 번호(①②③④⑤)나 "는" 같은 접두어 없이 바로 해설 내용만 작성하세요.
+
+예시:
+{
+  "wrongExplanations": [
+    "지문에서 기소로부터의 보호 역할을 언급하지만, 이것이 주된 내용은 아닙니다.",
+    "검찰 기소의 정당성을 입증하는 것은 대배심의 역할이지만 지문의 요지와는 다릅니다.",
+    "정답",
+    "비용 문제는 비판적 측면 중 하나일 뿐 지문의 핵심 요지가 아닙니다.",
+    "대배심 제도의 폐지를 주장하는 내용은 지문에 없습니다."
+  ]
+}
+
 {
   "type": "mainIdea",
-  "passageAnalysis": "지문의 핵심 내용과 구조 분석 (중심 소재, 주제문, 논지 전개 등 2-3문장)",
-  "correctExplanation": "정답이 맞는 이유 설명 (2문장)",
+  "passageAnalysis": "지문의 핵심 내용과 구조를 분석합니다 (중심 소재, 주제문, 논지 전개 등 2-3문장)",
+  "correctExplanation": "정답이 맞는 이유를 설명합니다 (2문장)",
   "wrongExplanations": [
-    "① 오답인 이유 (정답이면 '정답'이라고만 표시)",
-    "② 오답인 이유",
-    "③ 오답인 이유",
-    "④ 오답인 이유",
-    "⑤ 오답인 이유"
+    "첫 번째 보기가 오답인 이유 (번호 없이 바로 내용만, 정답이면 '정답'이라고만 표시)",
+    "두 번째 보기에 대한 해설",
+    "세 번째 보기에 대한 해설",
+    "네 번째 보기에 대한 해설",
+    "다섯 번째 보기에 대한 해설"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
   "instructionTranslation": "발문 한국어 번역",
@@ -166,7 +233,13 @@ ${TRANSLATION_INSTRUCTION}
     {"english": "보기3 원문", "korean": "보기3 번역", "showEnglish": true/false},
     {"english": "보기4 원문", "korean": "보기4 번역", "showEnglish": true/false},
     {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true/false}
-  ]
+  ],
+  "passageSummary": {
+    "field": "분야",
+    "topic": "중심 소재",
+    "subject": "주제",
+    "mainIdea": "요지"
+  }
 }`,
 
   insertion: `당신은 영어 독해 전문가입니다. 다음 문장 삽입 문제에 대한 해설을 생성해주세요.
@@ -177,20 +250,28 @@ ${TRANSLATION_INSTRUCTION}
 {{passage}}
 
 정답: {{answer}}
+{{hint}}
 ${TRANSLATION_INSTRUCTION}
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+중요: 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
 {
   "type": "insertion",
-  "correctExplanation": "정답 위치에 삽입해야 하는 이유 (연결어, 지시어, 논리적 흐름 등 2-3문장)",
+  "correctExplanation": "정답 위치에 삽입해야 하는 이유를 설명합니다 (연결어, 지시어, 논리적 흐름 등 2-3문장, ~합니다 체)",
   "positionExplanations": [
-    "A 위치: 이 위치가 적절/부적절한 이유",
-    "B 위치: 이 위치가 적절/부적절한 이유",
-    "C 위치: 이 위치가 적절/부적절한 이유",
-    "D 위치: 이 위치가 적절/부적절한 이유",
-    "E 위치: 이 위치가 적절/부적절한 이유"
+    "A 위치: 이 위치가 적절/부적절한 이유입니다 (~합니다 체)",
+    "B 위치: 이 위치가 적절/부적절한 이유입니다",
+    "C 위치: 이 위치가 적절/부적절한 이유입니다",
+    "D 위치: 이 위치가 적절/부적절한 이유입니다",
+    "E 위치: 이 위치가 적절/부적절한 이유입니다"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
-  "instructionTranslation": "발문 한국어 번역"
+  "instructionTranslation": "발문 한국어 번역",
+  "passageSummary": {
+    "field": "분야",
+    "topic": "중심 소재",
+    "subject": "주제",
+    "mainIdea": "요지"
+  }
 }`,
 
   order: `당신은 영어 독해 전문가입니다. 다음 문장 순서 문제에 대한 해설을 생성해주세요.
@@ -204,13 +285,15 @@ ${TRANSLATION_INSTRUCTION}
 {{choices}}
 
 정답: {{answer}}
+{{hint}}
 ${TRANSLATION_INSTRUCTION}
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+중요: 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
 {
   "type": "order",
-  "firstParagraph": "주어진 문장/첫 단락의 핵심 내용과 다음에 올 내용 예측",
-  "splitPoint": "각 단락(A, B, C)의 연결 단서 분석 (지시어, 연결어, 논리적 흐름)",
-  "conclusion": "따라서 정답은 {{answer}}. 최종 순서와 그 이유 요약",
+  "firstParagraph": "주어진 문장/첫 단락의 핵심 내용과 다음에 올 내용을 예측합니다 (~합니다 체)",
+  "splitPoint": "각 단락(A, B, C)의 연결 단서를 분석합니다 (지시어, 연결어, 논리적 흐름, ~합니다 체)",
+  "conclusion": "따라서 정답은 {{answer}}입니다. 최종 순서와 그 이유를 요약합니다 (~합니다 체)",
   "passageTranslation": "지문 전체 한국어 번역",
   "instructionTranslation": "발문 한국어 번역",
   "choiceTranslations": [
@@ -219,7 +302,13 @@ ${TRANSLATION_INSTRUCTION}
     {"english": "보기3 원문", "korean": "보기3 번역", "showEnglish": true/false},
     {"english": "보기4 원문", "korean": "보기4 번역", "showEnglish": true/false},
     {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true/false}
-  ]
+  ],
+  "passageSummary": {
+    "field": "분야",
+    "topic": "중심 소재",
+    "subject": "주제",
+    "mainIdea": "요지"
+  }
 }`,
 
   wordAppropriateness: `당신은 영어 독해 전문가입니다. 다음 어휘 적절성/밑줄 추론 문제에 대한 해설을 생성해주세요.
@@ -233,17 +322,23 @@ ${TRANSLATION_INSTRUCTION}
 {{choices}}
 
 정답: {{answer}}
+{{hint}}
 ${TRANSLATION_INSTRUCTION}
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+중요:
+- 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
+- choiceExplanations는 반드시 5개 항목을 모두 작성하세요! 정답 포함 모든 보기에 대해 해설을 작성합니다.
+- 각 항목은 "A:", "의" 같은 접두어 없이 바로 해설 내용만 작성하세요.
+
 {
   "type": "wordAppropriateness",
-  "mainTopic": "지문의 핵심 주제/논지 (1-2문장)",
+  "mainTopic": "지문의 핵심 주제/논지입니다 (1-2문장)",
   "choiceExplanations": [
-    "A: 해당 어휘가 적절/부적절한 이유",
-    "B: 해당 어휘가 적절/부적절한 이유",
-    "C: 해당 어휘가 적절/부적절한 이유",
-    "D: 해당 어휘가 적절/부적절한 이유",
-    "E: 해당 어휘가 적절/부적절한 이유"
+    "첫 번째 보기(A)의 어휘가 적절/부적절한 이유 (반드시 5개 모두 작성!)",
+    "두 번째 보기(B)의 어휘가 적절/부적절한 이유",
+    "세 번째 보기(C)의 어휘가 적절/부적절한 이유",
+    "네 번째 보기(D)의 어휘가 적절/부적절한 이유",
+    "다섯 번째 보기(E)의 어휘가 적절/부적절한 이유"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
   "instructionTranslation": "발문 한국어 번역",
@@ -253,7 +348,13 @@ ${TRANSLATION_INSTRUCTION}
     {"english": "보기3 원문", "korean": "보기3 번역", "showEnglish": true/false},
     {"english": "보기4 원문", "korean": "보기4 번역", "showEnglish": true/false},
     {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true/false}
-  ]
+  ],
+  "passageSummary": {
+    "field": "분야",
+    "topic": "중심 소재",
+    "subject": "주제",
+    "mainIdea": "요지"
+  }
 }`,
 
   default: `당신은 영어 독해 전문가입니다. 다음 문제에 대한 해설을 생성해주세요.
@@ -267,18 +368,20 @@ ${TRANSLATION_INSTRUCTION}
 {{choices}}
 
 정답: {{answer}}
+{{hint}}
 ${TRANSLATION_INSTRUCTION}
 다음 JSON 형식으로만 응답하세요 (마크다운 코드 블록 없이 순수 JSON만):
+중요: 모든 해설은 "~합니다/~입니다" 체로 작성하세요. "~하다/~이다" 체 금지.
 {
   "type": "mainIdea",
-  "passageAnalysis": "지문 분석 (2-3문장)",
-  "correctExplanation": "정답 해설 (2문장)",
+  "passageAnalysis": "지문을 분석합니다 (2-3문장, ~합니다 체)",
+  "correctExplanation": "정답 해설입니다 (2문장, ~합니다 체)",
   "wrongExplanations": [
-    "① 오답 해설",
-    "② 오답 해설",
-    "③ 오답 해설",
-    "④ 오답 해설",
-    "⑤ 오답 해설"
+    "① 오답 해설입니다 (~합니다 체)",
+    "② 오답 해설입니다",
+    "③ 오답 해설입니다",
+    "④ 오답 해설입니다",
+    "⑤ 오답 해설입니다"
   ],
   "passageTranslation": "지문 전체 한국어 번역",
   "instructionTranslation": "발문 한국어 번역",
@@ -338,8 +441,15 @@ function fillPromptTemplate(template: string, question: QuestionItem): string {
     .filter(Boolean)
     .join('\n');
 
-  // 힌트가 있으면 추가, 없으면 빈 문자열
-  const hintText = hint && hint.trim() ? hint.trim() : '';
+  // 힌트가 있으면 AI에게 해설에 반영하도록 지시, 없으면 빈 문자열
+  const hintText = hint && hint.trim()
+    ? `\n\n[중요: 교수자 힌트 - 아래 내용을 해설에 반드시 반영하세요]\n${hint.trim()}`
+    : '';
+
+  // 디버그 로그
+  if (hint && hint.trim()) {
+    console.log(`[fillPromptTemplate] 문제 ${question.questionNumber}: 힌트 적용 - "${hint.trim().substring(0, 50)}..."`);
+  }
 
   return template
     .replace(/\{\{passage\}\}/g, passage)
@@ -518,6 +628,12 @@ export function parseExplanationJSON(text: string): ExplanationData | null {
     cleaned = cleaned.trim();
 
     const parsed = JSON.parse(cleaned);
+    console.log('[parseExplanationJSON] 파싱 결과:', {
+      type: parsed.type,
+      hasStep3Choices: !!parsed.step3Choices,
+      step3ChoicesLength: parsed.step3Choices?.length,
+      step3Choices: parsed.step3Choices
+    });
     return parsed as ExplanationData;
   } catch (error) {
     console.error('JSON 파싱 실패:', error);
@@ -526,15 +642,68 @@ export function parseExplanationJSON(text: string): ExplanationData | null {
   }
 }
 
+// 번역 제외 프롬프트 템플릿 생성 (해설 부분만)
+function getExplanationOnlyPromptByCategory(question: QuestionItem): string {
+  const key = getPromptKey(question);
+  const savedPrompts = loadCustomPromptsFromStorage();
+  let template = savedPrompts[key] || customPrompts[key] || DEFAULT_PROMPTS[key] || DEFAULT_PROMPTS.default;
+
+  // 프롬프트에서 번역 관련 필드 제거 (passageTranslation, instructionTranslation, choiceTranslations)
+  // JSON 응답 형식에서 번역 필드들을 제거하는 지시 추가
+  template = template.replace(
+    /다음 JSON 형식으로만 응답하세요/,
+    '다음 JSON 형식으로만 응답하세요 (번역 관련 필드는 생성하지 마세요: passageTranslation, instructionTranslation, choiceTranslations 제외)'
+  );
+
+  return fillPromptTemplate(template, question);
+}
+
 // 단일 문제 해설 생성 (AI 설정 지원)
+// 해설은 사용자 선택 AI, 번역은 Gemini 고정 (비용 절감: 각각 1번씩만 호출)
 async function generateSingleExplanation(
   question: QuestionItem,
   aiSettings: AISettings,
+  geminiApiKey?: string, // 번역용 Gemini API 키 (선택적)
   maxRetries: number = 3
 ): Promise<ExplanationData | null> {
-  const prompt = getPromptByCategory(question);
+  // Gemini가 아닌 다른 AI를 사용하고, Gemini API 키가 있는 경우: 해설과 번역 분리
+  if (geminiApiKey && aiSettings.provider !== 'gemini') {
+    console.log(`[${question.id}] ${aiSettings.provider}로 해설, Gemini로 번역 (분리 생성)`);
 
-  console.log(`[${question.id}] ${aiSettings.provider}/${aiSettings.model}로 해설 생성 중...`);
+    // 1. 사용자 선택 AI로 해설만 생성 (번역 제외 프롬프트)
+    const explanationPrompt = getExplanationOnlyPromptByCategory(question);
+    const explanationText = await callAI(explanationPrompt, aiSettings, maxRetries);
+
+    if (!explanationText) {
+      console.error(`[${question.id}] 해설 생성 실패`);
+      return null;
+    }
+
+    const result = parseExplanationJSON(explanationText);
+    if (!result) {
+      console.error(`[${question.id}] JSON 파싱 실패`);
+      return null;
+    }
+
+    // 2. Gemini로 번역만 생성
+    const translation = await generateTranslationOnly(question, geminiApiKey);
+    if (translation) {
+      result.passageTranslation = translation.passageTranslation;
+      result.instructionTranslation = translation.instructionTranslation;
+      if ('choiceTranslations' in result || translation.choiceTranslations) {
+        (result as any).choiceTranslations = translation.choiceTranslations;
+      }
+      if (translation.passageSummary) {
+        result.passageSummary = translation.passageSummary;
+      }
+    }
+
+    return result;
+  }
+
+  // Gemini 사용 시: 기존처럼 한 번에 생성
+  const prompt = getPromptByCategory(question);
+  console.log(`[${question.id}] ${aiSettings.provider}/${aiSettings.model}로 해설+번역 생성 중...`);
 
   const generatedText = await callAI(prompt, aiSettings, maxRetries);
 
@@ -594,10 +763,12 @@ function groupByPassage(items: QuestionItem[]): PassageGroup[] {
 
 // 병렬로 여러 문제 해설 생성 (동시 5개씩)
 // 같은 지문을 공유하는 문제들은 첫 번째 문제만 passageTranslation을 생성하고 나머지에 공유
+// 해설은 사용자 선택 AI, 번역은 Gemini 고정
 export async function generateExplanations(
   questions: QuestionItem[],
   apiKeyOrSettings: string | AISettings,
-  onProgress?: (current: number, total: number) => void
+  onProgress?: (current: number, total: number) => void,
+  geminiApiKeyForTranslation?: string // 번역용 Gemini API 키 (선택적)
 ): Promise<Map<string, ExplanationData>> {
   const results = new Map<string, ExplanationData>();
 
@@ -607,6 +778,9 @@ export async function generateExplanations(
     : apiKeyOrSettings;
 
   console.log(`🤖 해설 생성 시작: ${aiSettings.provider} / ${aiSettings.model}`);
+  if (geminiApiKeyForTranslation && aiSettings.provider !== 'gemini') {
+    console.log(`📝 번역은 Gemini로 고정`);
+  }
 
   // 세트 문제 처리: passage가 없으면 이전 문제의 passage 상속
   let lastPassage = '';
@@ -623,6 +797,11 @@ export async function generateExplanations(
 
   // 유효한 문제만 필터링 (passage가 있거나 상속받은 경우)
   const validQuestions = processedQuestions.filter(q => q.passage && q.passage.trim());
+
+  console.log('[generateExplanations] 입력:', questions.length, '개, 유효:', validQuestions.length, '개');
+  if (validQuestions.length === 0 && questions.length > 0) {
+    console.warn('[generateExplanations] 경고: 모든 문제가 필터링됨. passage 확인 필요:', questions.map(q => ({ id: q.id, hasPassage: !!q.passage?.trim() })));
+  }
 
   // 같은 지문을 공유하는 문제들 그룹핑
   const passageGroups = groupByPassage(validQuestions);
@@ -645,7 +824,7 @@ export async function generateExplanations(
       // 그룹 내 문제들을 순차 처리 (첫 번째 문제의 번역을 공유하기 위해)
       for (let j = 0; j < group.items.length; j++) {
         const question = group.items[j];
-        const explanation = await generateSingleExplanation(question, aiSettings);
+        const explanation = await generateSingleExplanation(question, aiSettings, geminiApiKeyForTranslation);
 
         completed++;
         if (onProgress) {
@@ -823,7 +1002,7 @@ export async function generateVocaPreview(
 // ===== 번역 전용 API (Gemini 2.0 Flash) =====
 
 // 번역 전용 프롬프트
-const TRANSLATION_ONLY_PROMPT = `당신은 영한 번역 전문가입니다. 다음 영어 문제의 지문, 발문, 보기를 한국어로 번역해주세요.
+const TRANSLATION_ONLY_PROMPT = `당신은 영한 번역 전문가입니다. 다음 영어 문제의 지문, 발문, 보기를 한국어로 번역하고, 지문의 요약 정보를 분석해주세요.
 
 발문: {{instruction}}
 
@@ -843,19 +1022,40 @@ const TRANSLATION_ONLY_PROMPT = `당신은 영한 번역 전문가입니다. 다
     {"english": "보기3 원문", "korean": "보기3 번역", "showEnglish": true/false},
     {"english": "보기4 원문", "korean": "보기4 번역", "showEnglish": true/false},
     {"english": "보기5 원문", "korean": "보기5 번역", "showEnglish": true/false}
-  ]
+  ],
+  "passageSummary": {
+    "field": "분야 (예: 심리학, 경제학, 생물학, 사회학, 철학, 언어학 등)",
+    "topic": "중심 소재 (지문이 다루는 핵심 대상/주제, 명사구 형태)",
+    "subject": "주제 (중심 소재에 대해 말하고자 하는 핵심 내용, 1문장)",
+    "mainIdea": "요지 (분야 + 중심 소재 + 주제를 결합한 핵심 메시지, 1문장)"
+  }
 }
 
 번역 규칙:
 1. 자연스러운 한국어로 번역
 2. 보기가 짧으면(30자 이하) showEnglish=true, 길면 showEnglish=false
-3. 빈 보기는 빈 문자열로 처리`;
+3. 빈 보기는 빈 문자열로 처리
+
+요약 규칙:
+1. field: 학문 분야나 주제 영역 (간결하게)
+2. topic: 지문의 중심 소재 (명사/명사구)
+3. subject: 중심 소재에 대한 핵심 서술 (주제문)
+4. mainIdea: 글의 요지 (topic + subject를 자연스럽게 결합)`;
+
+// 지문 요약 타입
+export interface PassageSummary {
+  field: string;      // 분야
+  topic: string;      // 중심 소재
+  subject: string;    // 주제
+  mainIdea: string;   // 요지
+}
 
 // 번역 결과 타입
 export interface TranslationResult {
   passageTranslation: string;
   instructionTranslation: string;
   choiceTranslations: { english: string; korean: string; showEnglish: boolean }[];
+  passageSummary?: PassageSummary;
 }
 
 /**

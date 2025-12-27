@@ -222,48 +222,60 @@ const createStyles = (palette: PaletteColors, fontScale: number = 1) => {
       marginRight: 8,
     },
 
-    // ===== MY VOCA 사이드바 =====
+    // ===== MY VOCA 사이드바 (개선된 디자인) =====
+    myVocaHeader: {
+      textAlign: 'center',
+      marginBottom: 5,
+    },
     myVocaTitle: {
       textAlign: 'center',
-      fontSize: scaled(9),
-      fontWeight: 400,
+      fontSize: scaled(8),
+      fontWeight: 600,
       letterSpacing: 2,
-      color: '#333',
-      marginBottom: 1,
-    },
-    myVocaDotted: {
-      borderBottomWidth: 1,
-      borderBottomColor: '#999',
-      borderStyle: 'dotted',
-      marginBottom: 4,
+      color: textColor,
     },
     myVocaList: {
       flexDirection: 'column',
-      gap: 0,
+      gap: 5,
     },
-    myVocaRow: {
+    myVocaItem: {
       flexDirection: 'row',
-      alignItems: 'center',
+      alignItems: 'flex-end',
       gap: 3,
-      height: 12,
-    },
-    myVocaCheck: {
-      color: '#999',
-      fontSize: 6,
-      letterSpacing: -2,
-      flexShrink: 0,
     },
     myVocaNum: {
       color: textColor,
       fontSize: scaled(7),
+      fontWeight: 600,
       width: 12,
       flexShrink: 0,
+      height: 15,
+      lineHeight: 15,
     },
-    myVocaLine: {
+    myVocaWordBox: {
+      width: 66,
+      height: 15,
+      backgroundColor: '#f8f8f8',
+      borderWidth: 1,
+      borderColor: '#ddd',
+      borderRadius: 2,
+      flexShrink: 0,
+    },
+    myVocaArrow: {
+      color: '#999',
+      fontSize: scaled(6),
+      flexShrink: 0,
+      marginHorizontal: 1,
+      height: 15,
+      lineHeight: 15,
+    },
+    myVocaMeaningLine: {
       flex: 1,
       borderBottomWidth: 1,
-      borderBottomColor: '#ddd',
-      height: 8,
+      borderBottomColor: '#bbb',
+      borderStyle: 'dotted',
+      minWidth: 15,
+      height: 0,
     },
 
     // ===== 분석 사이드바 =====
@@ -521,25 +533,28 @@ const createStyles = (palette: PaletteColors, fontScale: number = 1) => {
     // 동의어 테이블
     synonymTable: {
       marginTop: 2,
+      width: '100%',
     },
     synonymRow: {
       flexDirection: 'row',
       borderBottomWidth: 1,
-      borderBottomColor: '#f0f0f0',
-      paddingVertical: 2,
+      borderBottomColor: '#e0e0e0',
+      paddingVertical: 3,
+      alignItems: 'flex-start',
     },
     synonymEnglish: {
-      width: '45%',
+      width: '40%',
       fontSize: scaled(7),
       color: '#333',
-      fontWeight: 400,
-      paddingHorizontal: 4,
+      fontWeight: 600,
+      paddingHorizontal: 6,
     },
     synonymKorean: {
-      width: '55%',
+      width: '60%',
       fontSize: scaled(7),
-      color: '#666',
-      paddingHorizontal: 4,
+      color: '#555',
+      paddingLeft: 12,
+      paddingRight: 6,
     },
     // 오답/정답 해설
     wrongExplanations: {
@@ -828,17 +843,18 @@ const groupByInstruction = (items: QuestionItem[]) => {
   return result;
 };
 
-// ===== MY VOCA 사이드바 =====
-const MyVocaSidebar = ({ styles, count = 30 }: { styles: ReturnType<typeof createStyles>; count?: number }) => (
+// ===== MY VOCA 사이드바 (개선된 디자인) =====
+const MyVocaSidebar = ({ styles, count = 5 }: { styles: ReturnType<typeof createStyles>; count?: number }) => (
   <View>
-    <Text style={styles.myVocaTitle}>MY VOCA</Text>
-    <View style={styles.myVocaDotted} />
+    <View style={styles.myVocaHeader}>
+      <Text style={styles.myVocaTitle}>MY VOCA</Text>
+    </View>
     <View style={styles.myVocaList}>
       {Array.from({ length: count }, (_, i) => (
-        <View key={i} style={styles.myVocaRow}>
-          <Text style={styles.myVocaCheck}>☐☐</Text>
+        <View key={i} style={styles.myVocaItem}>
           <Text style={styles.myVocaNum}>{String(i + 1).padStart(2, '0')}</Text>
-          <View style={styles.myVocaLine} />
+          <View style={styles.myVocaWordBox} />
+          <View style={styles.myVocaMeaningLine} />
         </View>
       ))}
     </View>
@@ -848,7 +864,7 @@ const MyVocaSidebar = ({ styles, count = 30 }: { styles: ReturnType<typeof creat
 // ===== 분석 사이드바 =====
 const AnalysisSidebar = ({ styles, categoryMain, categorySub }: { styles: ReturnType<typeof createStyles>; categoryMain: string; categorySub?: string }) => {
   if (categoryMain === '어휘') {
-    return <MyVocaSidebar styles={styles} count={20} />;
+    return <MyVocaSidebar styles={styles} count={5} />;
   }
 
   if (categoryMain === '논리' || categoryMain === '빈칸') {

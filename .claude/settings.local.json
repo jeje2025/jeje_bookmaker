@@ -3,7 +3,13 @@
     "allow": [
       "Bash(npm run build:*)",
       "Bash(powershell -ExecutionPolicy Bypass -File \".specify/scripts/powershell/check-prerequisites.ps1\" -Json -PathsOnly)",
-      "Bash(powershell -ExecutionPolicy Bypass -File:*)"
+      "Bash(powershell -ExecutionPolicy Bypass -File:*)",
+      "Bash(cd:*)",
+      "Bash(npm run dev:*)",
+      "Bash(echo:*)",
+      "Bash(lsof:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nMY VOCA 디자인 개선 및 힌트 기능 수정\n\n- TSV 파싱 시 힌트/해설 컬럼 추가 \\(14, 15번째\\)\n- AI 해설 재생성 시 힌트 반영 기능 수정\n- MY VOCA 영역 디자인 개선 \\(단어 박스 + 뜻 밑줄 한 줄 배치\\)\n- 문제 번호 배경 박스 제거\n- 밑줄형 문제 보기 숨김 기능 추가\n- 분석 사이드바 하단 패딩 추가\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

@@ -412,18 +412,18 @@ body {
   border-bottom: 1px solid #e5e5e5;
 }
 
-/* 좌측: 문제들 컬럼 (60%) */
+/* 좌측: 문제들 컬럼 (50%) */
 .questions-column {
-  flex: 0 0 60%;
-  max-width: 60%;
+  flex: 0 0 50%;
+  max-width: 50%;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
-/* 우측: 사이드바 컬럼 (40%) */
+/* 우측: 사이드바 컬럼 (50%) */
 .sidebar-column {
-  flex: 0 0 calc(40% - 20px);
-  max-width: calc(40% - 20px);
+  flex: 0 0 calc(50% - 20px);
+  max-width: calc(50% - 20px);
 }
 
 /* 컴팩트 문제 아이템 */
@@ -447,6 +447,17 @@ body {
   border-bottom: 1px solid #ddd;
 }
 
+/* 문장 삽입 제시문 (배경색 있는 영역) */
+.q-insert-sentence {
+  background: rgba(0, 0, 0, 0.04);
+  padding: 8px 12px;
+  margin: 8px 0 12px 0;
+  color: #333;
+  font-weight: 700;
+  line-height: 1.6;
+  text-align: justify;
+}
+
 /* 문제 행 (번호 + 내용) */
 .question-row {
   display: flex;
@@ -456,18 +467,64 @@ body {
   align-items: flex-start;
 }
 
-/* 문제 번호 - 해설지 스타일과 동일 */
+/* 문제 번호 */
 .q-number {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   min-width: 26px;
   height: 26px;
-  border-radius: 4px;
-  background: var(--badge-bg, #f3e8ff);
   color: var(--badge-text, #9b59b6);
   font-weight: 700;
   flex-shrink: 0;
+}
+
+/* 공동 지문 문제 번호 세로 배치 (33 ~ 34) - 해설지 스타일과 동일 */
+.q-number.q-number-vertical {
+  flex-direction: column;
+  background: none;
+  min-width: 28px;
+  height: auto;
+  padding: 0;
+  line-height: 1.2;
+}
+
+.q-number-separator {
+  font-size: 0.7em;
+  color: #999;
+  transform: rotate(90deg);
+  display: inline-block;
+}
+
+/* 공동 지문 그룹 내 개별 문제 */
+.grouped-question-item {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed #ddd;
+}
+
+.grouped-question-item:first-child {
+  margin-top: 8px;
+  padding-top: 0;
+  border-top: none;
+}
+
+.grouped-question-header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.grouped-question-num {
+  font-weight: 700;
+  color: var(--badge-text, #9b59b6);
+  flex-shrink: 0;
+}
+
+.grouped-question-instruction {
+  color: #555;
+  font-size: 0.9em;
 }
 
 /* 문제 내용 */
@@ -478,20 +535,23 @@ body {
   word-break: break-word;
 }
 
-/* 지문 */
+/* 지문 - 해설지 번역 영역과 동일한 스타일 */
 .q-passage {
   color: #333;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   text-align: justify;
   word-break: break-word;
   overflow-wrap: break-word;
+  border-left: 2px solid var(--badge-text, #9b59b6);
+  padding-left: 8px;
+  line-height: 1.6;
 }
 
-/* 보기 - 가로 배치 */
+/* 보기 - 세로 배치 (한 줄에 하나씩) */
 .q-choices {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px 12px;
+  flex-direction: column;
+  gap: 2px;
   margin-top: 6px;
 }
 
@@ -499,6 +559,7 @@ body {
   color: #333;
   white-space: normal;
   word-break: break-word;
+  display: block;
 }
 
 .q-choice.correct {
@@ -506,55 +567,70 @@ body {
   color: var(--badge-text, #9b59b6);
 }
 
-/* ===== MY VOCA 사이드바 ===== */
+/* ===== MY VOCA 사이드바 (개선된 디자인) ===== */
 .myvoca-sidebar {
   height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.myvoca-header {
+  text-align: center;
+  margin-bottom: 6px;
 }
 
 .myvoca-title {
-  text-align: center;
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 3px;
-  color: #333;
-  margin-bottom: 2px;
-}
-
-.myvoca-dotted {
-  border-bottom: 1px dotted #999;
-  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  color: var(--badge-text, #9b59b6);
 }
 
 .myvoca-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 6px;
 }
 
-.myvoca-row {
+.myvoca-item {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   gap: 4px;
-  height: 15px;
-}
-
-.myvoca-check {
-  color: #999;
-  font-size: 10px;
-  letter-spacing: -2px;
-  flex-shrink: 0;
 }
 
 .myvoca-num {
   color: var(--badge-text, #9b59b6);
-  font-size: 10px;
+  font-size: 9px;
+  font-weight: 600;
   width: 14px;
+  flex-shrink: 0;
+  height: 18px;
+  line-height: 18px;
+}
+
+.myvoca-word-box {
+  width: 85px;
+  height: 18px;
+  background: #f8f8f8;
+  border: 1px solid #ddd;
+  border-radius: 2px;
   flex-shrink: 0;
 }
 
-.myvoca-line {
+.myvoca-arrow {
+  color: #999;
+  font-size: 8px;
+  flex-shrink: 0;
+  margin: 0 2px;
+  height: 18px;
+  line-height: 18px;
+}
+
+.myvoca-meaning-line {
   flex: 1;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px dotted #bbb;
+  min-width: 15px;
+  height: 0;
 }
 
 /* ===== 분석 사이드바 (빈칸/문법/대의파악 등) ===== */
@@ -562,6 +638,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  padding-bottom: 8px;
 }
 
 .analysis-section-title {
@@ -606,11 +683,11 @@ body {
   }
 
   .questions-column {
-    flex: 6 !important;
+    flex: 5 !important;
   }
 
   .sidebar-column {
-    flex: 4 !important;
+    flex: 5 !important;
   }
 
   .analysis-box-sm,
@@ -621,7 +698,7 @@ body {
     -webkit-print-color-adjust: exact !important;
   }
 
-  .myvoca-check {
+  .myvoca-word-box {
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
   }
@@ -638,12 +715,107 @@ body {
   margin-bottom: 20px;
 }
 
+/* 대분류별 문항 수 표 (한 행에 2유형씩) */
+.category-summary-table {
+  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.category-summary-table table {
+  display: table;
+  width: auto;
+  border-collapse: collapse;
+  border: 1px solid #ddd;
+}
+
+.category-summary-table tbody {
+  display: table-row-group;
+}
+
+.category-summary-table tr {
+  display: table-row;
+  border-bottom: 1px solid #ddd;
+}
+
+.category-summary-table tr:last-child {
+  border-bottom: none;
+}
+
+.category-summary-table td {
+  display: table-cell;
+  padding: 3px 12px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.category-summary-table .category-name-cell {
+  font-weight: 600;
+  color: #333;
+  background: rgba(0, 0, 0, 0.03);
+  border-right: 1px solid #ddd;
+}
+
+.category-summary-table .category-count-cell {
+  font-weight: 500;
+  color: #666;
+  border-right: 1px solid #ddd;
+  text-align: center;
+}
+
+.category-summary-table .category-count-cell:last-child,
+.category-summary-table .category-count-cell.empty {
+  border-right: none;
+}
+
+.category-summary-table .category-name-cell.empty,
+.category-summary-table .category-count-cell.empty {
+  background: transparent;
+}
+
+/* 지문 요약 (분야/중심 소재/주제/요지) */
+.passage-summary {
+  background: #f8f5f0;
+  border-left: 2px solid var(--badge-text, #9b59b6);
+  padding: 8px 12px;
+  font-size: 8.5px;
+  line-height: 1.5;
+  border-radius: 0 4px 4px 0;
+}
+
+.passage-summary .summary-row {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.passage-summary .summary-row:last-child {
+  margin-bottom: 0;
+}
+
+.passage-summary .summary-label {
+  font-weight: 600;
+  color: var(--badge-text, #9b59b6);
+  min-width: 28px;
+  flex-shrink: 0;
+}
+
+.passage-summary .summary-value {
+  color: #333;
+  flex: 1;
+}
+
+.passage-summary .summary-divider {
+  color: #ccc;
+  margin: 0 4px;
+}
+
 /* 빠른 정답 답안표 */
 .quick-answer-table {
   flex-shrink: 0;
   margin-bottom: 16px;
   background: rgba(0, 0, 0, 0.025);
-  border: none;
   border-radius: 8px;
   padding: 10px 12px;
 }
@@ -658,42 +830,59 @@ body {
 }
 
 .quick-answer-grid {
-  border-collapse: separate;
-  border-spacing: 2px;
-  width: 100%;
+  border-collapse: collapse;
+  width: auto;
+  border: 1px solid #ccc;
+}
+
+.quick-answer-grid tr {
+  border-bottom: 1px solid #ccc;
+}
+
+.quick-answer-grid tr:last-child {
+  border-bottom: none;
 }
 
 .quick-answer-cell {
-  padding: 4px 6px;
+  padding: 4px 8px;
   text-align: center;
-  border-radius: 4px;
-  background: white;
-  border: 1px solid #eee;
+  border-right: 1px solid #ccc;
   white-space: nowrap;
+  background: transparent;
 }
 
-/* 열별 색상 - 대체열 */
+.quick-answer-cell:last-child {
+  border-right: none;
+}
+
+/* 열별 색상 제거 - 컨테이너와 동일 배경 */
 .quick-answer-cell:nth-child(odd) {
-  background: color-mix(in srgb, var(--badge-bg, #f3e8ff) 40%, white);
+  background: transparent;
 }
 
 .quick-answer-cell:nth-child(even) {
-  background: white;
+  background: transparent;
 }
 
 .quick-answer-num {
-  font-size: 9px;
-  font-weight: 500;
-  color: #999;
+  font-size: 10px;
+  font-weight: 600;
+  color: #333;
   display: inline;
-  margin-right: 6px;
+  margin-right: 4px;
 }
 
 .quick-answer-circle {
-  font-size: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--badge-text, #9b59b6);
+  color: white;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--badge-text, #9b59b6);
-  display: inline;
 }
 
 /* 해설 카드 */
@@ -836,6 +1025,72 @@ body {
   font-weight: 500;
 }
 
+/* 해설 헤더 오른쪽 영역 */
+.answer-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 재생성 컨트롤 (힌트 + 새로고침 버튼) */
+.regenerate-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hint-input {
+  width: 120px;
+  padding: 2px 8px;
+  font-size: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.hint-input:focus {
+  border-color: var(--badge-text, #9b59b6);
+}
+
+.hint-input:disabled {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+.regenerate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background: white;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+}
+
+.regenerate-btn:hover:not(:disabled) {
+  border-color: var(--badge-text, #9b59b6);
+  color: var(--badge-text, #9b59b6);
+  background: #f9f5ff;
+}
+
+.regenerate-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* 인쇄 시 숨김 */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
 .answer-word {
   font-weight: 600;
   color: #333;
@@ -960,24 +1215,46 @@ body {
 /* 동의어 테이블 */
 .synonym-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: calc(10px * var(--font-scale, 1));
+  table-layout: fixed;
+}
+
+.synonym-table tbody {
+  display: table-row-group;
+}
+
+.synonym-table tr {
+  display: table-row;
 }
 
 .synonym-table td {
-  padding: 3px 6px;
-  border-bottom: 1px solid #f0f0f0;
+  display: table-cell;
+  padding: 4px 8px;
+  border-bottom: 1px solid #e5e5e5;
+  vertical-align: top;
+  box-sizing: border-box;
 }
 
+.synonym-table tr:last-child td {
+  border-bottom: none;
+}
+
+.synonym-table td.synonym-english,
+td.synonym-english,
 .synonym-english {
-  width: 45%;
+  width: 40%;
   color: #333;
-  font-weight: 500;
+  font-weight: 600;
 }
 
+.synonym-table td.synonym-korean,
+td.synonym-korean,
 .synonym-korean {
-  width: 55%;
-  color: #666;
+  width: 60%;
+  color: #555;
+  padding-left: 16px;
 }
 
 /* 오답 해설 */
@@ -1206,6 +1483,99 @@ body {
     -webkit-print-color-adjust: exact !important;
   }
 
+  /* 대분류별 문항 수 표 인쇄 스타일 */
+  .category-summary-table {
+    margin-top: 8px !important;
+    display: flex !important;
+    justify-content: center !important;
+  }
+
+  .category-summary-table table {
+    width: auto !important;
+    border-collapse: collapse !important;
+    border: 1px solid #ddd !important;
+    display: table !important;
+  }
+
+  .category-summary-table tbody {
+    display: table-row-group !important;
+  }
+
+  .category-summary-table tr {
+    display: table-row !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+
+  .category-summary-table tr:last-child {
+    border-bottom: none !important;
+  }
+
+  .category-summary-table td {
+    display: table-cell !important;
+    padding: 3px 12px !important;
+    font-size: 9px !important;
+    white-space: nowrap !important;
+  }
+
+  .category-summary-table .category-name-cell {
+    font-weight: 600 !important;
+    color: #333 !important;
+    background: rgba(0, 0, 0, 0.03) !important;
+    border-right: 1px solid #ddd !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  .category-summary-table .category-count-cell {
+    font-weight: 500 !important;
+    color: #666 !important;
+    border-right: 1px solid #ddd !important;
+    text-align: center !important;
+  }
+
+  .category-summary-table .category-count-cell:last-child {
+    border-right: none !important;
+  }
+
+  .category-summary-table .category-name-cell.empty,
+  .category-summary-table .category-count-cell.empty {
+    background: transparent !important;
+    border-right: none !important;
+  }
+
+  /* 빠른 정답 테이블 인쇄 레이아웃 - 뷰모드와 동일한 스타일 */
+  .quick-answer-grid {
+    border-collapse: collapse !important;
+    display: table !important;
+    width: auto !important;
+    border: 1px solid #ccc !important;
+  }
+
+  .quick-answer-grid tbody {
+    display: table-row-group !important;
+  }
+
+  .quick-answer-grid tr {
+    display: table-row !important;
+    border-bottom: 1px solid #ccc !important;
+  }
+
+  .quick-answer-grid tr:last-child {
+    border-bottom: none !important;
+  }
+
+  .quick-answer-cell {
+    display: table-cell !important;
+    padding: 4px 8px !important;
+    border-right: 1px solid #ccc !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+  }
+
+  .quick-answer-cell:last-child {
+    border-right: none !important;
+  }
+
   .answer-badge,
   .question-num-badge,
   .explanation-block-title,
@@ -1215,5 +1585,79 @@ body {
   .question-passage-translation {
     print-color-adjust: exact !important;
     -webkit-print-color-adjust: exact !important;
+  }
+
+  /* 정답 배지 인쇄 스타일 - 굵게, 정중앙 정렬 */
+  .answer-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    -webkit-text-stroke: 0.3px currentColor;
+  }
+
+  /* 빠른 정답 표 인쇄 스타일 */
+  .quick-answer-circle {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 700 !important;
+    line-height: 1 !important;
+    -webkit-text-stroke: 0.3px currentColor;
+  }
+
+  /* 정답 텍스트 인쇄 스타일 - 굵게 */
+  .answer-text,
+  .vocab-answer-text {
+    font-weight: 700 !important;
+    -webkit-text-stroke: 0.3px currentColor;
+  }
+
+  /* 동의어 테이블 인쇄 스타일 */
+  .synonym-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+    display: table !important;
+  }
+
+  .synonym-table tbody {
+    display: table-row-group !important;
+  }
+
+  .synonym-table tr {
+    display: table-row !important;
+    page-break-inside: avoid !important;
+  }
+
+  .synonym-table td {
+    display: table-cell !important;
+    padding: 4px 8px !important;
+    border-bottom: 1px solid #e5e5e5 !important;
+    vertical-align: top !important;
+  }
+
+  .synonym-table tr:last-child td {
+    border-bottom: none !important;
+  }
+
+  td.synonym-english,
+  .synonym-table td.synonym-english,
+  .synonym-english {
+    width: 40% !important;
+    color: #000 !important;
+    font-weight: 700 !important;
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  td.synonym-korean,
+  .synonym-table td.synonym-korean,
+  .synonym-korean {
+    width: 60% !important;
+    color: #333 !important;
+    padding-left: 20px !important;
+    text-align: left !important;
   }
 }

@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useCallback } from 'react';
+import { Fragment, memo, useMemo, useState, useCallback } from 'react';
 import { A4PageLayout } from './A4PageLayout';
 import { HeaderFooter } from './HeaderFooter';
 import { scaledSize } from '../utils/fontScale';
@@ -38,10 +38,71 @@ const getAnswerChoiceText = (answer: string, choices: string[]): string => {
   return '';
 };
 
-// AI 해설에서 앞에 붙은 번호 제거 (① 사회적... → 사회적...)
-const stripLeadingNumber = (text: string): string => {
+// 마크다운 문자(*, **) 제거
+const stripMarkdown = (text: string | undefined | null): string => {
+  if (!text || typeof text !== 'string') return '';
+  return text.replace(/\*+/g, '');
+};
+
+// AI 해설에서 앞에 붙은 번호 및 마크다운 문자 제거
+const stripLeadingNumber = (text: string | undefined | null): string => {
+  if (!text || typeof text !== 'string') return '';
   // ①, ②, ③, ④, ⑤ 또는 (A), (B) 등으로 시작하는 경우 제거
-  return text.replace(/^[①②③④⑤]\s*/, '').replace(/^\([A-E]\)\s*/, '').trim();
+  // 마크다운 강조 표시(*, **) 제거
+  return text
+    .replace(/^[①②③④⑤]\s*/, '')
+    .replace(/^\([A-E]\)\s*/, '')
+    .replace(/\*+/g, '')
+    .trim();
+};
+
+// ===== 대분류별 문항 수 표 컴포넌트 (한 행에 2유형씩) =====
+const CategorySummaryTable = ({ questions }: { questions: QuestionItem[] }) => {
+  // 대분류별 문항 수 집계
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    questions.forEach(q => {
+      const category = q.categoryMain || '기타';
+      counts[category] = (counts[category] || 0) + 1;
+    });
+    return counts;
+  }, [questions]);
+
+  const categories = Object.entries(categoryCounts);
+
+  if (categories.length === 0) return null;
+
+  // 2개씩 행으로 묶기
+  const rows: [string, number][][] = [];
+  for (let i = 0; i < categories.length; i += 2) {
+    rows.push(categories.slice(i, i + 2) as [string, number][]);
+  }
+
+  return (
+    <div className="category-summary-table">
+      <table>
+        <tbody>
+          {rows.map((row, rowIdx) => (
+            <tr key={rowIdx}>
+              {row.map(([category, count]) => (
+                <Fragment key={category}>
+                  <td className="category-name-cell">{category}</td>
+                  <td className="category-count-cell">{count}문항</td>
+                </Fragment>
+              ))}
+              {/* 홀수개일 때 빈 셀 채우기 */}
+              {row.length === 1 && (
+                <Fragment key="empty">
+                  <td className="category-name-cell empty"></td>
+                  <td className="category-count-cell empty"></td>
+                </Fragment>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
 };
 
 // ===== 빠른 정답 답안표 컴포넌트 =====
@@ -292,16 +353,52 @@ const EditablePassage = ({
   );
 };
 
+// ===== 문장 삽입 유형 발문에서 삽입 문장 추출 =====
+const extractInsertionSentence = (instruction: string): string | null => {
+  if (!instruction) return null;
+  const patterns = [
+    /(?:다음 문장이 들어갈 위치로 가장 적절한 것은\??)\s*(.+)$/s,
+    /(?:주어진 문장이 들어가기에 가장 적절한 곳은\??)\s*(.+)$/s,
+    /(?:글의 흐름으로 보아.*?들어가기에 가장 적절한 곳은\??)\s*(.+)$/s,
+  ];
+  for (const pattern of patterns) {
+    const match = instruction.match(pattern);
+    if (match && match[1] && match[1].trim().length > 10) {
+      return match[1].trim();
+    }
+  }
+  return null;
+};
+
 // ===== 지문 포맷팅 함수 (마크다운 스타일 강조) =====
 // - ***text*** : 굵게 + 밑줄
 // - **text** : 굵게 (bold)
 // - _text_ : 밑줄 (underline)
 // - __________ : 빈칸
-const formatPassageWithUnderline = (text: string) => {
+// - insertionSentence : 삽입 문장 (굵게 처리)
+const formatPassageWithUnderline = (text: string, insertionSentence?: string | null) => {
   if (!text) return null;
+
+  // 삽입 문장이 있으면 지문에서 해당 문장을 찾아 **로 감싸기
+  let processedText = text;
+  if (insertionSentence) {
+    // 삽입 문장의 처음 30자로 매칭 시도 (지문에 삽입된 문장은 약간 다를 수 있음)
+    const searchPrefix = insertionSentence.substring(0, Math.min(30, insertionSentence.length));
+    const escapedPrefix = searchPrefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // 해당 문장 시작부터 문장 끝(마침표)까지 찾기
+    const sentencePattern = new RegExp(`(${escapedPrefix}[^.]*\\.)`, 'i');
+    const match = processedText.match(sentencePattern);
+    if (match) {
+      // 이미 **로 감싸져 있지 않은 경우만 처리
+      if (!processedText.includes(`**${match[1]}**`)) {
+        processedText = processedText.replace(match[1], `**${match[1]}**`);
+      }
+    }
+  }
+
   // 패턴: ***굵게+밑줄***, **굵게**, _밑줄_, 빈칸(5개 이상 언더스코어)
   const pattern = /(\*\*\*[^*]+\*\*\*|\*\*[^*]+\*\*|_[^_]+_|_{5,})/g;
-  const parts = text.split(pattern);
+  const parts = processedText.split(pattern);
   return parts.map((part, idx) => {
     // 빈칸 (5개 이상의 언더스코어)
     if (/^_{5,}$/.test(part)) {
@@ -368,8 +465,8 @@ const groupByPassage = (items: QuestionItem[]): PassageGroup[] => {
     return item;
   });
 
-  // 최대 그룹 크기 (2개까지만 묶음)
-  const MAX_GROUP_SIZE = 2;
+  // 최대 그룹 크기 (4개까지만 묶음)
+  const MAX_GROUP_SIZE = 4;
 
   processedItems.forEach((item) => {
     const lastGroup = groups[groups.length - 1];
@@ -402,7 +499,7 @@ const AnswerHeader = ({
   answerChange,
   showNumber = true,
   categoryMain,
-  categorySub
+  categorySub,
 }: {
   questionNumber: number;
   answer: string;
@@ -426,11 +523,13 @@ const AnswerHeader = ({
         <span className="answer-text">{answerText}</span>
       )}
     </div>
-    {categoryMain && (
-      <div className="answer-category">
-        {categoryMain}{categorySub ? ` | ${categorySub}` : ''}
-      </div>
-    )}
+    <div className="answer-right">
+      {categoryMain && (
+        <div className="answer-category">
+          {categoryMain}{categorySub ? ` | ${categorySub}` : ''}
+        </div>
+      )}
+    </div>
   </div>
 );
 
@@ -461,7 +560,7 @@ const VocabularySection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-        answer={item.answer}
+                answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -488,7 +587,7 @@ const VocabularySection = ({
       <div className="explanation-block">
         <div className="explanation-block-title">
           <span className="block-icon">📝</span>
-          동의어 추가
+          동의어 추가 |
         </div>
         {explanation?.synonyms && explanation.synonyms.length > 0 ? (
           <table className="synonym-table">
@@ -548,7 +647,7 @@ const GrammarSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-        answer={item.answer}
+                answer={item.answer}
         answerChange={explanation?.answerChange}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -563,7 +662,7 @@ const GrammarSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.correctExplanation || (
+          {stripMarkdown(explanation?.correctExplanation) || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
         </div>
@@ -581,7 +680,7 @@ const GrammarSection = ({
             explanation.wrongExplanations.map((exp, idx) => (
               <div key={idx} className="wrong-item">
                 <span className="wrong-label">{labels[idx]}</span>
-                <span className="wrong-text">{exp}</span>
+                <span className="wrong-text">{stripMarkdown(exp)}</span>
               </div>
             ))
           ) : (
@@ -612,7 +711,7 @@ const LogicSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-        answer={item.answer}
+                answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -630,7 +729,7 @@ const LogicSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.step1Targeting || (
+          {stripMarkdown(explanation?.step1Targeting) || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
         </div>
@@ -647,7 +746,7 @@ const LogicSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.step2Evidence || (
+          {stripMarkdown(explanation?.step2Evidence) || (
             <span className="placeholder-text">근거 분석이 생성되면 여기에 표시됩니다.</span>
           )}
         </div>
@@ -699,7 +798,7 @@ const MainIdeaSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-        answer={item.answer}
+                answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -734,7 +833,7 @@ const MainIdeaSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.correctExplanation || (
+          {stripMarkdown(explanation?.correctExplanation) || (
             <span className="placeholder-text">정답 해설이 생성되면 여기에 표시됩니다.</span>
           )}
         </div>
@@ -790,7 +889,7 @@ const InsertionSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-        answer={item.answer}
+                answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -808,7 +907,7 @@ const InsertionSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.correctExplanation || (
+          {stripMarkdown(explanation?.correctExplanation) || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
         </div>
@@ -825,7 +924,7 @@ const InsertionSection = ({
             {explanation.positionExplanations.map((exp, idx) => (
               <div key={idx} className="position-item">
                 <span className="position-label">{labels[idx]}</span>
-                <span className="position-text">{exp}</span>
+                <span className="position-text">{stripMarkdown(exp)}</span>
               </div>
             ))}
           </div>
@@ -852,7 +951,7 @@ const OrderSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-        answer={item.answer}
+                answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -867,7 +966,7 @@ const OrderSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.firstParagraph || (
+          {stripMarkdown(explanation?.firstParagraph) || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
         </div>
@@ -881,7 +980,7 @@ const OrderSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.splitPoint || (
+          {stripMarkdown(explanation?.splitPoint) || (
             <span className="placeholder-text">쪼개는 포인트가 생성되면 여기에 표시됩니다.</span>
           )}
         </div>
@@ -894,7 +993,7 @@ const OrderSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.conclusion || (
+          {stripMarkdown(explanation?.conclusion) || (
             <span className="placeholder-text">
               따라서 정답은 <strong>{item.answer}</strong>번입니다.
             </span>
@@ -924,7 +1023,7 @@ const WordAppropriatenessSection = ({
       {/* 정답 헤더 */}
       <AnswerHeader
         questionNumber={item.questionNumber}
-        answer={item.answer}
+                answer={item.answer}
         answerText={getAnswerChoiceText(item.answer, item.choices)}
         showNumber={showNumber}
         categoryMain={item.categoryMain}
@@ -942,7 +1041,7 @@ const WordAppropriatenessSection = ({
           contentEditable={isEditMode}
           suppressContentEditableWarning={true}
         >
-          {explanation?.mainTopic || (
+          {stripMarkdown(explanation?.mainTopic) || (
             <span className="placeholder-text">AI 해설이 생성되면 여기에 표시됩니다.</span>
           )}
         </div>
@@ -988,7 +1087,7 @@ const ExplanationSectionByType = ({
   showNumber?: boolean;
   onEdit?: ExplanationEditCallback;
   isEditMode?: boolean;
-}) => {
+}): JSX.Element => {
   // explanation.type을 우선 사용 (AI 해설 유형), 없으면 categoryMain fallback
   const explType = explanation?.type;
 
@@ -1099,6 +1198,18 @@ const renderChoiceWithTranslation = (
   );
 };
 
+// 보기가 짧은 마커인지 확인 (예: "(A)", "(B)", "A", "B" 등)
+// 단어(hasty, ethical 등)는 마커가 아니므로 번역 표시
+const isShortMarker = (choice: string): boolean => {
+  const trimmed = choice.trim();
+  // (A)~(E), A~E 패턴만 마커로 인식
+  if (/^\([A-E]\)$/.test(trimmed)) return true;
+  if (/^[A-E]$/.test(trimmed)) return true;
+  // 3자 이하이고 알파벳/숫자만 있는 경우 (예: "A", "1", "AB")
+  if (trimmed.length <= 3 && /^[A-Za-z0-9]+$/.test(trimmed)) return true;
+  return false;
+};
+
 // ===== 편집 가능한 보기 렌더링 헬퍼 =====
 const renderEditableChoice = (
   choice: string,
@@ -1110,6 +1221,9 @@ const renderEditableChoice = (
 ) => {
   const choiceLabels = ['①', '②', '③', '④', '⑤'];
   const isCorrect = isAnswerMatch(answer, choiceLabels[idx]);
+
+  // 짧은 마커(A, B, C 등)인 경우 번역 없이 원문만 표시
+  const skipTranslation = isShortMarker(choice);
 
   return (
     <div
@@ -1126,7 +1240,7 @@ const renderEditableChoice = (
             className="choice-english"
           />
         )}
-        {choiceTranslation && displayMode !== 'english' && (
+        {choiceTranslation && displayMode !== 'english' && !skipTranslation && (
           <span className="choice-korean">{stripLeadingNumber(choiceTranslation.korean)}</span>
         )}
       </span>
@@ -1160,6 +1274,7 @@ const SingleExplanationCard = ({
   const passageTranslation = explanation?.passageTranslation;
   const choiceTranslations = explanation?.choiceTranslations;
   const instructionText = explanation?.instructionTranslation || item.instruction;
+  const passageSummary = explanation?.passageSummary;
 
   const handlePassageSave = (newText: string) => {
     if (onPassageEdit) {
@@ -1202,16 +1317,36 @@ const SingleExplanationCard = ({
               text={passageTranslation}
               onSave={handlePassageSave}
               className="question-passage-translation"
-              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333', marginBottom: '12px' }}
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333', marginBottom: '8px' }}
             />
           ) : item.passage ? (
             <EditablePassage
               text={item.passage}
               onSave={onEnglishPassageEdit ? handleEnglishPassageSave : undefined}
               className="question-passage"
-              style={{ fontSize: scaledSize(9), lineHeight: 1.6, marginBottom: '12px' }}
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, marginBottom: '8px' }}
             />
           ) : null}
+          {/* 지문 요약 (분야/중심 소재/주제/요지) - 어휘/문법일 때는 분야/소재/주제/요지 전체 숨김 */}
+          {passageSummary && item.categoryMain?.trim() !== '어휘' && item.categoryMain?.trim() !== '문법' && (
+            <div className="passage-summary" style={{ marginBottom: '12px' }}>
+              <div className="summary-row">
+                <span className="summary-label">분야</span>
+                <span className="summary-value">{passageSummary.field}</span>
+                <span className="summary-divider">|</span>
+                <span className="summary-label">소재</span>
+                <span className="summary-value">{passageSummary.topic}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">주제</span>
+                <span className="summary-value">{passageSummary.subject}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">요지</span>
+                <span className="summary-value">{passageSummary.mainIdea}</span>
+              </div>
+            </div>
+          )}
           {/* 보기 */}
           <div className="question-choices" style={{ marginTop: '8px', fontSize: scaledSize(9.5) }}>
             {item.choices.map((choice, idx) => (
@@ -1230,7 +1365,13 @@ const SingleExplanationCard = ({
 
       {/* 우측: 해설 */}
       <div className="explanation-content">
-        <ExplanationSectionByType item={item} explanation={explanation} showNumber={false} onEdit={onExplanationEdit} isEditMode={isEditMode} />
+        <ExplanationSectionByType
+          item={item}
+          explanation={explanation}
+          showNumber={false}
+          onEdit={onExplanationEdit}
+          isEditMode={isEditMode}
+        />
       </div>
     </div>
   );
@@ -1262,6 +1403,7 @@ const GroupedExplanationCard = ({
   // 첫 번째 문제의 해설에서 지문 번역 가져오기
   const firstExplanation = explanations?.get(firstItem.id);
   const passageTranslation = firstExplanation?.passageTranslation;
+  const passageSummary = firstExplanation?.passageSummary;
 
   // 문제 번호 범위 (예: 15~17)
   const questionNumbers = group.items.map(i => i.questionNumber);
@@ -1303,16 +1445,36 @@ const GroupedExplanationCard = ({
               text={passageTranslation}
               onSave={handlePassageSave}
               className="question-passage-translation"
-              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333' }}
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, color: '#333', marginBottom: '8px' }}
             />
           ) : firstItem.passage ? (
             <EditablePassage
               text={firstItem.passage}
               onSave={onEnglishPassageEdit ? handleEnglishPassageSave : undefined}
               className="question-passage"
-              style={{ fontSize: scaledSize(9), lineHeight: 1.6 }}
+              style={{ fontSize: scaledSize(9), lineHeight: 1.6, marginBottom: '8px' }}
             />
           ) : null}
+          {/* 지문 요약 (분야/중심 소재/주제/요지) - 어휘/문법일 때는 전체 숨김 */}
+          {passageSummary && firstItem.categoryMain?.trim() !== '어휘' && firstItem.categoryMain?.trim() !== '문법' && (
+            <div className="passage-summary" style={{ marginBottom: '12px' }}>
+              <div className="summary-row">
+                <span className="summary-label">분야</span>
+                <span className="summary-value">{passageSummary.field}</span>
+                <span className="summary-divider">|</span>
+                <span className="summary-label">소재</span>
+                <span className="summary-value">{passageSummary.topic}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">주제</span>
+                <span className="summary-value">{passageSummary.subject}</span>
+              </div>
+              <div className="summary-row">
+                <span className="summary-label">요지</span>
+                <span className="summary-value">{passageSummary.mainIdea}</span>
+              </div>
+            </div>
+          )}
 
           {/* 각 문제의 보기 */}
           {group.items.map((item) => {
@@ -1457,6 +1619,7 @@ export const ExplanationView = memo(function ExplanationView({
             isEditable={false}
             onHeaderChange={onHeaderChange}
             unitNumber={unitNumber}
+            categoryContent={<CategorySummaryTable questions={data} />}
           />
           <QuickAnswerTable questions={data} />
         </div>

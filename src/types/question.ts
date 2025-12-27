@@ -39,11 +39,20 @@ export interface ChoiceTranslation {
   showEnglish: boolean; // 영어 원문 표시 여부
 }
 
+// 지문 요약 타입
+export interface PassageSummary {
+  field: string;      // 분야 (심리학, 경제학, 생물학 등)
+  topic: string;      // 중심 소재 (지문이 다루는 핵심 대상)
+  subject: string;    // 주제 (중심 소재에 대한 핵심 서술)
+  mainIdea: string;   // 요지 (topic + subject 결합)
+}
+
 // 공통 번역 필드
 export interface TranslationFields {
   passageTranslation?: string;           // 지문 한글 번역
   instructionTranslation?: string;       // 발문 한글 번역
   choiceTranslations?: ChoiceTranslation[]; // 보기 번역 (5개)
+  passageSummary?: PassageSummary;       // 지문 요약
 }
 
 // 어휘(동의어) 해설
@@ -225,17 +234,109 @@ export interface StorageData {
   sessions: SavedSession[];  // 저장된 세션 배열 (최대 2개)
 }
 
+// TSV 전체 파싱 - 컬럼 수 기반 멀티라인 처리
+// 구글 시트에서 복사 시 따옴표 없이 줄바꿈이 들어오는 경우 처리
+function parseTSVLines(tsv: string, expectedCols: number = 13): string[][] {
+  const lines = tsv.split(/\r?\n/);
+  const rows: string[][] = [];
+
+  let pendingRow: string[] | null = null;
+
+  for (const line of lines) {
+    if (!line.trim()) continue; // 빈 줄 스킵
+
+    // 현재 줄을 탭으로 분리
+    const cols = parseLineWithQuotes(line);
+
+    if (pendingRow) {
+      // 이전에 불완전한 행이 있으면, 마지막 필드에 현재 줄 첫 부분을 이어붙임
+      pendingRow[pendingRow.length - 1] += '\n' + cols[0];
+      // 나머지 컬럼들 추가
+      for (let i = 1; i < cols.length; i++) {
+        pendingRow.push(cols[i]);
+      }
+
+      // 컬럼 수가 충분하면 완성
+      if (pendingRow.length >= expectedCols) {
+        rows.push(pendingRow);
+        pendingRow = null;
+      }
+    } else {
+      // 새 행 시작
+      if (cols.length >= expectedCols) {
+        // 컬럼 수가 충분하면 바로 추가
+        rows.push(cols);
+      } else if (cols.length > 0) {
+        // 컬럼 수가 부족하면 다음 줄과 합칠 준비
+        pendingRow = cols;
+      }
+    }
+  }
+
+  // 마지막 미완성 행 처리 (헤더일 수도 있으므로 1개 이상이면 추가)
+  if (pendingRow && pendingRow.length > 1) {
+    rows.push(pendingRow);
+  }
+
+  return rows;
+}
+
+// 따옴표 처리하며 한 줄 파싱
+function parseLineWithQuotes(line: string): string[] {
+  const cols: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === '"') {
+      if (!inQuotes) {
+        inQuotes = true;
+      } else if (line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = false;
+      }
+    } else if (char === '\t' && !inQuotes) {
+      cols.push(current);
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  cols.push(current);
+  return cols;
+}
+
 // TSV 파싱 함수
 export function parseQuestionTSV(tsv: string): QuestionItem[] {
-  const lines = tsv.trim().split('\n');
-  if (lines.length < 2) return [];
+  // 디버깅: 원본 데이터 출력 (처음 500자)
+  console.log('[TSV 파싱] 원본 데이터 (처음 500자):', tsv.substring(0, 500));
+  console.log('[TSV 파싱] 탭 개수:', (tsv.match(/\t/g) || []).length);
+  console.log('[TSV 파싱] 줄바꿈 개수:', (tsv.match(/\n/g) || []).length);
+
+  const rows = parseTSVLines(tsv.trim());
+
+  // 디버깅: 파싱된 행 수와 각 행의 컬럼 수 출력
+  console.log(`[TSV 파싱] 총 ${rows.length}개 행 파싱됨`);
+  rows.forEach((row, i) => {
+    console.log(`  행 ${i}: ${row.length}개 컬럼`, row.slice(0, 3).map(c => c.substring(0, 30)));
+  });
+
+  if (rows.length < 2) return [];
 
   // 첫 번째 줄은 헤더
   const items: QuestionItem[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
-    const cols = lines[i].split('\t');
-    if (cols.length < 13) continue;
+  for (let i = 1; i < rows.length; i++) {
+    const cols = rows[i];
+    if (cols.length < 13) {
+      console.warn(`[TSV 파싱] 행 ${i} 건너뜀: ${cols.length}개 컬럼 (최소 13개 필요)`);
+      continue;
+    }
 
     items.push({
       id: cols[0],
@@ -247,6 +348,8 @@ export function parseQuestionTSV(tsv: string): QuestionItem[] {
       passage: cols[6],
       choices: [cols[7], cols[8], cols[9], cols[10], cols[11]],
       answer: cols[12],
+      hint: cols[13] || undefined,         // 14번째 컬럼: 힌트
+      explanation: cols[14] || undefined,  // 15번째 컬럼: 해설
     });
   }
 
